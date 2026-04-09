@@ -4,9 +4,10 @@ import { now, today } from '../utils/date'
 
 const DEFAULT_SETTING_ID = 'default'
 
-export async function getSetting(): Promise<Setting> {
+export async function ensureSetting(): Promise<Setting> {
   const setting = await db.settings.get(DEFAULT_SETTING_ID)
   if (setting) return setting
+
   const defaultSetting: Setting = {
     id: DEFAULT_SETTING_ID,
     studioName: '118StudioManager',
@@ -21,8 +22,12 @@ export async function getSetting(): Promise<Setting> {
   return defaultSetting
 }
 
+export async function getSetting(): Promise<Setting> {
+  return ensureSetting()
+}
+
 export async function updateSetting(updates: Partial<Setting>): Promise<void> {
-  const current = await getSetting()
+  const current = await ensureSetting()
   await db.settings.put({ ...current, ...updates, id: DEFAULT_SETTING_ID, updatedAt: now() })
 }
 

@@ -4,9 +4,7 @@ import * as settingService from '../services/settingService'
 import type { Setting } from '../types/setting'
 
 export function useSettings() {
-  const setting = useLiveQuery(async () => {
-    return (await db.settings.get('default')) ?? settingService.getSetting()
-  }, [])
+  const setting = useLiveQuery(() => db.settings.get('default'), [])
 
   const updateSetting = async (updates: Partial<Setting>) => {
     await settingService.updateSetting(updates)
