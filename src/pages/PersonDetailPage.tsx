@@ -84,7 +84,7 @@ export function PersonDetailPage() {
         <div className="lg:col-span-2">
           <h3 className="text-sm font-medium text-text-primary mb-3">分配记录 ({personAssignments.length})</h3>
           {personAssignments.length === 0 ? (
-            <EmptyState title="暂无分配记录" description="通过日计划页面为此人员分配任务" />
+            <EmptyState title="暂无分配记录" description="通过日程页面为此人员分配任务" />
           ) : (
             <div className="space-y-2">
               {personAssignments.map(a => {

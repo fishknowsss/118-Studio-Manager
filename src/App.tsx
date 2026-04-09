@@ -37,6 +37,7 @@ const router = createRouter([
     children: [
       { index: true, element: withSuspense(<HomePage />) },
       { path: 'dashboard', element: withSuspense(<DashboardPage />) },
+      { path: 'planner', element: withSuspense(<DailyPlannerPage />) },
       { path: 'projects', element: withSuspense(<ProjectsPage />) },
       { path: 'projects/:id', element: withSuspense(<ProjectDetailPage />) },
       { path: 'people', element: withSuspense(<PeoplePage />) },

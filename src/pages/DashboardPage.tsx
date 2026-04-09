@@ -117,7 +117,7 @@ export function DashboardPage() {
           <div>
             <div className="flex items-center justify-between mb-3">
               <h3 className="text-xs font-semibold text-text-secondary uppercase tracking-wide">今日安排</h3>
-              <Button size="sm" variant="secondary" onClick={() => navigate(`/planner/${todayStr}`)}>打开日计划</Button>
+              <Button size="sm" variant="secondary" onClick={() => navigate(`/planner/${todayStr}`)}>打开日程</Button>
             </div>
             {stats.todayAssignmentDetails.length === 0 ? (
               <p className="text-sm text-text-muted py-6">今天还没有分配任务</p>

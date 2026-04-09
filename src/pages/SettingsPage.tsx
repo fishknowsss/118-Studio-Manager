@@ -234,7 +234,7 @@ export function SettingsPage() {
             </FormField>
 
             {setting?.lastOpenedDate && (
-              <p className="text-xs text-text-muted">最近打开的日计划: {setting.lastOpenedDate}</p>
+              <p className="text-xs text-text-muted">最近打开的日程日期: {setting.lastOpenedDate}</p>
             )}
 
             <div className="flex justify-end">

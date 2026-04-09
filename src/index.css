@@ -138,3 +138,24 @@ body {
   font-weight: 500;
   font-size: 0.8125rem;
 }
+
+.schedule-calendar .fc .fc-header-toolbar {
+  margin-bottom: 0.9rem;
+  gap: 0.5rem;
+}
+
+.schedule-calendar .fc .fc-toolbar-title {
+  font-size: 1rem;
+}
+
+.schedule-calendar .fc .fc-button {
+  min-height: 2rem;
+}
+
+.schedule-calendar .fc .fc-daygrid-day-events {
+  margin-top: 0.1rem;
+}
+
+.schedule-calendar .fc .fc-daygrid-event-harness {
+  margin-inline: 0.15rem;
+}

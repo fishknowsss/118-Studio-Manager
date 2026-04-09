@@ -3,11 +3,10 @@ import type { Setting } from '../types/setting'
 
 export const DEFAULT_VIEW_OPTIONS = [
   { value: 'dashboard', label: '首页' },
-  { value: 'planner', label: '日计划' },
+  { value: 'planner', label: '日程' },
   { value: 'projects', label: '项目' },
   { value: 'tasks', label: '任务' },
   { value: 'people', label: '人员' },
-  { value: 'calendar', label: '日历' },
 ] as const
 
 export function getDefaultViewPath(setting?: Pick<Setting, 'defaultView' | 'lastOpenedDate'> | null): string {
@@ -19,7 +18,7 @@ export function getDefaultViewPath(setting?: Pick<Setting, 'defaultView' | 'last
     case 'people':
       return '/people'
     case 'calendar':
-      return '/calendar'
+      return `/planner/${setting.lastOpenedDate || today()}`
     case 'planner':
       return `/planner/${setting.lastOpenedDate || today()}`
     case 'dashboard':
