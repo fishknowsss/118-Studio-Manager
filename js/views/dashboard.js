@@ -10,6 +10,14 @@ let _quote = getRandQuote();
 let _motivation = getRandMotivation();
 let _calYear, _calMonth;
 
+const URGENCY_TEXT = {
+  'urg-overdue': '逾期',
+  'urg-today': '今日截止',
+  'urg-soon': '3天内',
+  'urg-near': '7天内',
+  '': '未迫近',
+};
+
 export function renderDashboard(container) {
   const t = new Date();
   if (_calYear === undefined) { _calYear = t.getFullYear(); _calMonth = t.getMonth(); }
@@ -117,34 +125,81 @@ function renderFocusCards() {
   const todayStr = today();
   const active = store.projects.filter(p => p.status !== 'cancelled' && p.status !== 'completed');
   const sorted = sortByUrgency(active);
-  const top    = sorted.slice(0, 8);
+  const top = sorted.slice(0, 8);
 
   if (!top.length) {
     el.innerHTML = '<div class="focus-empty">暂无活跃项目 — 新建一个开始吧</div>';
     return;
   }
 
-  el.innerHTML = '';
-  for (const proj of top) {
+  const focusProj = top[0];
+  const focusUc = urgencyClass(focusProj.ddl, focusProj.status);
+  const focusTasks = store.tasksForProject(focusProj.id);
+  const focusTodayTasks = focusTasks.filter(t => t.scheduledDate === todayStr && t.status !== 'done');
+  const focusOverdueTasks = focusTasks.filter(t => t.endDate && t.endDate < todayStr && t.status !== 'done');
+  const focusNextMs = (focusProj.milestones || [])
+    .filter(m => !m.completed && m.date >= todayStr)
+    .sort((a, b) => a.date.localeCompare(b.date))[0];
+  const focusDays = daysUntil(focusProj.ddl);
+
+  const urgencyBrief = (() => {
+    if (focusDays === null) return '该项目未设置 DDL，请尽快补齐时间点。';
+    if (focusDays < 0) return `已逾期 ${Math.abs(focusDays)} 天，建议立即处理交付风险。`;
+    if (focusDays === 0) return '今天截止，请优先完成最终交付与确认。';
+    if (focusDays <= 3) return `距离截止 ${focusDays} 天，进入冲刺窗口。`;
+    if (focusDays <= 7) return `距离截止 ${focusDays} 天，请锁定关键里程碑。`;
+    return `距离截止 ${focusDays} 天，保持节奏推进。`;
+  })();
+
+  const focusHighlight = `
+    <div class="focus-highlight ${focusUc}">
+      <div class="focus-highlight-head">
+        <div>
+          <div class="focus-highlight-label">最紧急项目</div>
+          <div class="focus-highlight-name">${esc(focusProj.name)}</div>
+          <div class="focus-highlight-ddl">${ddlLabel(focusProj.ddl, focusProj.status)}</div>
+        </div>
+        <div class="focus-highlight-tier">${URGENCY_TEXT[focusUc] || '未迫近'}</div>
+      </div>
+      <div class="focus-highlight-brief">${urgencyBrief}</div>
+      <div class="focus-highlight-meta">
+        <span>今日事项 ${focusTodayTasks.length}</span>
+        <span>逾期任务 ${focusOverdueTasks.length}</span>
+        <span>未完成 ${focusTasks.filter(t => t.status !== 'done').length}</span>
+        ${focusNextMs ? `<span>关键节点 ${esc(focusNextMs.title)} · ${formatDate(focusNextMs.date)}</span>` : '<span>关键节点 暂无</span>'}
+      </div>
+    </div>`;
+
+  const cards = top.slice(1).map(proj => {
     const uc = urgencyClass(proj.ddl, proj.status);
     const dl = ddlLabel(proj.ddl, proj.status);
     const tasks = store.tasksForProject(proj.id);
     const remaining = tasks.filter(t => t.status !== 'done').length;
-    const nextMs = (proj.milestones || []).filter(m => !m.completed && m.date >= todayStr)
-      .sort((a,b) => a.date.localeCompare(b.date))[0];
+    const nextMs = (proj.milestones || [])
+      .filter(m => !m.completed && m.date >= todayStr)
+      .sort((a, b) => a.date.localeCompare(b.date))[0];
 
-    const card = document.createElement('div');
-    card.className = `focus-card ${uc}`;
-    card.innerHTML = `
-      <div class="focus-card-name">${esc(proj.name)}</div>
-      <div class="focus-card-ddl">${dl}</div>
-      <div class="focus-card-meta">
-        <span>${remaining} 个任务</span>
-      </div>
-      ${nextMs ? `<div class="focus-card-milestone">⬡ ${esc(nextMs.title)} · ${formatDate(nextMs.date)}</div>` : ''}`;
+    return `
+      <div class="focus-card ${uc}" data-project-id="${proj.id}">
+        <div class="focus-card-name">${esc(proj.name)}</div>
+        <div class="focus-card-ddl">${dl}</div>
+        <div class="focus-card-meta">
+          <span>${URGENCY_TEXT[uc] || '未迫近'}</span>
+          <span>${remaining} 个任务</span>
+        </div>
+        ${nextMs ? `<div class="focus-card-milestone">◆ ${esc(nextMs.title)} · ${formatDate(nextMs.date)}</div>` : ''}
+      </div>`;
+  }).join('');
+
+  el.innerHTML = `
+    ${focusHighlight}
+    <div class="focus-secondary-list">${cards || '<div class="focus-empty">当前仅 1 个活跃项目</div>'}</div>`;
+
+  const highlight = el.querySelector('.focus-highlight');
+  if (highlight) highlight.onclick = () => navigate('projects');
+  el.querySelectorAll('.focus-card').forEach(card => {
     card.onclick = () => navigate('projects');
-    el.appendChild(card);
-  }
+  });
 }
 
 function renderTaskPool() {
