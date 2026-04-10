@@ -21,8 +21,14 @@ jobs:
       url: ${{ steps.deployment.outputs.page_url }}
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout
+      - name: Checkout vc source
         uses: actions/checkout@v4
+
+      - name: Checkout existing gh-pages content
+        uses: actions/checkout@v4
+        with:
+          ref: gh-pages
+          path: gh-pages-site
 
       - name: Setup Pages
         uses: actions/configure-pages@v5
@@ -30,10 +36,14 @@ jobs:
       - name: Build publish dir
         run: |
           mkdir -p _site
-          cp index.html _site/
-          cp -R css _site/
-          cp -R js _site/
+          rsync -a --exclude .git --exclude .github gh-pages-site/ _site/
+          rm -rf _site/vc
+          mkdir -p _site/vc
+          cp index.html _site/vc/
+          cp -R css _site/vc/
+          cp -R js _site/vc/
           cp .nojekyll _site/ || true
+          cp .nojekyll _site/vc/ || true
 
       - name: Upload static artifact
         uses: actions/upload-pages-artifact@v3
