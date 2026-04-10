@@ -82,8 +82,8 @@ jobs:
             find . -mindepth 1 -maxdepth 1 ! -name '.git' -exec rm -rf {} +
           fi
 
-          cp -R . "${site_dir}"
-          find "${site_dir}" -mindepth 1 -maxdepth 1 ! -name '.git' -exec rm -rf {} +
+          find . -mindepth 1 -maxdepth 1 ! -name '.git' -exec cp -R {} "${site_dir}/" \;
+          rm -rf "${site_dir}/${DEPLOY_TARGET}"
           mkdir -p "${site_dir}/${DEPLOY_TARGET}"
           cp -R "${GITHUB_WORKSPACE}/dist/." "${site_dir}/${DEPLOY_TARGET}/"
           touch "${site_dir}/.nojekyll"
