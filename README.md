@@ -14,11 +14,16 @@
   </p>
 
   <p>
+    <a href="https://fishknowsss.github.io/118-Studio-Manager/">在线预览</a> ·
+    <a href="https://github.com/fishknowsss/118-Studio-Manager">GitHub 仓库</a>
+  </p>
+
+  <p>
     <a href="#项目定位">项目定位</a> ·
+    <a href="#界面预览">界面预览</a> ·
     <a href="#功能全景">功能全景</a> ·
     <a href="#快速开始">快速开始</a> ·
-    <a href="#数据与备份">数据与备份</a> ·
-    <a href="#部署到-github-pages">部署说明</a>
+    <a href="#版本更新记录">版本更新</a>
   </p>
 </div>
 
@@ -46,6 +51,39 @@
     <td width="50%" valign="top">
       <h3>使用体验</h3>
       <p>打开即用，支持 JSON 完整备份、CSV 导出、GitHub Pages 发布。</p>
+    </td>
+  </tr>
+</table>
+
+## 在线预览
+
+- 线上地址: [https://fishknowsss.github.io/118-Studio-Manager/](https://fishknowsss.github.io/118-Studio-Manager/)
+- 仓库地址: [https://github.com/fishknowsss/118-Studio-Manager](https://github.com/fishknowsss/118-Studio-Manager)
+- 说明: 线上版本适合快速浏览结构与交互；本地运行更适合长期使用与数据管理。
+
+## 界面预览
+
+以下截图基于本地演示数据生成，展示的是当前项目里的真实界面。
+
+<table>
+  <tr>
+    <td width="50%" valign="top">
+      <img src="./docs/screenshots/dashboard.png" alt="Dashboard preview" />
+      <p><strong>Dashboard</strong><br/>首页集中展示今日分配、逾期项目、近 7 天截止事项与最近操作。</p>
+    </td>
+    <td width="50%" valign="top">
+      <img src="./docs/screenshots/planner.png" alt="Planner preview" />
+      <p><strong>Daily Planner</strong><br/>把单日任务、成员分配、月历节点与未来 7 天关键事项放进同一视图。</p>
+    </td>
+  </tr>
+  <tr>
+    <td width="50%" valign="top">
+      <img src="./docs/screenshots/projects.png" alt="Projects preview" />
+      <p><strong>Projects</strong><br/>按截止时间、优先级与状态管理项目，适合快速识别紧急程度。</p>
+    </td>
+    <td width="50%" valign="top">
+      <img src="./docs/screenshots/settings.png" alt="Settings preview" />
+      <p><strong>Settings & Backup</strong><br/>集中管理应用名称、默认视图、JSON 备份恢复与 CSV 导出。</p>
     </td>
   </tr>
 </table>
@@ -128,6 +166,8 @@ src/
   constants/    常量映射与导航配置
   types/        业务类型定义
   utils/        日期、CSV、校验、排序等工具
+docs/
+  screenshots/  README 展示截图
 ```
 
 ## 数据与备份
@@ -144,6 +184,16 @@ npm run lint
 npm run build
 ```
 
+## 版本更新记录
+
+以下记录根据仓库当前演进整理，便于快速了解项目变化。
+
+| 版本 | 日期 | 更新内容 |
+| --- | --- | --- |
+| v0.3.0 | 2026-04-10 | 日程页合并月历与分配视图；README 升级为展示型文档，加入真实截图、在线预览与更新记录 |
+| v0.2.0 | 2026-04-09 | 修复 GitHub Pages 下的设置初始化问题，完善部署可用性 |
+| v0.1.0 | 2026-04-09 | 完成首版工作室管理台，包含项目、任务、人员、日程、备份与导出能力 |
+
 ## 部署到 GitHub Pages
 
 项目已经为 GitHub Pages 做了适配：
@@ -154,13 +204,3 @@ npm run build
 4. 推送到 `main` 分支后触发构建与发布。
 
 生产环境已配置 GitHub Pages 的基础路径，并使用 Hash Router，深链接在部署后仍然可用。
-
-## Why This README Looks Different
-
-这个版本刻意按“仓库首页即产品说明页”的思路设计：
-
-- 先让访问者快速理解项目用途
-- 再用表格和流程图展示结构
-- 最后给出直接可执行的启动与部署路径
-
-如果你后面想继续升级，我也可以顺手把它扩展成带真实界面截图、在线预览链接和版本更新记录的 README。
