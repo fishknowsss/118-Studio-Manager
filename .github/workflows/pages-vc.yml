@@ -40,6 +40,7 @@ jobs:
           rm -rf _site/vc
           mkdir -p _site/vc
           cp index.html _site/vc/
+          cp favicon.svg _site/vc/
           cp -R css _site/vc/
           cp -R js _site/vc/
           cp .nojekyll _site/ || true
