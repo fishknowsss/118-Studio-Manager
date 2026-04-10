@@ -1,6 +1,4 @@
 <div align="center">
-  <img src="./docs/readme-banner.svg" alt="118 Studio Manager banner" width="100%" />
-
   <h1>118 Studio Manager</h1>
   <p>为小型工作室与内容团队准备的本地优先运营管理台</p>
 
