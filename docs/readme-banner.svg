@@ -1,0 +1,70 @@
+<svg width="1280" height="640" viewBox="0 0 1280 640" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bg" x1="96" y1="64" x2="1184" y2="576" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#0F172A"/>
+      <stop offset="0.5" stop-color="#1D4ED8"/>
+      <stop offset="1" stop-color="#0F766E"/>
+    </linearGradient>
+    <linearGradient id="panel" x1="780" y1="140" x2="1090" y2="470" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#FFFFFF" stop-opacity="0.24"/>
+      <stop offset="1" stop-color="#FFFFFF" stop-opacity="0.08"/>
+    </linearGradient>
+    <filter id="shadow" x="0" y="0" width="1280" height="640" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB">
+      <feDropShadow dx="0" dy="24" stdDeviation="32" flood-color="#020617" flood-opacity="0.22"/>
+    </filter>
+  </defs>
+
+  <rect x="24" y="24" width="1232" height="592" rx="40" fill="url(#bg)"/>
+  <g opacity="0.24">
+    <circle cx="1090" cy="146" r="118" fill="#38BDF8"/>
+    <circle cx="1034" cy="468" r="168" fill="#34D399"/>
+    <circle cx="740" cy="86" r="62" fill="#F8FAFC"/>
+  </g>
+
+  <g filter="url(#shadow)">
+    <rect x="84" y="92" width="1112" height="456" rx="32" fill="#FFFFFF" fill-opacity="0.06"/>
+    <rect x="84" y="92" width="1112" height="456" rx="32" stroke="#FFFFFF" stroke-opacity="0.18" stroke-width="2"/>
+  </g>
+
+  <rect x="126" y="132" width="522" height="376" rx="28" fill="#FFFFFF" fill-opacity="0.08" stroke="#FFFFFF" stroke-opacity="0.14"/>
+  <text x="164" y="198" fill="#E2E8F0" font-family="Arial, Helvetica, sans-serif" font-size="18" letter-spacing="4">LOCAL-FIRST STUDIO OPS DASHBOARD</text>
+  <text x="164" y="282" fill="#FFFFFF" font-family="Arial, Helvetica, sans-serif" font-size="62" font-weight="700">118 Studio</text>
+  <text x="164" y="348" fill="#FFFFFF" font-family="Arial, Helvetica, sans-serif" font-size="62" font-weight="700">Manager</text>
+  <text x="164" y="404" fill="#DCE8FF" font-family="Arial, Helvetica, sans-serif" font-size="24">Projects, tasks, planner, milestones and backups</text>
+  <text x="164" y="440" fill="#DCE8FF" font-family="Arial, Helvetica, sans-serif" font-size="24">organized into one focused workspace.</text>
+
+  <rect x="164" y="464" width="152" height="36" rx="18" fill="#FFFFFF"/>
+  <text x="192" y="488" fill="#0F172A" font-family="Arial, Helvetica, sans-serif" font-size="18" font-weight="700">React + TS</text>
+  <rect x="328" y="464" width="160" height="36" rx="18" fill="#FFFFFF" fill-opacity="0.16" stroke="#FFFFFF" stroke-opacity="0.24"/>
+  <text x="356" y="488" fill="#FFFFFF" font-family="Arial, Helvetica, sans-serif" font-size="18" font-weight="700">Dexie + IDB</text>
+
+  <g>
+    <rect x="724" y="132" width="388" height="152" rx="28" fill="url(#panel)" stroke="#FFFFFF" stroke-opacity="0.20"/>
+    <text x="760" y="184" fill="#BFDBFE" font-family="Arial, Helvetica, sans-serif" font-size="18" letter-spacing="3">DASHBOARD</text>
+    <text x="760" y="234" fill="#FFFFFF" font-family="Arial, Helvetica, sans-serif" font-size="42" font-weight="700">4 key views</text>
+    <text x="760" y="272" fill="#E2E8F0" font-family="Arial, Helvetica, sans-serif" font-size="20">overview, planner, people, settings</text>
+
+    <rect x="760" y="206" width="12" height="12" rx="6" fill="#38BDF8"/>
+    <rect x="944" y="206" width="12" height="12" rx="6" fill="#34D399"/>
+    <rect x="1056" y="206" width="12" height="12" rx="6" fill="#F8FAFC"/>
+  </g>
+
+  <g>
+    <rect x="724" y="304" width="182" height="174" rx="24" fill="#FFFFFF" fill-opacity="0.13" stroke="#FFFFFF" stroke-opacity="0.18"/>
+    <text x="754" y="350" fill="#A7F3D0" font-family="Arial, Helvetica, sans-serif" font-size="16" letter-spacing="2">PROJECTS</text>
+    <text x="754" y="400" fill="#FFFFFF" font-family="Arial, Helvetica, sans-serif" font-size="44" font-weight="700">DDL</text>
+    <text x="754" y="438" fill="#E2E8F0" font-family="Arial, Helvetica, sans-serif" font-size="18">Track urgency</text>
+  </g>
+
+  <g>
+    <rect x="930" y="304" width="182" height="174" rx="24" fill="#FFFFFF" fill-opacity="0.13" stroke="#FFFFFF" stroke-opacity="0.18"/>
+    <text x="960" y="350" fill="#BFDBFE" font-family="Arial, Helvetica, sans-serif" font-size="16" letter-spacing="2">PLANNER</text>
+    <text x="960" y="400" fill="#FFFFFF" font-family="Arial, Helvetica, sans-serif" font-size="44" font-weight="700">DAY</text>
+    <text x="960" y="438" fill="#E2E8F0" font-family="Arial, Helvetica, sans-serif" font-size="18">Assign people</text>
+  </g>
+
+  <g opacity="0.7">
+    <path d="M1048 530C1097.71 530 1138 489.706 1138 440" stroke="#E2E8F0" stroke-width="3" stroke-dasharray="8 10"/>
+    <path d="M842 530C891.706 530 932 489.706 932 440" stroke="#E2E8F0" stroke-width="3" stroke-dasharray="8 10"/>
+  </g>
+</svg>
