@@ -1,5 +1,5 @@
 import { db } from '../db/database'
-import { now } from '../utils/date'
+import { now, today } from '../utils/date'
 import { validateBackupData } from '../utils/validation'
 import { addLog } from './logService'
 import type { Project } from '../types/project'
@@ -10,8 +10,39 @@ import type { Assignment } from '../types/assignment'
 import type { Log } from '../types/log'
 import type { Setting } from '../types/setting'
 
-const APP_VERSION = '1.0.0'
-const SCHEMA_VERSION = 1
+const APP_VERSION = '2.0.0'
+const SCHEMA_VERSION = 2
+
+function normalizePersonRecord(person: Record<string, unknown>): Person {
+  return {
+    id: String(person.id ?? ''),
+    name: typeof person.name === 'string' ? person.name : '',
+    role: typeof person.role === 'string' ? person.role : '',
+    gender: person.gender === 'male' || person.gender === 'female' ? person.gender : 'unspecified',
+    skills: Array.isArray(person.skills) ? person.skills.filter((skill): skill is string => typeof skill === 'string') : [],
+    note: typeof person.note === 'string' ? person.note : '',
+    isActive: typeof person.isActive === 'boolean' ? person.isActive : true,
+    createdAt: typeof person.createdAt === 'string' ? person.createdAt : now(),
+    updatedAt: typeof person.updatedAt === 'string' ? person.updatedAt : now(),
+  }
+}
+
+function normalizeSettingRecord(setting: Record<string, unknown>): Setting {
+  return {
+    id: String(setting.id ?? 'default'),
+    studioName: typeof setting.studioName === 'string' && setting.studioName.trim()
+      ? setting.studioName
+      : '118StudioManager',
+    defaultView: 'dashboard',
+    lastOpenedDate: typeof setting.lastOpenedDate === 'string' && setting.lastOpenedDate
+      ? setting.lastOpenedDate
+      : today(),
+    lastBackupAt: typeof setting.lastBackupAt === 'string' ? setting.lastBackupAt : '',
+    backupReminderDays: typeof setting.backupReminderDays === 'number' ? setting.backupReminderDays : 7,
+    createdAt: typeof setting.createdAt === 'string' ? setting.createdAt : now(),
+    updatedAt: typeof setting.updatedAt === 'string' ? setting.updatedAt : now(),
+  }
+}
 
 export async function exportFullJSON(): Promise<string> {
   const [projects, people, tasks, milestones, assignments, logs, settings] = await Promise.all([
@@ -82,6 +113,10 @@ export async function importFullJSON(jsonStr: string): Promise<void> {
   }
 
   const d = result.data.data
+  const people = d.people.map(person => normalizePersonRecord(person as Record<string, unknown>))
+  const settings = d.settings.length > 0
+    ? d.settings.map(setting => normalizeSettingRecord(setting as Record<string, unknown>))
+    : [normalizeSettingRecord({ id: 'default' })]
 
   await db.transaction('rw', [db.projects, db.people, db.tasks, db.milestones, db.assignments, db.logs, db.settings], async () => {
     await db.projects.clear()
@@ -93,12 +128,12 @@ export async function importFullJSON(jsonStr: string): Promise<void> {
     await db.settings.clear()
 
     await db.projects.bulkAdd(d.projects as Project[])
-    await db.people.bulkAdd(d.people as Person[])
+    await db.people.bulkAdd(people)
     await db.tasks.bulkAdd(d.tasks as Task[])
     await db.milestones.bulkAdd(d.milestones as Milestone[])
     await db.assignments.bulkAdd(d.assignments as Assignment[])
     await db.logs.bulkAdd(d.logs as Log[])
-    await db.settings.bulkAdd(d.settings as Setting[])
+    await db.settings.bulkAdd(settings)
   })
 
   await addLog('import', 'system', '', '从 JSON 备份恢复数据')

@@ -38,6 +38,22 @@ export class StudioManagerDB extends Dexie {
       logs: 'id, type, targetType, targetId, createdAt',
       settings: 'id',
     })
+
+    this.version(3).stores({
+      projects: 'id, name, status, priority, deadline, createdAt',
+      people: 'id, name, gender, isActive, createdAt',
+      tasks: 'id, projectId, status, priority, dueDate, createdAt',
+      milestones: 'id, projectId, date, createdAt',
+      assignments: 'id, taskId, personId, date, projectId, createdAt, [date+taskId], [date+personId+taskId]',
+      logs: 'id, type, targetType, targetId, createdAt',
+      settings: 'id',
+    }).upgrade(async tx => {
+      await tx.table('people').toCollection().modify(person => {
+        if (!person.gender) {
+          person.gender = 'unspecified'
+        }
+      })
+    })
   }
 }
 

@@ -4,6 +4,11 @@ import { generateId } from '../utils/id'
 import { now } from '../utils/date'
 import { addLog } from './logService'
 
+function normalizeGender(gender: Person['gender']): NonNullable<Person['gender']> {
+  if (gender === 'male' || gender === 'female') return gender
+  return 'unspecified'
+}
+
 export async function getAllPeople(): Promise<Person[]> {
   return db.people.orderBy('createdAt').reverse().toArray()
 }
@@ -21,6 +26,7 @@ export async function addPerson(input: PersonInput): Promise<string> {
   const timestamp = now()
   await db.people.add({
     ...input,
+    gender: normalizeGender(input.gender),
     id,
     createdAt: timestamp,
     updatedAt: timestamp,
@@ -30,7 +36,11 @@ export async function addPerson(input: PersonInput): Promise<string> {
 }
 
 export async function updatePerson(id: string, updates: Partial<PersonInput>): Promise<void> {
-  await db.people.update(id, { ...updates, updatedAt: now() })
+  await db.people.update(id, {
+    ...updates,
+    ...(updates.gender !== undefined ? { gender: normalizeGender(updates.gender) } : {}),
+    updatedAt: now(),
+  })
   await addLog('update', 'person', id, `更新人员: ${updates.name || id}`)
 }
 

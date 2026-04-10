@@ -12,4 +12,15 @@ export default defineConfig(({ command }) => ({
       '@': '/src',
     },
   },
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks(id) {
+          if (!id.includes('node_modules')) return
+          if (id.includes('react') || id.includes('scheduler')) return 'react-vendor'
+          if (id.includes('dayjs') || id.includes('dexie')) return 'data-vendor'
+        },
+      },
+    },
+  },
 }))

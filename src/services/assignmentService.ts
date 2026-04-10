@@ -47,6 +47,40 @@ export async function addAssignment(input: AssignmentInput): Promise<string> {
   return id
 }
 
+export async function assignTaskToPersonOnDate(input: {
+  date: string
+  taskId: string
+  projectId: string
+  personId: string
+  note?: string
+}): Promise<string> {
+  const existingAssignment = await db.assignments
+    .where('[date+taskId]')
+    .equals([input.date, input.taskId])
+    .first()
+
+  if (existingAssignment) {
+    await db.assignments.update(existingAssignment.id, {
+      personId: input.personId,
+      projectId: input.projectId,
+      assignmentStatus: 'assigned',
+      note: input.note ?? existingAssignment.note,
+      updatedAt: now(),
+    })
+    await addLog('update', 'assignment', existingAssignment.id, '重新分配任务')
+    return existingAssignment.id
+  }
+
+  return addAssignment({
+    date: input.date,
+    taskId: input.taskId,
+    projectId: input.projectId,
+    personId: input.personId,
+    assignmentStatus: 'assigned',
+    note: input.note ?? '',
+  })
+}
+
 export async function updateAssignment(id: string, updates: Partial<AssignmentInput>): Promise<void> {
   await db.assignments.update(id, { ...updates, updatedAt: now() })
   await addLog('update', 'assignment', id, `更新分配`)

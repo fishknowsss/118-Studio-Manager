@@ -14,6 +14,8 @@ export function useAssignments(date?: string) {
   return {
     assignments: assignments ?? [],
     addAssignment: (input: AssignmentInput) => assignmentService.addAssignment(input),
+    assignTaskToPersonOnDate: (input: { date: string; taskId: string; projectId: string; personId: string; note?: string }) =>
+      assignmentService.assignTaskToPersonOnDate(input),
     updateAssignment: (id: string, updates: Partial<AssignmentInput>) => assignmentService.updateAssignment(id, updates),
     deleteAssignment: (id: string) => assignmentService.deleteAssignment(id),
   }
