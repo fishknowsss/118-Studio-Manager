@@ -99,6 +99,9 @@ async function init() {
   // Set initial hash if missing
   if (!window.location.hash) window.location.hash = '#dashboard';
 
+  // Signal React that store is ready
+  document.dispatchEvent(new CustomEvent('appReady'));
+
   updateBadge();
 
   // Keep badge in sync with store changes

@@ -23,13 +23,13 @@ function getHashView() {
 }
 
 export default function App() {
-  const hostRef   = useRef<HTMLDivElement | null>(null)
-  const slotRef   = useRef<HTMLDivElement | null>(null)
-  const rootRef   = useRef<ReturnType<typeof createRoot> | null>(null)
-  const [view, setView] = useState(getHashView)
+  const hostRef  = useRef<HTMLDivElement | null>(null)
+  const slotRef  = useRef<HTMLDivElement | null>(null)
+  const rootRef  = useRef<ReturnType<typeof createRoot> | null>(null)
+  const [view, setView]   = useState(getHashView)
   const [ready, setReady] = useState(false)
 
-  // Boot legacy shell + DB/store init once
+  // Boot: inject shell, init DB/store
   useEffect(() => {
     let dispose: (() => void) | undefined
 
@@ -38,7 +38,6 @@ export default function App() {
       if (!host) return
       host.innerHTML = getLegacyAppShell()
 
-      // Create React slot inside #view-container
       const vc = host.querySelector('#view-container') as HTMLElement
       const slot = document.createElement('div')
       slot.style.cssText = 'display:flex;flex-direction:column;height:100%;'
@@ -46,16 +45,18 @@ export default function App() {
       slotRef.current = slot
       rootRef.current = createRoot(slot)
 
-      // Boot legacy only for DB + store (routing handled by React)
       const mod = await import('../js/app.js') as { disposeLegacyApp?: () => void }
       dispose = mod.disposeLegacyApp
-
-      setReady(true)
     }
+
+    // Wait for store to finish loading before rendering views
+    const onReady = () => setReady(true)
+    document.addEventListener('appReady', onReady)
 
     void boot()
 
     return () => {
+      document.removeEventListener('appReady', onReady)
       dispose?.()
       rootRef.current?.unmount()
       if (hostRef.current) hostRef.current.innerHTML = ''
@@ -69,18 +70,18 @@ export default function App() {
     return () => window.removeEventListener('hashchange', onHash)
   }, [])
 
-  // Sync nav active state + render React view
+  // Render view only after store is ready
   useEffect(() => {
     if (!ready || !slotRef.current) return
 
-    // Update sidebar active class
     document.querySelectorAll('.nav-item').forEach(item => {
       const el = item as HTMLElement
       el.classList.toggle('active', el.dataset.view === view)
     })
 
     const View = VIEWS[view]
-    rootRef.current?.render(<View />)
+    // key=view forces unmount+remount on every view switch so legacy render runs fresh
+    rootRef.current?.render(<View key={view} />)
   }, [view, ready])
 
   return <div ref={hostRef} style={{ height: '100%' }} />

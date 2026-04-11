@@ -53,7 +53,7 @@ export function getLegacyAppShell() {
       </div>
     </dialog>
     <div id="toast-root" class="toast-root"></div>
-    <div id="planner-panel" class="planner-panel" style="display:none">
+    <div id="planner-panel" class="planner-panel">
       <div class="planner-overlay" id="planner-overlay"></div>
       <div class="planner-content" id="planner-content"></div>
     </div>
