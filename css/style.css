@@ -378,7 +378,7 @@ svg { display: block; flex-shrink: 0; }
 /* Dashboard Bottom */
 .dash-bottom {
   display: grid;
-  grid-template-columns: 7fr 3fr;
+  grid-template-columns: minmax(0, 7fr) minmax(240px, 3fr);
   overflow: hidden;
   flex: 1;
   min-height: 0;
@@ -525,7 +525,8 @@ svg { display: block; flex-shrink: 0; }
 
 /* Mini Calendar (right panel) */
 .dash-right {
-  overflow: hidden;
+  overflow: auto;
+  min-width: 0;
   display: flex;
   flex-direction: column;
   padding: 16px 16px;
@@ -551,7 +552,14 @@ svg { display: block; flex-shrink: 0; }
 .mini-cal-btn:hover { background: var(--c-bg); color: var(--c-text); }
 .mini-cal-btn svg { width: 14px; height: 14px; }
 
-.mini-cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 2px; flex: 1; }
+.mini-cal-grid {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 2px;
+  flex: 1;
+  min-width: 0;
+}
+
 .mini-cal-dow {
   text-align: center;
   font-size: 10px;
