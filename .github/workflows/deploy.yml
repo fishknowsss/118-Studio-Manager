@@ -126,8 +126,8 @@ jobs:
 
           find . -mindepth 1 -maxdepth 1 ! -name '.git' -exec rm -rf {} +
           cp -R "${site_dir}/." .
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git config user.name "Fishknowsss"
+          git config user.email "imnothapi@gmail.com"
           git add .
 
           if git diff --cached --quiet; then
