@@ -1,0 +1,1 @@
+import{c as e,u as t}from"./jsx-runtime-D5o9D2j8.js";function n(){return crypto.randomUUID()}async function r(r,i,a,o){await t.logs.add({id:n(),type:r,targetType:i,targetId:a,message:o,createdAt:e()})}export{n,r as t};

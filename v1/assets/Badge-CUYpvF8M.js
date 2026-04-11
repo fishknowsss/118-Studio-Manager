@@ -1,0 +1,1 @@
+import{t as e}from"./jsx-runtime-D5o9D2j8.js";var t=e();function n({children:e,className:n=`text-text-secondary bg-gray-100`}){return(0,t.jsx)(`span`,{className:`inline-flex items-center px-2.5 py-0.5 rounded-lg text-xs font-medium tracking-tight ${n}`,children:e})}export{n as t};

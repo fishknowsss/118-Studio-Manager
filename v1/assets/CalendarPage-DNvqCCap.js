@@ -1,0 +1,1 @@
+import{l as e,t}from"./jsx-runtime-D5o9D2j8.js";import{n}from"./chunk-QFMPRPBF-D0MUSCw9.js";import{t as r}from"./useSettings-B1qquHTZ.js";var i=t();function a(){let{setting:t}=r();return(0,i.jsx)(n,{to:`/planner/${t?.lastOpenedDate||e()}`,replace:!0})}export{a as CalendarPage};

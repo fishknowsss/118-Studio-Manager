@@ -1,0 +1,1 @@
+import{t as e}from"./jsx-runtime-D5o9D2j8.js";import{t}from"./Badge-CUYpvF8M.js";import{i as n,r}from"./constants-L3hHd0zy.js";var i=e();function a({priority:e}){return(0,i.jsx)(t,{className:r[e],children:n[e]})}export{a as t};
