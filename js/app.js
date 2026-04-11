@@ -11,6 +11,9 @@ import { renderPeople }    from './views/people.js';
 import { renderCalendar }  from './views/calendar.js';
 import { renderSettings }  from './views/settings.js';
 
+let hasBooted = false;
+let teardown = [];
+
 /* ─── View registry ──────────────────────────────────── */
 const VIEWS = {
   dashboard: renderDashboard,
@@ -51,6 +54,9 @@ function renderView(viewName) {
 
 /* ─── Init ───────────────────────────────────────────── */
 async function init() {
+  if (hasBooted) return;
+  hasBooted = true;
+
   // Open IndexedDB
   await openDB();
 
@@ -59,13 +65,17 @@ async function init() {
 
   // Set up nav click handlers
   document.querySelectorAll('.nav-item[data-view]').forEach(item => {
-    item.addEventListener('click', () => navigate(item.dataset.view));
+    const handler = () => navigate(item.dataset.view);
+    item.addEventListener('click', handler);
+    teardown.push(() => item.removeEventListener('click', handler));
   });
 
   // Hash-based routing
-  window.addEventListener('hashchange', () => {
+  const onHashChange = () => {
     renderView(getHashView());
-  });
+  };
+  window.addEventListener('hashchange', onHashChange);
+  teardown.push(() => window.removeEventListener('hashchange', onHashChange));
 
   // Seed demo data on first run (if empty)
   if (!store.projects.length && !store.tasks.length && !store.people.length) {
@@ -172,7 +182,17 @@ async function seedDemoData() {
 }
 
 /* ─── Re-render on store updates (optional cross-view refresh) */
-document.addEventListener('storeUpdated', () => { updateBadge(); });
+const onStoreUpdated = () => { updateBadge(); };
+document.addEventListener('storeUpdated', onStoreUpdated);
+teardown.push(() => document.removeEventListener('storeUpdated', onStoreUpdated));
+
+export function disposeLegacyApp() {
+  while (teardown.length) {
+    const fn = teardown.pop();
+    try { fn?.(); } catch {}
+  }
+  hasBooted = false;
+}
 
 /* ─── Boot ───────────────────────────────────────────── */
 init().catch(err => {
