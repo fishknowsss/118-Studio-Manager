@@ -1092,10 +1092,6 @@ svg { display: block; flex-shrink: 0; }
   overflow: hidden;
   outline: none;
   margin: auto;
-  position: fixed;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
 }
 .app-modal::backdrop {
   background: rgba(15, 23, 42, .45);
@@ -1249,9 +1245,11 @@ select.form-input { cursor: pointer; }
   position: fixed;
   inset: 0;
   z-index: 900;
-  display: flex !important;
+  display: none;
 }
-.planner-panel[style*="display:none"] { display: none !important; }
+.planner-panel.is-open {
+  display: flex;
+}
 .planner-overlay {
   flex: 1;
   background: rgba(15,23,42,.35);

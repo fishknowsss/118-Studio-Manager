@@ -86,14 +86,14 @@ export function openPlanner(dateStr) {
   const content = document.getElementById('planner-content');
   const overlay = document.getElementById('planner-overlay');
 
-  panel.style.display = 'flex';
+  panel.classList.add('is-open');
   renderPlannerContent(content, dateStr);
 
   overlay.onclick = closePlanner;
 }
 
 function closePlanner() {
-  document.getElementById('planner-panel').style.display = 'none';
+  document.getElementById('planner-panel').classList.remove('is-open');
 }
 
 function renderPlannerContent(content, dateStr) {
