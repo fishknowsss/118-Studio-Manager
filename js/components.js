@@ -47,20 +47,20 @@ export function openModal({ title, body, footer }) {
   else modalBody().appendChild(body);
   if (typeof footer === 'string') modalFtr().innerHTML = footer;
   else if (footer) modalFtr().appendChild(footer);
-  modal().showModal();
+
+  const m = modal();
+  // Bind close handlers lazily each time the modal opens (shell may not exist at DOMContentLoaded)
+  document.getElementById('modal-close').onclick = closeModal;
+  m._backdropHandler = (e) => { if (e.target === m) closeModal(); };
+  m.removeEventListener('click', m._backdropHandler);
+  m.addEventListener('click', m._backdropHandler);
+
+  m.showModal();
 }
 
 export function closeModal() {
   modal().close();
 }
-
-// Close on X button
-document.addEventListener('DOMContentLoaded', () => {
-  document.getElementById('modal-close').onclick = closeModal;
-  modal().addEventListener('click', (e) => {
-    if (e.target === modal()) closeModal();
-  });
-});
 
 /* ─── Form builder ───────────────────────────────────── */
 /**

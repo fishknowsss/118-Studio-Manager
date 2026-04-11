@@ -1,86 +1,87 @@
-import { useEffect, useRef } from 'react'
+import React, { useEffect, useRef, useState } from 'react'
+import { createRoot } from 'react-dom/client'
+import { getLegacyAppShell } from './legacy/appShell'
+import { Dashboard } from './views/Dashboard'
+import { Calendar }  from './views/Calendar'
+import { Projects }  from './views/Projects'
+import { Tasks }     from './views/Tasks'
+import { People }    from './views/People'
+import { Settings }  from './views/Settings'
+
+const VIEWS: Record<string, () => React.ReactElement> = {
+  dashboard: Dashboard,
+  calendar:  Calendar,
+  projects:  Projects,
+  tasks:     Tasks,
+  people:    People,
+  settings:  Settings,
+}
+
+function getHashView() {
+  const h = window.location.hash.slice(1)
+  return h in VIEWS ? h : 'dashboard'
+}
 
 export default function App() {
-  const hostRef = useRef<HTMLDivElement | null>(null)
+  const hostRef   = useRef<HTMLDivElement | null>(null)
+  const slotRef   = useRef<HTMLDivElement | null>(null)
+  const rootRef   = useRef<ReturnType<typeof createRoot> | null>(null)
+  const [view, setView] = useState(getHashView)
+  const [ready, setReady] = useState(false)
 
+  // Boot legacy shell + DB/store init once
   useEffect(() => {
     let dispose: (() => void) | undefined
 
-    async function mountLegacyApp() {
+    async function boot() {
       const host = hostRef.current
       if (!host) return
+      host.innerHTML = getLegacyAppShell()
 
-      host.innerHTML = `
-        <div id="app" class="app-shell">
-          <nav class="sidebar" id="sidebar">
-            <div class="sidebar-brand">
-              <span class="brand-num">118</span>
-              <span class="brand-sub">Studio</span>
-            </div>
-            <ul class="nav-list" id="nav-list">
-              <li class="nav-item" data-view="dashboard">
-                <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
-                <span class="nav-label">今日</span>
-              </li>
-              <li class="nav-item" data-view="projects">
-                <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
-                <span class="nav-label">项目</span>
-                <span class="nav-badge" id="badge-projects" style="display:none"></span>
-              </li>
-              <li class="nav-item" data-view="tasks">
-                <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
-                <span class="nav-label">任务</span>
-              </li>
-              <li class="nav-item" data-view="people">
-                <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
-                <span class="nav-label">人员</span>
-              </li>
-              <li class="nav-item" data-view="calendar">
-                <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
-                <span class="nav-label">日历</span>
-              </li>
-            </ul>
-            <div class="sidebar-footer">
-              <div class="nav-item" data-view="settings">
-                <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
-                <span class="nav-label">设置</span>
-              </div>
-            </div>
-          </nav>
-          <main class="main-content" id="main-content">
-            <div id="view-container"></div>
-          </main>
-        </div>
-        <dialog id="app-modal" class="app-modal">
-          <div class="modal-inner">
-            <div class="modal-header">
-              <h3 class="modal-title" id="modal-title"></h3>
-              <button class="modal-close" id="modal-close" aria-label="关闭">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-              </button>
-            </div>
-            <div class="modal-body" id="modal-body"></div>
-            <div class="modal-footer" id="modal-footer"></div>
-          </div>
-        </dialog>
-        <div id="toast-root" class="toast-root"></div>
-        <div id="planner-panel" class="planner-panel" style="display:none">
-          <div class="planner-overlay" id="planner-overlay"></div>
-          <div class="planner-content" id="planner-content"></div>
-        </div>
-      `
+      // Create React slot inside #view-container
+      const vc = host.querySelector('#view-container') as HTMLElement
+      const slot = document.createElement('div')
+      slot.style.cssText = 'display:flex;flex-direction:column;height:100%;'
+      vc.appendChild(slot)
+      slotRef.current = slot
+      rootRef.current = createRoot(slot)
 
-      const module = await import('../js/app.js') as { disposeLegacyApp?: () => void }
-      dispose = module.disposeLegacyApp
+      // Boot legacy only for DB + store (routing handled by React)
+      const mod = await import('../js/app.js') as { disposeLegacyApp?: () => void }
+      dispose = mod.disposeLegacyApp
+
+      setReady(true)
     }
 
-    void mountLegacyApp()
+    void boot()
 
     return () => {
       dispose?.()
+      rootRef.current?.unmount()
       if (hostRef.current) hostRef.current.innerHTML = ''
     }
   }, [])
 
-  return <div ref={hostRef} />
+  // Track hash changes
+  useEffect(() => {
+    const onHash = () => setView(getHashView())
+    window.addEventListener('hashchange', onHash)
+    return () => window.removeEventListener('hashchange', onHash)
+  }, [])
+
+  // Sync nav active state + render React view
+  useEffect(() => {
+    if (!ready || !slotRef.current) return
+
+    // Update sidebar active class
+    document.querySelectorAll('.nav-item').forEach(item => {
+      const el = item as HTMLElement
+      el.classList.toggle('active', el.dataset.view === view)
+    })
+
+    const View = VIEWS[view]
+    rootRef.current?.render(<View />)
+  }, [view, ready])
+
+  return <div ref={hostRef} style={{ height: '100%' }} />
 }

@@ -1,126 +1,32 @@
 /**
- * 118 Studio Manager — Main Entry Point
- * Local-first SPA powered by IndexedDB.
+ * 118 Studio Manager — Bootstrap
+ * Handles DB init, store load, demo seed, and badge updates.
+ * Routing is handled by React (src/App.tsx).
  */
 import { openDB } from './db.js';
 import { store }  from './store.js';
-import { renderDashboard } from './views/dashboard.js';
-import { renderProjects }  from './views/projects.js';
-import { renderTasks }     from './views/tasks.js';
-import { renderPeople }    from './views/people.js';
-import { renderCalendar }  from './views/calendar.js';
-import { renderSettings }  from './views/settings.js';
 
 let hasBooted = false;
-let teardown = [];
+let teardown  = [];
 
-/* ─── View registry ──────────────────────────────────── */
-const VIEWS = {
-  dashboard: renderDashboard,
-  projects:  renderProjects,
-  tasks:     renderTasks,
-  people:    renderPeople,
-  calendar:  renderCalendar,
-  settings:  renderSettings,
-};
-
-/* ─── Current view ───────────────────────────────────── */
-let currentView = null;
-
-function getHashView() {
-  const h = window.location.hash.slice(1);
-  return VIEWS[h] ? h : 'dashboard';
-}
-
-function navigate(view) {
-  if (!VIEWS[view]) view = 'dashboard';
-  window.location.hash = '#' + view;
-}
-
-function renderView(viewName) {
-  currentView = viewName;
-  const container = document.getElementById('view-container');
-  container.innerHTML = '';
-  const el = document.createElement('div');
-  el.style.cssText = 'display:flex;flex-direction:column;height:100%;';
-  container.appendChild(el);
-  VIEWS[viewName](el);
-
-  // Update nav active state
-  document.querySelectorAll('.nav-item').forEach(item => {
-    item.classList.toggle('active', item.dataset.view === viewName);
-  });
-}
-
-/* ─── Init ───────────────────────────────────────────── */
-async function init() {
-  if (hasBooted) return;
-  hasBooted = true;
-
-  // Open IndexedDB
-  await openDB();
-
-  // Load all data into store
-  await store.loadAll();
-
-  // Set up nav click handlers
-  document.querySelectorAll('.nav-item[data-view]').forEach(item => {
-    const handler = () => navigate(item.dataset.view);
-    item.addEventListener('click', handler);
-    teardown.push(() => item.removeEventListener('click', handler));
-  });
-
-  // Hash-based routing
-  const onHashChange = () => {
-    renderView(getHashView());
-  };
-  window.addEventListener('hashchange', onHashChange);
-  teardown.push(() => window.removeEventListener('hashchange', onHashChange));
-
-  // Seed demo data on first run (if empty)
-  if (!store.projects.length && !store.tasks.length && !store.people.length) {
-    await seedDemoData();
-  }
-
-  // Initial render
-  if (!window.location.hash) window.location.hash = '#dashboard';
-  else renderView(getHashView());
-
-  // Update urgency badge on projects nav
-  updateBadge();
-}
-
+/* ─── Badge ──────────────────────────────────────────── */
 function updateBadge() {
   const badge = document.getElementById('badge-projects');
   if (!badge) return;
-  const { urgencyClass } = {
-    urgencyClass(ddl, status) {
-      if (status === 'completed' || status === 'cancelled') return '';
-      if (!ddl) return '';
-      const d = Math.round((new Date(ddl + 'T00:00:00') - new Date().setHours(0,0,0,0)) / 86400000);
-      if (d < 0) return 'overdue';
-      if (d <= 3) return 'soon';
-      return '';
-    }
-  };
   const urgent = store.projects.filter(p => {
-    const uc = urgencyClass(p.ddl, p.status);
-    return uc === 'overdue' || uc === 'soon';
+    if (p.status === 'completed' || p.status === 'cancelled') return false;
+    if (!p.ddl) return false;
+    const d = Math.round((new Date(p.ddl + 'T00:00:00') - new Date().setHours(0,0,0,0)) / 86400000);
+    return d < 0 || d <= 3;
   }).length;
-
-  if (urgent > 0) {
-    badge.textContent = urgent;
-    badge.style.display = '';
-  } else {
-    badge.style.display = 'none';
-  }
+  badge.textContent = urgent;
+  badge.style.display = urgent > 0 ? '' : 'none';
 }
 
-/* ─── Demo seed data ─────────────────────────────────── */
+/* ─── Demo seed ──────────────────────────────────────── */
 async function seedDemoData() {
   const uid = () => crypto.randomUUID();
   const n   = () => new Date().toISOString();
-
   const today = new Date();
   const fmtDate = (offset) => {
     const d = new Date(today);
@@ -128,12 +34,10 @@ async function seedDemoData() {
     return d.toISOString().slice(0, 10);
   };
 
-  // People
   const alice = { id: uid(), name: '陈佳宁', gender: 'female', status: 'active', skills: ['视频剪辑', 'After Effects', '调色'], notes: '主视频剪辑师', createdAt: n(), updatedAt: n() };
   const bob   = { id: uid(), name: '王浩然', gender: 'male',   status: 'active', skills: ['动态设计', 'Cinema 4D', '建模'], notes: '', createdAt: n(), updatedAt: n() };
   const carol = { id: uid(), name: '刘思敏', gender: 'female', status: 'active', skills: ['平面设计', 'Figma', '插画'], notes: '兼顾社媒', createdAt: n(), updatedAt: n() };
 
-  // Projects
   const projA = {
     id: uid(), name: '品牌宣传片 · 第三季', status: 'active', priority: 'urgent',
     ddl: fmtDate(1), description: '客户品牌年度宣传片，3分钟正片+15s短版，需要4K交付。',
@@ -163,7 +67,6 @@ async function seedDemoData() {
     createdAt: n(), updatedAt: n()
   };
 
-  // Tasks
   const tasks = [
     { id: uid(), projectId: projA.id, title: '音效混音终版', status: 'in-progress', priority: 'urgent', assigneeId: alice.id, scheduledDate: fmtDate(0), startDate: fmtDate(-1), endDate: fmtDate(0), estimatedHours: 4, description: '', createdAt: n(), updatedAt: n() },
     { id: uid(), projectId: projA.id, title: '客户修改版渲染输出', status: 'todo', priority: 'urgent', assigneeId: alice.id, scheduledDate: fmtDate(1), startDate: fmtDate(1), endDate: fmtDate(1), estimatedHours: 2, description: '', createdAt: n(), updatedAt: n() },
@@ -181,10 +84,35 @@ async function seedDemoData() {
   await store.addLog('加载了演示数据');
 }
 
-/* ─── Re-render on store updates (optional cross-view refresh) */
-const onStoreUpdated = () => { updateBadge(); };
-document.addEventListener('storeUpdated', onStoreUpdated);
-teardown.push(() => document.removeEventListener('storeUpdated', onStoreUpdated));
+/* ─── Init ───────────────────────────────────────────── */
+async function init() {
+  if (hasBooted) return;
+  hasBooted = true;
+
+  await openDB();
+  await store.loadAll();
+
+  if (!store.projects.length && !store.tasks.length && !store.people.length) {
+    await seedDemoData();
+  }
+
+  // Set initial hash if missing
+  if (!window.location.hash) window.location.hash = '#dashboard';
+
+  updateBadge();
+
+  // Keep badge in sync with store changes
+  const onStoreUpdated = () => updateBadge();
+  document.addEventListener('storeUpdated', onStoreUpdated);
+  teardown.push(() => document.removeEventListener('storeUpdated', onStoreUpdated));
+
+  // Nav click → hash navigation (React handles rendering)
+  document.querySelectorAll('.nav-item[data-view]').forEach(item => {
+    const handler = () => { window.location.hash = '#' + item.dataset.view; };
+    item.addEventListener('click', handler);
+    teardown.push(() => item.removeEventListener('click', handler));
+  });
+}
 
 export function disposeLegacyApp() {
   while (teardown.length) {
@@ -197,7 +125,8 @@ export function disposeLegacyApp() {
 /* ─── Boot ───────────────────────────────────────────── */
 init().catch(err => {
   console.error('[118SM] 初始化失败:', err);
-  document.getElementById('view-container').innerHTML =
+  const vc = document.getElementById('view-container');
+  if (vc) vc.innerHTML =
     `<div style="padding:40px;color:#E54D4D;font-size:14px">
       <strong>启动失败</strong><br>
       请检查浏览器是否支持 IndexedDB，并确认页面通过 HTTP 加载（非 file://）。<br>

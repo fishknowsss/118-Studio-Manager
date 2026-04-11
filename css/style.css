@@ -1091,6 +1091,11 @@ svg { display: block; flex-shrink: 0; }
   max-height: 85vh;
   overflow: hidden;
   outline: none;
+  margin: auto;
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
 }
 .app-modal::backdrop {
   background: rgba(15, 23, 42, .45);
