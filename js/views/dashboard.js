@@ -90,11 +90,6 @@ export function renderDashboard(container) {
             <div class="cal-legend-dot" style="background:var(--c-primary)"></div> 里程碑
           </div>
         </div>
-        <!-- Recent log -->
-        <div style="margin-top:12px;flex-shrink:0">
-          <div class="panel-title" style="margin-bottom:6px">最近操作</div>
-          <div class="log-list" id="dash-log-list"></div>
-        </div>
       </div>
     </div>`;
 
@@ -102,7 +97,6 @@ export function renderDashboard(container) {
   renderTaskPool();
   renderPeoplePool();
   renderMiniCal();
-  renderLog();
 
   // Nav shortcuts
   container.querySelector('#go-tasks').onclick  = () => navigate('tasks');
@@ -341,18 +335,6 @@ function renderMiniCal() {
   gridEl.querySelectorAll('.mini-cal-day').forEach(cell => {
     cell.onclick = () => openPlanner(cell.dataset.date);
   });
-}
-
-function renderLog() {
-  const el = document.getElementById('dash-log-list');
-  if (!el) return;
-  const logs = store.logs.slice(0, 8);
-  if (!logs.length) { el.innerHTML = '<div class="text-muted text-sm">暂无操作记录</div>'; return; }
-  el.innerHTML = logs.map(l => {
-    const d = new Date(l.ts);
-    const t = `${d.getHours().toString().padStart(2,'0')}:${d.getMinutes().toString().padStart(2,'0')}`;
-    return `<div class="log-item"><span class="log-time">${t}</span><span class="log-text">${esc(l.text)}</span></div>`;
-  }).join('');
 }
 
 function navigate(view) {

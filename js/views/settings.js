@@ -9,7 +9,8 @@ export function renderSettings(container) {
     <div class="view-header">
       <h1 class="view-title">设置 / 备份</h1>
     </div>
-    <div class="settings-body">
+    <div class="settings-layout">
+      <div class="settings-body">
 
       <!-- Data export -->
       <div class="settings-section">
@@ -88,11 +89,22 @@ export function renderSettings(container) {
           <span id="data-stats" class="text-muted text-sm"></span>
         </div>
       </div>
+    </div>
+
+      <!-- Right: Activity log -->
+      <div class="settings-log-panel">
+        <div class="settings-section-title" style="margin-bottom:10px">最近操作</div>
+        <div class="log-list" id="settings-log-list"></div>
+      </div>
     </div>`;
 
   // Stats
   document.getElementById('data-stats').textContent =
     `${store.projects.length} 项目 · ${store.tasks.length} 任务 · ${store.people.length} 人员`;
+
+  renderSettingsLog();
+
+  document.addEventListener('storeUpdated', renderSettingsLog);
 
   // Export JSON
   container.querySelector('#btn-export-json').onclick = async () => {
@@ -176,3 +188,18 @@ export function renderSettings(container) {
       `${store.projects.length} 项目 · ${store.tasks.length} 任务 · ${store.people.length} 人员`;
   };
 }
+
+function renderSettingsLog() {
+  const el = document.getElementById('settings-log-list');
+  if (!el) return;
+  const logs = store.logs.slice(0, 20);
+  if (!logs.length) { el.innerHTML = '<div class="text-muted text-sm">暂无操作记录</div>'; return; }
+  el.innerHTML = logs.map(l => {
+    const d = new Date(l.ts);
+    const t = `${d.getHours().toString().padStart(2,'0')}:${d.getMinutes().toString().padStart(2,'0')}`;
+    const ds = `${d.getMonth()+1}/${d.getDate()}`;
+    return `<div class="log-item"><span class="log-time">${ds} ${t}</span><span class="log-text">${esc(l.text)}</span></div>`;
+  }).join('');
+}
+
+function esc(s) { return String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
