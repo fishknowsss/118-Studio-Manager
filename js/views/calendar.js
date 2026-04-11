@@ -198,7 +198,7 @@ function renderPlannerPeople(dateStr) {
 function renderPlannerUnassigned(dateStr) {
   const el = document.getElementById('planner-unassigned-rows');
   if (!el) return;
-  const tasks = store.tasks.filter(t => t.status !== 'done' && !t.scheduledDate);
+  const tasks = store.tasks.filter(t => t.status !== 'done' && t.status !== 'blocked' && !t.scheduledDate);
 
   if (!tasks.length) {
     el.innerHTML = '<div class="text-muted text-sm">所有任务已安排</div>';

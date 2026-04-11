@@ -1,9 +1,53 @@
 import { db } from './db'
 
-export type LegacyProject = Record<string, any>
-export type LegacyTask = Record<string, any>
-export type LegacyPerson = Record<string, any>
-export type LegacyLog = Record<string, any>
+type LegacyEntity = {
+  id: string
+  createdAt?: string
+  updatedAt?: string
+}
+
+export type LegacyMilestone = {
+  id: string
+  title?: string
+  date?: string | null
+  completed?: boolean
+}
+
+export type LegacyProject = LegacyEntity & {
+  name?: string
+  status?: string
+  priority?: string
+  ddl?: string | null
+  description?: string
+  milestones?: LegacyMilestone[]
+}
+
+export type LegacyTask = LegacyEntity & {
+  title?: string
+  projectId?: string | null
+  status?: string
+  priority?: string
+  assigneeId?: string | null
+  scheduledDate?: string | null
+  startDate?: string | null
+  endDate?: string | null
+  estimatedHours?: number | null
+  description?: string
+}
+
+export type LegacyPerson = LegacyEntity & {
+  name?: string
+  gender?: string
+  status?: string
+  skills?: string[]
+  notes?: string
+}
+
+export type LegacyLog = {
+  id: string
+  text: string
+  ts: string
+}
 
 function emitStoreUpdated(detail: Record<string, unknown> = {}) {
   document.dispatchEvent(new CustomEvent('storeUpdated', { detail }))

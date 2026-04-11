@@ -32,9 +32,9 @@ export default function App() {
   // Boot: inject shell, init DB/store
   useEffect(() => {
     let dispose: (() => void) | undefined
+    const host = hostRef.current
 
     async function boot() {
-      const host = hostRef.current
       if (!host) return
       host.innerHTML = getLegacyAppShell()
 
@@ -59,7 +59,7 @@ export default function App() {
       document.removeEventListener('appReady', onReady)
       dispose?.()
       rootRef.current?.unmount()
-      if (hostRef.current) hostRef.current.innerHTML = ''
+      if (host) host.innerHTML = ''
     }
   }, [])
 

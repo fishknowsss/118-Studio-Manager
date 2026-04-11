@@ -51,9 +51,12 @@ export function openModal({ title, body, footer }) {
   const m = modal();
   // Bind close handlers lazily each time the modal opens (shell may not exist at DOMContentLoaded)
   document.getElementById('modal-close').onclick = closeModal;
-  m._backdropHandler = (e) => { if (e.target === m) closeModal(); };
-  m.removeEventListener('click', m._backdropHandler);
-  m.addEventListener('click', m._backdropHandler);
+  if (m._backdropHandler) {
+    m.removeEventListener('click', m._backdropHandler);
+  }
+  const onBackdropClick = (e) => { if (e.target === m) closeModal(); };
+  m._backdropHandler = onBackdropClick;
+  m.addEventListener('click', onBackdropClick);
 
   m.showModal();
 }

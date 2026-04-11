@@ -125,14 +125,32 @@ function renderList() {
   }
 }
 
-function buildTaskSchema() {
+function buildAssigneeOptions(task) {
+  const activePeople = store.activePeople()
+  const currentAssignee = task?.assigneeId ? store.getPerson(task.assigneeId) : null
+  const people = currentAssignee && !activePeople.some(person => person.id === currentAssignee.id)
+    ? [...activePeople, currentAssignee]
+    : activePeople
+
+  return [
+    ['', '（未分配）'],
+    ...people.map(person => [
+      person.id,
+      person.id === currentAssignee?.id && person.status !== 'active'
+        ? `${person.name}（已停用）`
+        : person.name,
+    ]),
+  ]
+}
+
+function buildTaskSchema(task) {
   return {
     fields: [
       { name: 'title',          label: '任务标题',   type: 'text',   required: true, span2: false, placeholder: '任务名称…' },
       { name: 'projectId',      label: '所属项目',   type: 'select', options: [['', '（无）'], ...store.projects.map(p => [p.id, p.name])] },
       { name: 'status',         label: '状态',       type: 'select', options: [['todo','待处理'],['in-progress','进行中'],['done','完成'],['blocked','受阻']] },
       { name: 'priority',       label: '优先级',     type: 'select', options: [['urgent','紧急'],['high','高'],['medium','中'],['low','低']] },
-      { name: 'assigneeId',     label: '负责人',     type: 'select', options: [['', '（未分配）'], ...store.activePeople().map(p => [p.id, p.name])] },
+      { name: 'assigneeId',     label: '负责人',     type: 'select', options: buildAssigneeOptions(task) },
       { name: 'scheduledDate',  label: '安排日期',   type: 'date' },
       { name: 'startDate',      label: '开始日期',   type: 'date' },
       { name: 'endDate',        label: '截止日期',   type: 'date' },
@@ -145,7 +163,7 @@ function buildTaskSchema() {
 function openTaskModal(task) {
   const isNew = !task;
   const initial = task || { status: 'todo', priority: 'medium' };
-  const schema = buildTaskSchema();
+  const schema = buildTaskSchema(task);
   const { formEl, getData, validate } = buildForm(schema, initial);
 
   const footer = document.createElement('div');
