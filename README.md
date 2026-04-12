@@ -1,30 +1,36 @@
-# 118 Studio Manager VC
+# 118 Studio Manager
 
-`vc` 是我给 118 Studio Manager 留的一条过渡分支。
+面向 118 Studio 的本地项目管理工具。当前仓库默认分支是 `vc`，也是唯一持续开发的版本。
 
-这条线不是 `main` 的正式版本，也不是 `singleD` 的单屏版本，而是一个已经切到 `React + Vite` 外壳、但底层仍保留 legacy 数据层和交互模块的迁移中版本。它的价值不在于“功能最全”，而在于这套混合结构现在还能稳定跑、还能继续拆和迁。
+## 当前版本
 
-## 在线预览
+- 默认分支：`vc`
+- 在线预览：[https://fishknowsss.github.io/118-Studio-Manager/vc/](https://fishknowsss.github.io/118-Studio-Manager/vc/)
+- 仓库地址：[https://github.com/fishknowsss/118-Studio-Manager/tree/vc](https://github.com/fishknowsss/118-Studio-Manager/tree/vc)
 
-- 预览地址：[https://fishknowsss.github.io/118-Studio-Manager/vc/](https://fishknowsss.github.io/118-Studio-Manager/vc/)
-- 分支地址：[https://github.com/fishknowsss/118-Studio-Manager/tree/vc](https://github.com/fishknowsss/118-Studio-Manager/tree/vc)
+## 这个版本能做什么
 
-## 分支状态
+- 在今日页集中看最紧急项目、逾期任务、任务池和成员负载
+- 按状态、优先级、DDL 管理项目和里程碑
+- 按负责人、日期、状态管理任务
+- 管理人员状态、技能标签和任务分配
+- 在日历里查看 DDL、里程碑和当天排期
+- 导出 JSON / CSV、导入备份、清空数据，并查看基础统计和最近日志
 
-当前仓库以 `vc` 作为默认分支，也是唯一持续开发的版本。
+## 页面一览
 
-| 分支 | 状态 | 说明 |
+| 路由 | 页面 | 当前用途 |
 | --- | --- | --- |
-| `vc` | 主力开发 | 当前最满意、也在持续迭代的版本 |
-| `main` | 历史保留 | 保留早期 Pages 版本，默认不再继续开发 |
-| `singleD` | 历史保留 | 保留单屏方案和 README 记录，默认不再继续开发 |
-
-如果只是继续做 118 Studio Manager 的功能和界面，请直接基于 `vc` 开发，不再把变更分散到 `main` 或 `singleD`。
+| `#dashboard` | 今日 | 焦点项目、逾期任务、任务池、人员概览 |
+| `#projects` | 项目 | 项目筛选、状态管理、里程碑编辑 |
+| `#tasks` | 任务 | 任务筛选、搜索、编辑、新建 |
+| `#people` | 人员 | 人员管理、技能标签、启用停用 |
+| `#calendar` | 日历 | 月历、DDL、里程碑、排期入口 |
+| `#settings` | 设置 | 备份、导入、导出、清库、数据统计 |
 
 ## 界面截图
 
-以下截图都来自 `vc` 分支本地运行页面，不是示意图。  
-本次截图统一基于 `118studio-backup-2026-04-11.json` 导入后的页面状态拍摄。
+以下截图来自 `vc` 分支本地运行页面，基于 `118studio-backup-2026-04-11.json` 导入后的状态拍摄。
 
 **今日**
 
@@ -54,50 +60,41 @@
 
 ![VC Settings](docs/screenshots/vc-settings.png)
 
-## 这条分支现在是什么
+## 适合怎么用
 
-我保留 `vc` 的原因很简单：它是当前代码库里最接近“迁移中间态”的那一版。
+这个版本更适合做工作室内部的轻量项目协作：
 
-- 入口和主视图切换已经换成 React
-- 构建工具已经统一到 Vite
-- 数据仍然存在本地 `IndexedDB`
-- 启动、seed、modal、planner、toast 这类底层能力还在走 legacy 模块
-- 导航仍然用 hash，不是正式路由系统
+- 用项目承接阶段、DDL 和里程碑
+- 用任务跟踪执行人、开始/截止时间和排期
+- 用人员页维护成员状态和技能
+- 用设置页定期导出 JSON 做备份
 
-如果后面要继续收口 legacy、补类型、拆交互，这条分支比直接在 `main` 上动更合适。
+它目前是本地优先方案，数据保存在浏览器本地，不依赖服务器。
 
-## 当前页面范围
+## 分支说明
 
-`vc` 现在实际提供这些入口：
+当前仓库已经把 `vc` 设为默认分支，后续开发以它为准。
 
-| 路由 | 页面 | 用途 |
+| 分支 | 角色 | 状态 |
 | --- | --- | --- |
-| `#dashboard` | 今日页 | 日期、焦点区域、任务池、人员区、月历概览 |
-| `#projects` | 项目页 | 项目筛选、视图切换、新建入口 |
-| `#tasks` | 任务页 | 任务筛选、搜索、新建入口 |
-| `#people` | 人员页 | 人员筛选和新增入口 |
-| `#calendar` | 日历页 | 月历视图与日期入口 |
-| `#settings` | 设置页 | 导入、导出、清库、版本和数据统计 |
+| `vc` | 主力版本 | 默认分支，持续开发 |
+| `main` | 历史版本 | 保留早期 Pages 版本，不再作为主线 |
+| `singleD` | 历史版本 | 保留单屏方案和 README 记录，不再作为主线 |
 
-入口实现见 [App.tsx](/Users/fishknowsss/Documents/MMSS/118SM/118studio-vc/src/App.tsx)。
+如果只是继续开发 118 Studio Manager，请直接基于 `vc`。
 
-## 架构说明
+## 技术说明
 
-这个分支最关键的点不是页面，而是结构：
+这个版本不是纯 React 重写版，而是“React 外壳 + legacy 能力托底”的混合结构。
 
-### React 负责应用壳
+### 前端壳
 
-React 现在负责这些事：
+- React 负责应用入口、侧栏导航、视图切换和主题同步
+- 当前视图通过 hash 切换，不走正式路由
+- 主入口见 [App.tsx](/Users/fishknowsss/Documents/MMSS/118SM/118studio-vc/src/App.tsx)
 
-- 应用入口
-- 侧栏导航
-- 主视图切换
-- 主题状态同步
-- 通过 `useSyncExternalStore` 订阅 store 更新
+主要视图：
 
-相关文件：
-
-- [App.tsx](/Users/fishknowsss/Documents/MMSS/118SM/118studio-vc/src/App.tsx)
 - [Dashboard.tsx](/Users/fishknowsss/Documents/MMSS/118SM/118studio-vc/src/views/Dashboard.tsx)
 - [Projects.tsx](/Users/fishknowsss/Documents/MMSS/118SM/118studio-vc/src/views/Projects.tsx)
 - [Tasks.tsx](/Users/fishknowsss/Documents/MMSS/118SM/118studio-vc/src/views/Tasks.tsx)
@@ -105,35 +102,20 @@ React 现在负责这些事：
 - [Calendar.tsx](/Users/fishknowsss/Documents/MMSS/118SM/118studio-vc/src/views/Calendar.tsx)
 - [Settings.tsx](/Users/fishknowsss/Documents/MMSS/118SM/118studio-vc/src/views/Settings.tsx)
 
-### legacy 继续托底
+### 数据与交互底层
 
-legacy 层现在还在负责：
+- legacy 模块负责启动初始化、IndexedDB 读写、store、seed 数据和部分旧交互
+- React 启动后会加载 `js/app.js` 完成底层初始化
+- 相关文件：
+  - [app.js](/Users/fishknowsss/Documents/MMSS/118SM/118studio-vc/js/app.js)
+  - [components.js](/Users/fishknowsss/Documents/MMSS/118SM/118studio-vc/js/components.js)
+  - [calendar.js](/Users/fishknowsss/Documents/MMSS/118SM/118studio-vc/js/views/calendar.js)
+  - [db.ts](/Users/fishknowsss/Documents/MMSS/118SM/118studio-vc/src/legacy/db.ts)
+  - [store.ts](/Users/fishknowsss/Documents/MMSS/118SM/118studio-vc/src/legacy/store.ts)
 
-- 启动初始化
-- IndexedDB 打开和读写
-- store 对象
-- demo 数据写入
-- modal / planner / toast 等旧交互
+## 数据与备份
 
-相关文件：
-
-- [app.js](/Users/fishknowsss/Documents/MMSS/118SM/118studio-vc/js/app.js)
-- [components.js](/Users/fishknowsss/Documents/MMSS/118SM/118studio-vc/js/components.js)
-- [calendar.js](/Users/fishknowsss/Documents/MMSS/118SM/118studio-vc/js/views/calendar.js)
-- [db.ts](/Users/fishknowsss/Documents/MMSS/118SM/118studio-vc/src/legacy/db.ts)
-- [store.ts](/Users/fishknowsss/Documents/MMSS/118SM/118studio-vc/src/legacy/store.ts)
-
-现在的连接方式比较直接：
-
-- React 启动后 `import('../js/app.js')`
-- `app.js` 负责打开 DB、加载 store、在空库时写入 demo 数据
-- 视图组件直接读取 legacy store
-
-这不是终态，但它足够真实，正好适合继续迁移。
-
-## 数据与本地存储
-
-本地数据库名是：
+本地数据库名：
 
 ```text
 studio118db
@@ -141,39 +123,15 @@ studio118db
 
 当前核心 store：
 
-| store | 说明 |
+| store | 内容 |
 | --- | --- |
 | `projects` | 项目、优先级、DDL、描述、里程碑 |
-| `tasks` | 任务、负责人、开始/截止、排期、工时 |
+| `tasks` | 任务、负责人、日期、工时、状态 |
 | `people` | 成员、状态、技能、备注 |
 | `logs` | 操作日志 |
 | `settings` | 本地设置 |
 
-DB 定义见 [db.ts](/Users/fishknowsss/Documents/MMSS/118SM/118studio-vc/src/legacy/db.ts)。
-
-## Demo 数据
-
-这条分支在本地数据库为空时会自动写入一组演示数据，当前 seed 包含：
-
-- 3 个成员
-- 3 个项目
-- 8 个任务
-- 1 条操作日志
-
-seed 逻辑在 [app.js](/Users/fishknowsss/Documents/MMSS/118SM/118studio-vc/js/app.js)。
-
-## 这版我会怎么描述它
-
-如果按开发视角说，`vc` 现在是“能跑、能看清迁移边界，但还没完全收口”的版本。
-
-目前比较明确的状态有这些：
-
-- `Settings` 已经能直接看到本地数据统计和最近日志
-- Demo 数据已经能写进 IndexedDB
-- 侧栏导航、主题切换、基础页框架都能正常工作
-- 但部分列表区域的展示还没有和数据层完全对齐，仍然属于迁移中的状态
-
-所以 README 里的截图我保留了真实界面，不去回避这些中间态问题。
+空库时会自动写入一组演示数据，方便直接查看页面状态和交互流程。
 
 ## 本地开发
 
@@ -195,27 +153,29 @@ npm run dev
 http://127.0.0.1:5173/
 ```
 
-## 检查命令
+常用检查命令：
 
 ```bash
 npm run lint
-npm run build
 npm run test
+npm run build
 ```
 
-测试文件在 [review-fixes.test.js](/Users/fishknowsss/Documents/MMSS/118SM/118studio-vc/tests/review-fixes.test.js)。
+测试文件见 [review-fixes.test.js](/Users/fishknowsss/Documents/MMSS/118SM/118studio-vc/tests/review-fixes.test.js)。
 
-## 部署
+## 部署说明
 
-这个仓库的 GitHub Pages 采用“分支对应子目录”的方式：
+GitHub Pages 采用“分支对应子目录”的方式发布：
 
 - `main` -> `/118-Studio-Manager/v1/`
 - `singleD` -> `/118-Studio-Manager/singleD/`
 - `vc` -> `/118-Studio-Manager/vc/`
 
-`vc` 的构建 base 定义在 [vite.config.ts](/Users/fishknowsss/Documents/MMSS/118SM/118studio-vc/vite.config.ts)，部署流程在 [deploy.yml](/Users/fishknowsss/Documents/MMSS/118SM/118studio-vc/.github/workflows/deploy.yml)。
+`vc` 构建 base 定义在 [vite.config.ts](/Users/fishknowsss/Documents/MMSS/118SM/118studio-vc/vite.config.ts)，部署流程在 [deploy.yml](/Users/fishknowsss/Documents/MMSS/118SM/118studio-vc/.github/workflows/deploy.yml)。
 
-## 目录说明
+需要注意的是，仓库默认分支已经是 `vc`，但 GitHub Pages 根路径当前仍会跳到 `/v1/`。如果后面要让站点首页直接展示 `vc`，还需要单独调整部署重定向策略。
+
+## 目录结构
 
 ```text
 src/
@@ -234,9 +194,7 @@ tests/
 
 | 版本 | 日期 | 说明 |
 | --- | --- | --- |
+| vc-readme-5 | 2026-04-12 | README 改为产品说明 + 开发说明双段结构，并同步当前分支状态 |
 | vc-readme-4 | 2026-04-12 | 按 `118studio-backup-2026-04-11.json` 备份数据重做 7 张 README 页面截图 |
 | vc-readme-2 | 2026-04-12 | README 改成带真实截图的版本，并补充当前迁移状态说明 |
 | vc-readme-1 | 2026-04-12 | 首次补充 `vc` 分支专用 README |
-| 3e45bf2 | 2026-04-11 | 重做 VC workspace 的视图和交互 |
-| c594da5 | 2026-04-11 | 修复 VC 的 GitHub Pages 发布 |
-| 0cfd3c6 | 2026-04-12 | 升级 Actions runtime 版本 |
