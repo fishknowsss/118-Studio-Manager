@@ -1,9 +1,17 @@
 import { useState, useMemo, useSyncExternalStore } from 'react'
 import { store, type LegacyPerson } from '../legacy/store'
-import { 
+import {
   initials, now, uid
 } from '../legacy/utils'
 import { openModal, closeModal, buildForm, toast, confirm } from '../../js/components.js'
+
+type PersonFormData = {
+  name: string | null
+  gender: string | null
+  status: string | null
+  skills: string[]
+  notes: string | null
+}
 
 export function People() {
   useSyncExternalStore(store.subscribe, () => store.getSnapshot())
@@ -14,7 +22,7 @@ export function People() {
 
   const filteredPeople = useMemo(() => {
     return people.filter(p =>
-      (!search || p.name?.toLowerCase().includes(search.toLowerCase())) &&
+      (!search || (p.name || '').toLowerCase().includes(search.toLowerCase())) &&
       (!statusFilter || p.status === statusFilter)
     ).sort((a, b) => {
       if (a.status !== b.status) return a.status === 'active' ? -1 : 1
@@ -73,7 +81,7 @@ export function People() {
               <div className="empty-text">暂无人员</div>
             </div>
           ) : (
-            filteredPeople.map(p => (
+            filteredPeople.map((p) => (
               <PersonCard 
                 key={p.id} 
                 person={p} 
@@ -90,13 +98,13 @@ export function People() {
   )
 }
 
-function PersonCard({ person, taskCount, onEdit, onToggle, onDelete }: any) {
+function PersonCard({ person, taskCount, onEdit, onToggle, onDelete }: { person: LegacyPerson; taskCount: number; onEdit: () => void; onToggle: () => void; onDelete: () => void }) {
   const isInactive = person.status === 'inactive'
 
   return (
     <div className={`person-card ${isInactive ? 'inactive' : ''}`} onClick={onEdit}>
       <div className="person-card-top">
-        <div className={`person-card-avatar ${isInactive ? 'inactive' : ''}`}>{initials(person.name)}</div>
+        <div className={`person-card-avatar ${isInactive ? 'inactive' : ''}`}>{initials(person.name || '')}</div>
         <div style={{ flex: 1, minWidth: 0 }}>
           <div className="person-card-name">{person.name}</div>
           <div className="person-card-status">
@@ -138,7 +146,7 @@ function PersonCard({ person, taskCount, onEdit, onToggle, onDelete }: any) {
   )
 }
 
-function openPersonModal(person: any) {
+function openPersonModal(person: LegacyPerson | null) {
   const isNew = !person;
   const initial = person || { status: 'active', gender: '', skills: [] };
   const schema = {
@@ -164,10 +172,10 @@ function openPersonModal(person: any) {
   if (cancelBtn) cancelBtn.onclick = closeModal;
   if (saveBtn) saveBtn.onclick = async () => {
     if (!validate()) { toast('请填写姓名', 'error'); return; }
-    const data = getData() as any;
-    const saved = {
+    const data = getData() as unknown as PersonFormData;
+    const saved: LegacyPerson = {
       id:        person?.id || uid(),
-      name:      data.name,
+      name:      data.name || '',
       gender:    data.gender || '',
       status:    data.status || 'active',
       skills:    data.skills || [],

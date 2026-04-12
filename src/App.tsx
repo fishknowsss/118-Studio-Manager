@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useSyncExternalStore, useMemo } from 'react'
+import React, { useEffect, useState, useSyncExternalStore } from 'react'
 import { store } from './legacy/store'
 import { Dashboard } from './views/Dashboard'
 import { Calendar }  from './views/Calendar'
@@ -51,14 +51,12 @@ export default function App() {
   }, [])
 
   // Calculate project badge (urgent projects)
-  const urgentCount = useMemo(() => {
-    return store.projects.filter(p => {
-      if (p.status === 'completed' || p.status === 'cancelled') return false
-      if (!p.ddl) return false
-      const d = Math.round((new Date(p.ddl + 'T00:00:00').getTime() - new Date().setHours(0,0,0,0)) / 86400000)
-      return d < 0 || d <= 3
-    }).length
-  }, [(store as any).version])
+  const urgentCount = store.projects.filter(p => {
+    if (p.status === 'completed' || p.status === 'cancelled') return false
+    if (!p.ddl) return false
+    const d = Math.round((new Date(p.ddl + 'T00:00:00').getTime() - new Date().setHours(0,0,0,0)) / 86400000)
+    return d < 0 || d <= 3
+  }).length
 
   if (!ready) return null
 

@@ -58,8 +58,9 @@ export function Settings() {
     const input = document.createElement('input')
     input.type = 'file'
     input.accept = '.json'
-    input.onchange = async (e: any) => {
-      const file = e.target.files[0]
+    input.onchange = async (e: Event) => {
+      const target = e.target as HTMLInputElement
+      const file = target.files?.[0]
       if (!file) return
       const ok = await confirm('确认导入', '导入将清空现有所有数据，用文件内容替换。建议先导出备份。确认继续？')
       if (!ok) return

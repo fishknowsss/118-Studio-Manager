@@ -49,10 +49,10 @@ export type LegacyLog = {
   ts: string
 }
 
-let listeners: Set<() => void> = new Set()
+const listeners: Set<() => void> = new Set()
 
 function emitStoreUpdated(detail: Record<string, unknown> = {}) {
-  ;(store as any).version++
+  store.version++
   document.dispatchEvent(new CustomEvent('storeUpdated', { detail }))
   listeners.forEach(l => l())
 }

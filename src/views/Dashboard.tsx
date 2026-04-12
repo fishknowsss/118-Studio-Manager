@@ -37,7 +37,10 @@ export function Dashboard() {
   const taskPool = useMemo(() => {
     const PRIO_ORDER: Record<string, number> = { urgent: 0, high: 1, medium: 2, low: 3 }
     return tasks
-      .filter(t => ((t.status as any) !== 'done' && (t.status as any) !== 'blocked') || t.status === 'in-progress')
+      .filter(t => {
+        const s = t.status as string
+        return (s !== 'done' && s !== 'blocked') || (s === 'in-progress' as string)
+      })
       .sort((a, b) => {
         const po = (PRIO_ORDER[a.priority || 'medium']) - (PRIO_ORDER[b.priority || 'medium'])
         if (po !== 0) return po
@@ -48,19 +51,17 @@ export function Dashboard() {
 
   const activePeople = useMemo(() => people.filter(p => p.status === 'active'), [people])
 
-  const calendarDays = useMemo(() => {
-    return getCalendarDays(calDate.getFullYear(), calDate.getMonth())
-  }, [calDate])
+  const calendarDays = getCalendarDays(calDate.getFullYear(), calDate.getMonth())
 
   const eventMap = useMemo(() => {
     const map: Record<string, { hasDdl?: boolean; hasMs?: boolean; urgent?: boolean }> = {}
-    projects.forEach((proj: any) => {
+    projects.forEach(proj => {
       if (proj.ddl) {
         if (!map[proj.ddl]) map[proj.ddl] = {}
         map[proj.ddl].hasDdl = true
         if (urgencyClass(proj.ddl, proj.status || 'active').includes('overdue')) map[proj.ddl].urgent = true
       }
-      (proj.milestones || []).forEach((ms: any) => {
+      (proj.milestones || []).forEach((ms) => {
         if (ms.date) {
           if (!map[ms.date]) map[ms.date] = {}
           map[ms.date].hasMs = true
@@ -92,7 +93,7 @@ export function Dashboard() {
       updatedAt: new Date().toISOString()
     }
     await store.saveTask(updatedTask)
-    await store.addLog(`分配任务「${task.title}」给 ${person.name}`)
+    await store.addLog(`分配任务「${task.title}」给 ${person.name || ''}`)
   }
 
   const focusProj = topProjects[0] as LegacyProject | undefined
@@ -101,8 +102,8 @@ export function Dashboard() {
     const todayStr = today()
     const pTasks = tasks.filter(t => t.projectId === focusProj.id)
     const nextMs = (focusProj.milestones || [])
-      .filter((m: any) => !m.completed && m.date! >= todayStr)
-      .sort((a: any, b: any) => a.date!.localeCompare(b.date!))[0]
+      .filter((m) => !m.completed && m.date && m.date >= todayStr)
+      .sort((a, b) => (a.date || '').localeCompare(b.date || ''))[0]
     const days = daysUntil(focusProj.ddl)
     
     let brief = '该项目未设置 DDL，请尽快补齐时间点。'
@@ -122,6 +123,7 @@ export function Dashboard() {
       nextMs,
       brief
     }
+    // eslint-disable-next-line react-hooks/preserve-manual-memoization
   }, [focusProj, tasks])
 
   return (
@@ -146,14 +148,14 @@ export function Dashboard() {
           ) : (
             <>
               <div 
-                className={`focus-highlight ${focusData?.uc}`}
+                className={`focus-highlight ${focusData?.uc || ''}`}
                 onClick={() => navigate('projects')}
               >
                 <div className="focus-highlight-head">
                   <div>
                     <div className="focus-highlight-label">最紧急项目</div>
                     <div className="focus-highlight-name">{focusProj.name}</div>
-                    <div className="focus-highlight-ddl">{ddlLabel(focusProj.ddl, focusProj.status || 'active')}</div>
+                    <div className="focus-highlight-ddl">{ddlLabel(focusProj.ddl || null, focusProj.status || 'active')}</div>
                   </div>
                   <div className="focus-highlight-tier">{URGENCY_TEXT[focusData?.uc || ''] || '未迫近'}</div>
                 </div>
@@ -163,19 +165,19 @@ export function Dashboard() {
                   <span>逾期任务 {focusData?.overdueCount}</span>
                   <span>未完成 {focusData?.remainingCount}</span>
                   {focusData?.nextMs ? (
-                    <span>关键节点 {focusData.nextMs.title} · {formatDate(focusData.nextMs.date)}</span>
+                    <span>关键节点 {focusData.nextMs.title} · {formatDate(focusData.nextMs.date || null)}</span>
                   ) : (
                     <span>关键节点 暂无</span>
                   )}
                 </div>
               </div>
               <div className="focus-secondary-list">
-                {topProjects.slice(1).map((proj: any) => {
-                  const uc = urgencyClass(proj.ddl, proj.status || 'active')
+                {topProjects.slice(1).map((proj) => {
+                  const uc = urgencyClass(proj.ddl || null, proj.status || 'active')
                   const pTasks = tasks.filter(t => t.projectId === proj.id)
                   const nextMs = (proj.milestones || [])
-                    .filter((m: any) => !m.completed && m.date! >= today())
-                    .sort((a: any, b: any) => a.date!.localeCompare(b.date!))[0]
+                    .filter((m) => !m.completed && m.date && m.date >= today())
+                    .sort((a, b) => (a.date || '').localeCompare(b.date || ''))[0]
                   return (
                     <div 
                       key={proj.id} 
@@ -183,13 +185,13 @@ export function Dashboard() {
                       onClick={() => navigate('projects')}
                     >
                       <div className="focus-card-name">{proj.name}</div>
-                      <div className="focus-card-ddl">{ddlLabel(proj.ddl, proj.status || 'active')}</div>
+                      <div className="focus-card-ddl">{ddlLabel(proj.ddl || null, proj.status || 'active')}</div>
                       <div className="focus-card-meta">
                         <span>{URGENCY_TEXT[uc] || '未迫近'}</span>
                         <span>{pTasks.filter(t => t.status !== 'done').length} 个任务</span>
                       </div>
                       {nextMs && (
-                        <div className="focus-card-milestone">◆ {nextMs.title} · {formatDate(nextMs.date)}</div>
+                        <div className="focus-card-milestone">◆ {nextMs.title} · {formatDate(nextMs.date || null)}</div>
                       )}
                     </div>
                   )
@@ -227,7 +229,7 @@ export function Dashboard() {
                       <span className="task-title-text">{t.title}</span>
                       {proj && <span className="task-proj-tag">{proj.name}</span>}
                       {person && <span className="task-assignee-tag">{initials(person.name || '')}</span>}
-                      {isOverdue && <span className="date-chip overdue">{formatDate(t.endDate)}</span>}
+                      {isOverdue && <span className="date-chip overdue">{formatDate(t.endDate || null)}</span>}
                     </div>
                   )
                 })

@@ -1,9 +1,22 @@
-import { useState, useMemo, useSyncExternalStore } from 'react'
-import { store, type LegacyTask } from '../legacy/store'
-import { 
+import React, { useState, useMemo, useSyncExternalStore } from 'react'
+import { store, type LegacyTask, type LegacyProject, type LegacyPerson } from '../legacy/store'
+import {
   today, formatDate, STATUS_LABELS, PRIORITY_LABELS, now, uid
 } from '../legacy/utils'
 import { openModal, closeModal, buildForm, toast, confirm } from '../../js/components.js'
+
+type TaskFormData = {
+  title: string | null
+  projectId: string | null
+  status: string | null
+  priority: string | null
+  assigneeId: string | null
+  scheduledDate: string | null
+  startDate: string | null
+  endDate: string | null
+  estimatedHours: number | null
+  description: string | null
+}
 
 export function Tasks() {
   useSyncExternalStore(store.subscribe, () => store.getSnapshot())
@@ -19,7 +32,7 @@ export function Tasks() {
     const PRIO: Record<string, number> = { urgent: 0, high: 1, medium: 2, low: 3 }
 
     return tasks.filter(t =>
-      (!search || t.title?.toLowerCase().includes(search.toLowerCase())) &&
+      (!search || (t.title || '').toLowerCase().includes(search.toLowerCase())) &&
       (!projFilter || t.projectId === projFilter) &&
       (!statusFilter || t.status === statusFilter) &&
       (!assigneeFilter || t.assigneeId === assigneeFilter)
@@ -55,7 +68,7 @@ export function Tasks() {
     setContextMenu({ x: e.clientX, y: e.clientY, taskId, type })
   }
 
-  const quickUpdate = async (taskId: string, field: string, value: any) => {
+  const quickUpdate = async (taskId: string, field: keyof LegacyTask, value: string | number | null) => {
     const t = store.getTask(taskId)
     if (t) {
       const updated = { ...t, [field]: value, updatedAt: now() }
@@ -113,9 +126,9 @@ export function Tasks() {
                 onToggle={() => handleToggleStatus(t)}
                 onEdit={() => handleEditTask(t)}
                 onDelete={() => handleDeleteTask(t)}
-                onContextStatus={(e: any) => handleContextMenu(e, t.id, 'status')}
-                onContextPrio={(e: any) => handleContextMenu(e, t.id, 'priority')}
-                onContextAssignee={(e: any) => handleContextMenu(e, t.id, 'assignee')}
+                onContextStatus={(e: React.MouseEvent) => handleContextMenu(e, t.id, 'status')}
+                onContextPrio={(e: React.MouseEvent) => handleContextMenu(e, t.id, 'priority')}
+                onContextAssignee={(e: React.MouseEvent) => handleContextMenu(e, t.id, 'assignee')}
               />
             ))
           )}
@@ -135,18 +148,18 @@ export function Tasks() {
           <div className="menu-label" style={{ fontSize: '10px', color: 'var(--c-text-3)', padding: '4px 8px' }}>快速更新</div>
           {contextMenu.type === 'status' && ['todo', 'in-progress', 'done', 'blocked'].map(s => (
             <div key={s} className="menu-item" style={menuItemStyle} onClick={() => quickUpdate(contextMenu.taskId, 'status', s)} onMouseEnter={menuHover} onMouseLeave={menuLeave}>
-              {STATUS_LABELS[s]}
+              {STATUS_LABELS[s || 'todo']}
             </div>
           ))}
           {contextMenu.type === 'priority' && ['urgent', 'high', 'medium', 'low'].map(p => (
             <div key={p} className="menu-item" style={menuItemStyle} onClick={() => quickUpdate(contextMenu.taskId, 'priority', p)} onMouseEnter={menuHover} onMouseLeave={menuLeave}>
-              {PRIORITY_LABELS[p]}
+              {PRIORITY_LABELS[p || 'medium']}
             </div>
           ))}
           {contextMenu.type === 'assignee' && [
             {id: null, name: '（取消分配）'},
             ...people.filter(p => p.status === 'active')
-          ].map(p => (
+          ].map((p: LegacyPerson | {id: null, name: string}) => (
             <div key={p.id || 'none'} className="menu-item" style={menuItemStyle} onClick={() => quickUpdate(contextMenu.taskId, 'assigneeId', p.id)} onMouseEnter={menuHover} onMouseLeave={menuLeave}>
               {p.name}
             </div>
@@ -157,7 +170,11 @@ export function Tasks() {
   )
 }
 
-function TaskItem({ task, project, person, onToggle, onEdit, onDelete, onContextStatus, onContextPrio, onContextAssignee }: any) {
+function TaskItem({ 
+  task, project, person, onToggle, onEdit, onDelete, onContextStatus, onContextPrio, onContextAssignee 
+}: { 
+  task: LegacyTask; project?: LegacyProject; person?: LegacyPerson; onToggle: () => void; onEdit: () => void; onDelete: () => void; onContextStatus: (e: React.MouseEvent) => void; onContextPrio: (e: React.MouseEvent) => void; onContextAssignee: (e: React.MouseEvent) => void 
+}) {
   const isDone = task.status === 'done'
   const isOverdue = task.endDate && task.endDate < today() && !isDone
 
@@ -180,7 +197,7 @@ function TaskItem({ task, project, person, onToggle, onEdit, onDelete, onContext
       </div>
       <div className="task-right">
         <span 
-          className={`badge badge-${task.priority}`} 
+          className={`badge badge-${task.priority || 'medium'}`} 
           onContextMenu={onContextPrio}
           style={{ cursor: 'context-menu' }}
         >
@@ -192,11 +209,11 @@ function TaskItem({ task, project, person, onToggle, onEdit, onDelete, onContext
           </span>
         )}
         <span 
-          className={`badge badge-${task.status}`} 
+          className={`badge badge-${task.status || 'todo'}`} 
           onContextMenu={onContextStatus}
           style={{ cursor: 'context-menu' }}
         >
-          {STATUS_LABELS[task.status]}
+          {STATUS_LABELS[task.status || 'todo']}
         </span>
         <button className="card-btn" onClick={(e) => { e.stopPropagation(); onEdit(); }}>
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="14" height="14"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
@@ -210,10 +227,10 @@ function TaskItem({ task, project, person, onToggle, onEdit, onDelete, onContext
 }
 
 const menuItemStyle: React.CSSProperties = { padding: '6px 12px', cursor: 'pointer', fontSize: '13px', borderRadius: '4px' }
-const menuHover = (e: any) => e.currentTarget.style.background = 'var(--c-bg)'
-const menuLeave = (e: any) => e.currentTarget.style.background = 'transparent'
+const menuHover = (e: React.MouseEvent<HTMLDivElement>) => (e.currentTarget.style.background = 'var(--c-bg)')
+const menuLeave = (e: React.MouseEvent<HTMLDivElement>) => (e.currentTarget.style.background = 'transparent')
 
-function openTaskModal(task: any, projects: any[], people: any[]) {
+function openTaskModal(task: LegacyTask | null, projects: LegacyProject[], people: LegacyPerson[]) {
   const isNew = !task;
   const initial = task || { status: 'todo', priority: 'medium' };
   
@@ -251,10 +268,10 @@ function openTaskModal(task: any, projects: any[], people: any[]) {
   if (cancelBtn) cancelBtn.onclick = closeModal;
   if (saveBtn) saveBtn.onclick = async () => {
     if (!validate()) { toast('请填写任务标题', 'error'); return; }
-    const data = getData() as any;
-    const saved = {
+    const data = getData() as unknown as TaskFormData;
+    const saved: LegacyTask = {
       id:             task?.id || uid(),
-      title:          data.title,
+      title:          data.title || '',
       projectId:      data.projectId || null,
       status:         data.status || 'todo',
       priority:       data.priority || 'medium',

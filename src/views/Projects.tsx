@@ -1,10 +1,19 @@
 import React, { useState, useMemo, useSyncExternalStore } from 'react'
-import { store, type LegacyProject } from '../legacy/store'
-import { 
-  urgencyClass, ddlLabel, formatDate, sortByUrgency, 
+import { store, type LegacyProject, type LegacyTask, type LegacyMilestone } from '../legacy/store'
+import {
+  urgencyClass, ddlLabel, formatDate, sortByUrgency,
   STATUS_LABELS, PRIORITY_LABELS, today
 } from '../legacy/utils'
 import { openModal, closeModal, buildForm, toast, confirm } from '../../js/components.js'
+
+type ProjectFormData = {
+  name: string | null
+  status: string | null
+  priority: string | null
+  ddl: string | null
+  description: string | null
+  milestones: LegacyMilestone[]
+}
 
 export function Projects() {
   useSyncExternalStore(store.subscribe, () => store.getSnapshot())
@@ -16,7 +25,7 @@ export function Projects() {
   const [contextMenu, setContextMenu] = useState<{ x: number; y: number; projectId: string } | null>(null)
 
   const filteredProjects = useMemo(() => {
-    let projs = projects.filter((p: any) =>
+    const projs = projects.filter((p) =>
       (!statusFilter || p.status === statusFilter) &&
       (!prioFilter || p.priority === prioFilter)
     )
@@ -43,7 +52,7 @@ export function Projects() {
     const p = store.getProject(projectId)
     if (p) {
       await store.saveProject({ ...p, status, updatedAt: new Date().toISOString() })
-      toast(`项目状态已更新为 ${STATUS_LABELS[status]}`, 'success')
+      toast(`项目状态已更新为 ${STATUS_LABELS[status || 'active']}`, 'success')
     }
     setContextMenu(null)
   }
@@ -97,14 +106,14 @@ export function Projects() {
                 <div className="empty-text">暂无项目</div>
               </div>
             ) : (
-              filteredProjects.map((p: any) => (
+              filteredProjects.map((p: LegacyProject) => (
                 <ProjectCard 
                   key={p.id} 
                   project={p} 
                   tasks={tasks.filter(t => t.projectId === p.id)}
                   onEdit={() => handleEditProject(p)}
                   onDelete={() => handleDeleteProject(p)}
-                  onContextMenu={(e: any) => handleContextMenu(e, p.id)}
+                  onContextMenu={(e: React.MouseEvent) => handleContextMenu(e, p.id)}
                 />
               ))
             )}
@@ -134,7 +143,7 @@ export function Projects() {
               onMouseEnter={(e) => e.currentTarget.style.background = 'var(--c-bg)'}
               onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
             >
-              {STATUS_LABELS[s]}
+              {STATUS_LABELS[s || 'active']}
             </div>
           ))}
         </div>
@@ -143,17 +152,17 @@ export function Projects() {
   )
 }
 
-function ProjectCard({ project, tasks, onEdit, onDelete, onContextMenu }: any) {
-  const uc = urgencyClass(project.ddl, project.status)
-  const doneCount = tasks.filter((t: any) => t.status === 'done').length
-  const milestones = (project.milestones || []).filter((m: any) => m.title).slice(0, 3)
+function ProjectCard({ project, tasks, onEdit, onDelete, onContextMenu }: { project: LegacyProject; tasks: LegacyTask[]; onEdit: () => void; onDelete: () => void; onContextMenu: (e: React.MouseEvent) => void }) {
+  const uc = urgencyClass(project.ddl, project.status || 'active')
+  const doneCount = tasks.filter((t) => t.status === 'done').length
+  const milestones = (project.milestones || []).filter((m) => m.title).slice(0, 3)
 
   return (
     <div className={`project-card ${uc}`} onClick={onEdit} onContextMenu={onContextMenu}>
       <div className="project-card-top">
         <div className="project-name">{project.name}</div>
         <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
-          <span className={`badge badge-${project.status}`}>{STATUS_LABELS[project.status]}</span>
+          <span className={`badge badge-${project.status || 'active'}`}>{STATUS_LABELS[project.status || 'active']}</span>
           <div className="card-actions">
             <button className="card-btn" onClick={(e) => { e.stopPropagation(); onEdit(); }}>
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
@@ -167,14 +176,14 @@ function ProjectCard({ project, tasks, onEdit, onDelete, onContextMenu }: any) {
       {project.description && <div className="project-desc">{project.description}</div>}
       <div className="project-meta">
         {project.ddl && (
-          <span className="project-ddl-label" style={{ color: ddlColor(uc) }}>{ddlLabel(project.ddl, project.status)}</span>
+          <span className="project-ddl-label" style={{ color: ddlColor(uc) }}>{ddlLabel(project.ddl, project.status || 'active')}</span>
         )}
-        <span className={`badge badge-${project.priority}`}>{PRIORITY_LABELS[project.priority]}</span>
+        <span className={`badge badge-${project.priority || 'medium'}`}>{PRIORITY_LABELS[project.priority || 'medium']}</span>
         <span className="project-task-count">{doneCount}/{tasks.length} 完成</span>
       </div>
       {milestones.length > 0 && (
         <div className="milestones-mini">
-          {milestones.map((m: any, i: number) => (
+          {milestones.map((m, i) => (
             <div key={i} className={`milestone-mini-item ${m.completed ? 'done' : ''}`}>
               <div className={`milestone-dot ${m.completed ? 'done' : ''}`}></div>
               {m.title} {m.date ? `· ${formatDate(m.date)}` : ''}
@@ -214,7 +223,7 @@ function ProjectTimeline({ projects }: { projects: LegacyProject[] }) {
         </div>
       </div>
       <div className="timeline-body">
-        {projects.map((p: any) => {
+        {projects.map((p) => {
           const pStart = new Date(p.createdAt || today())
           const pEnd = p.ddl ? new Date(p.ddl) : new Date(pStart.getTime() + 7 * 86400000)
           const offsetDays = Math.max(0, Math.round((pStart.getTime() - start.getTime()) / 86400000))
@@ -244,7 +253,7 @@ function ProjectTimeline({ projects }: { projects: LegacyProject[] }) {
                     overflow: 'hidden'
                   }}
                 >
-                  {p.name} (DDL: {formatDate(p.ddl)})
+                  {p.name} (DDL: {formatDate(p.ddl || null)})
                 </div>
               </div>
             </div>
@@ -256,7 +265,7 @@ function ProjectTimeline({ projects }: { projects: LegacyProject[] }) {
 }
 
 function ddlColor(uc: string) {
-  const map: any = { 'urg-overdue': 'var(--c-overdue)', 'urg-today': 'var(--c-today)', 'urg-soon': 'var(--c-soon)', 'urg-near': 'var(--c-near)' };
+  const map: Record<string, string> = { 'urg-overdue': 'var(--c-overdue)', 'urg-today': 'var(--c-today)', 'urg-soon': 'var(--c-soon)', 'urg-near': 'var(--c-near)' };
   return map[uc] || 'var(--c-text-2)';
 }
 
@@ -271,7 +280,7 @@ const PROJECT_SCHEMA = {
   ]
 };
 
-function openProjectModal(proj: any) {
+function openProjectModal(proj: LegacyProject | null) {
   const isNew = !proj;
   const initial = proj || { status: 'active', priority: 'medium', milestones: [] };
   const { formEl, getData, validate } = buildForm(PROJECT_SCHEMA, initial);
@@ -288,10 +297,10 @@ function openProjectModal(proj: any) {
   if (cancelBtn) cancelBtn.onclick = closeModal;
   if (saveBtn) saveBtn.onclick = async () => {
     if (!validate()) { toast('请填写项目名称', 'error'); return; }
-    const data = getData() as any;
-    const saved = {
+    const data = getData() as unknown as ProjectFormData;
+    const saved: LegacyProject = {
       id:         proj?.id || crypto.randomUUID(),
-      name:       data.name,
+      name:       data.name || '',
       status:     data.status || 'active',
       priority:   data.priority || 'medium',
       ddl:        data.ddl || null,
