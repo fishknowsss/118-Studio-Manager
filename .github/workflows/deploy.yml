@@ -24,7 +24,7 @@ jobs:
       deploy_target: ${{ steps.vars.outputs.deploy_target }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           fetch-depth: 0
 
@@ -51,7 +51,7 @@ jobs:
           echo "deploy_base=/118-Studio-Manager/${deploy_target}/" >> "${GITHUB_OUTPUT}"
 
       - name: Setup Node
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6
         with:
           node-version: 22
           cache: npm
@@ -142,7 +142,7 @@ jobs:
           git push origin gh-pages
 
       - name: Upload artifact
-        uses: actions/upload-pages-artifact@v3
+        uses: actions/upload-pages-artifact@v4
         with:
           path: ${{ runner.temp }}/site
 
