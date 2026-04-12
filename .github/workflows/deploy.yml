@@ -142,9 +142,13 @@ jobs:
           git push origin gh-pages
 
       - name: Upload artifact
-        uses: actions/upload-pages-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
+          name: github-pages
           path: ${{ runner.temp }}/site
+          retention-days: 1
+          if-no-files-found: error
+          include-hidden-files: true
 
   deploy:
     environment:
@@ -154,8 +158,8 @@ jobs:
     needs: build
     steps:
       - name: Setup Pages
-        uses: actions/configure-pages@v5
+        uses: actions/configure-pages@v6
 
       - name: Deploy to GitHub Pages
         id: deployment
-        uses: actions/deploy-pages@v4
+        uses: actions/deploy-pages@v5

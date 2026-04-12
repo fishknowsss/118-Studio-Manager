@@ -242,4 +242,22 @@ describe('current app regressions', () => {
     expect(dashboardSource).not.toMatch(/dash-date-block/)
     expect(dashboardSource).not.toMatch(/mini-cal-header/)
   })
+
+  it('uses node24-compatible GitHub Pages actions in deploy workflow', () => {
+    const workflowSource = readFileSync(join(process.cwd(), '.github/workflows/deploy.yml'), 'utf8')
+
+    expect(workflowSource).toMatch(/actions\/configure-pages@v6/)
+    expect(workflowSource).toMatch(/actions\/deploy-pages@v5/)
+    expect(workflowSource).toMatch(/actions\/upload-artifact@v6/)
+    expect(workflowSource).not.toMatch(/actions\/upload-pages-artifact@v4/)
+  })
+
+  it('keeps dashboard skill tags clipped inside compact person cards', () => {
+    const styleSource = readFileSync(join(process.cwd(), 'css/style.css'), 'utf8')
+
+    expect(styleSource).toMatch(/\.skill-tag\s*\{/)
+    expect(styleSource).toMatch(/max-width:\s*100%/)
+    expect(styleSource).toMatch(/text-overflow:\s*ellipsis/)
+    expect(styleSource).toMatch(/overflow:\s*hidden/)
+  })
 })
