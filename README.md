@@ -13,17 +13,17 @@
 
 以下截图都来自 `vc` 分支本地运行页面，不是示意图。
 
-**Dashboard**
+**Projects**
 
-![VC Dashboard](docs/screenshots/vc-dashboard.png)
+![VC Projects](docs/screenshots/vc-projects.png)
 
 **Tasks**
 
 ![VC Tasks](docs/screenshots/vc-tasks.png)
 
-**Settings**
+**People**
 
-![VC Settings](docs/screenshots/vc-settings.png)
+![VC People](docs/screenshots/vc-people.png)
 
 ## 这条分支现在是什么
 
