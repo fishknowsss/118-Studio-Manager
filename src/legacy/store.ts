@@ -1,6 +1,6 @@
 import { db } from './db'
 
-type LegacyEntity = {
+export type LegacyEntity = {
   id: string
   createdAt?: string
   updatedAt?: string
@@ -49,8 +49,12 @@ export type LegacyLog = {
   ts: string
 }
 
+let listeners: Set<() => void> = new Set()
+
 function emitStoreUpdated(detail: Record<string, unknown> = {}) {
+  ;(store as any).version++
   document.dispatchEvent(new CustomEvent('storeUpdated', { detail }))
+  listeners.forEach(l => l())
 }
 
 export const store = {
@@ -58,6 +62,16 @@ export const store = {
   tasks: [] as LegacyTask[],
   people: [] as LegacyPerson[],
   logs: [] as LegacyLog[],
+  version: 0,
+
+  subscribe(listener: () => void) {
+    listeners.add(listener)
+    return () => listeners.delete(listener)
+  },
+
+  getSnapshot() {
+    return this.version
+  },
 
   async loadAll() {
     ;[this.projects, this.tasks, this.people, this.logs] = await Promise.all([
@@ -154,5 +168,6 @@ export const store = {
       const removed = this.logs.splice(50)
       for (const entry of removed) await db.delete('logs', entry.id)
     }
+    emitStoreUpdated()
   },
 }

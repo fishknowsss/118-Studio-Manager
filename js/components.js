@@ -27,6 +27,10 @@ export function confirm(title, body) {
       </div>`;
     document.body.appendChild(d);
     d.showModal();
+
+    // Close on backdrop click
+    d.onclick = (e) => { if (e.target === d) d.close(); };
+
     d.querySelector('#_cn').onclick = () => { d.close(); d.remove(); resolve(false); };
     d.querySelector('#_cy').onclick = () => { d.close(); d.remove(); resolve(true);  };
     d.addEventListener('close', () => { d.remove(); resolve(false); });

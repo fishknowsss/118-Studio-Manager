@@ -43,6 +43,29 @@
   --focus-h: 176px;
 }
 
+[data-theme='dark'] {
+  --c-bg:            #0F172A;
+  --c-surface:       #1E293B;
+  --c-border:        #334155;
+  --c-border-light:  #1E293B;
+
+  --c-text:          #F8FAFC;
+  --c-text-2:        #CBD5E1;
+  --c-text-3:        #64748B;
+
+  --c-primary-light: rgba(65, 102, 245, 0.15);
+  --c-teal-light:    rgba(57, 197, 187, 0.15);
+  --c-sage-light:    rgba(93, 173, 130, 0.15);
+  --c-overdue-bg:    rgba(229, 77, 77, 0.15);
+  --c-today-bg:      rgba(232, 132, 15, 0.15);
+  --c-soon-bg:       rgba(202, 138, 4, 0.15);
+  --c-near-bg:       rgba(65, 102, 245, 0.15);
+
+  --shadow-sm: 0 1px 3px rgba(0,0,0,.3), 0 1px 2px rgba(0,0,0,.2);
+  --shadow-md: 0 4px 12px rgba(0,0,0,.4);
+  --shadow-lg: 0 8px 32px rgba(0,0,0,.5);
+}
+
 /* ─── Reset ──────────────────────────────────────────── */
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 html, body { height: 100%; overflow: hidden; }
@@ -1377,8 +1400,12 @@ select.form-input { cursor: pointer; }
   max-width: 360px;
   width: 90vw;
   outline: none;
+  margin: auto;
 }
-.confirm-modal::backdrop { background: rgba(15,23,42,.45); }
+.confirm-modal::backdrop {
+  background: rgba(15, 23, 42, .45);
+  backdrop-filter: blur(2px);
+}
 .confirm-title { font-size: 16px; font-weight: 800; margin-bottom: 8px; }
 .confirm-body { font-size: 13px; color: var(--c-text-2); line-height: 1.55; margin-bottom: 20px; }
 .confirm-actions { display: flex; gap: 8px; justify-content: flex-end; }

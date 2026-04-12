@@ -80,7 +80,7 @@ export const PRIORITY_LABELS: Record<string, string> = {
   low: '低',
 }
 
-export function sortByUrgency<T extends { ddl?: string | null; status: string }>(projects: T[]) {
+export function sortByUrgency<T extends { ddl?: string | null; status?: string }>(projects: T[]) {
   const order: Record<string, number> = {
     'urg-overdue': 0,
     'urg-today': 1,
@@ -90,8 +90,8 @@ export function sortByUrgency<T extends { ddl?: string | null; status: string }>
     'urg-done': 5,
   }
   return [...projects].sort((a, b) => {
-    const aOrder = order[urgencyClass(a.ddl, a.status)] ?? 4
-    const bOrder = order[urgencyClass(b.ddl, b.status)] ?? 4
+    const aOrder = order[urgencyClass(a.ddl, a.status || 'active')] ?? 4
+    const bOrder = order[urgencyClass(b.ddl, b.status || 'active')] ?? 4
     return aOrder !== bOrder ? aOrder - bOrder : (a.ddl || '').localeCompare(b.ddl || '')
   })
 }
