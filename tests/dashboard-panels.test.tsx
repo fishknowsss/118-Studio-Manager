@@ -2,7 +2,7 @@
 
 import type { ReactNode } from 'react'
 import { act } from 'react'
-import { createRoot, type Root } from 'react-dom/client'
+import { createRoot } from 'react-dom/client'
 import { describe, expect, it, vi } from 'vitest'
 import { PeopleAssignmentPanel } from '../src/features/dashboard/PeopleAssignmentPanel'
 import { TaskPoolPanel } from '../src/features/dashboard/TaskPoolPanel'
