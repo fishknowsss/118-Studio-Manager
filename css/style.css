@@ -1,5 +1,7 @@
 /* ─── CSS Variables ───────────────────────────────────── */
 :root {
+  color-scheme: light;
+
   --c-primary:       #4166F5;
   --c-primary-light: #EEF2FF;
   --c-primary-dark:  #2D4FD6;
@@ -44,6 +46,8 @@
 }
 
 [data-theme='dark'] {
+  color-scheme: dark;
+
   --c-bg:            #0F172A;
   --c-surface:       #1E293B;
   --c-border:        #334155;
@@ -766,6 +770,12 @@ svg { display: block; flex-shrink: 0; }
   align-items: center;
   flex-wrap: wrap;
 }
+.form-input,
+.filter-select,
+.filter-input,
+.skill-add-input {
+  color-scheme: inherit;
+}
 .filter-select, .filter-input {
   padding: 6px 10px;
   border: 1px solid var(--c-border);
@@ -1130,6 +1140,8 @@ svg { display: block; flex-shrink: 0; }
 .app-modal {
   border: none;
   border-radius: var(--r-xl);
+  background: var(--c-surface);
+  color: var(--c-text);
   box-shadow: var(--shadow-lg);
   padding: 0;
   max-width: 560px;
@@ -1197,6 +1209,7 @@ svg { display: block; flex-shrink: 0; }
   border-radius: var(--r-md);
   background: var(--c-surface);
   font-size: 13.5px;
+  color: var(--c-text);
   outline: none;
   transition: border-color .15s, box-shadow .15s;
 }
@@ -1248,6 +1261,7 @@ select.form-input { cursor: pointer; }
   min-width: 80px;
   outline: none;
   background: transparent;
+  color: var(--c-text);
 }
 .skill-add-input:focus { border-color: var(--c-teal); }
 
@@ -1395,6 +1409,8 @@ select.form-input { cursor: pointer; }
 .confirm-modal {
   border: none;
   border-radius: var(--r-lg);
+  background: var(--c-surface);
+  color: var(--c-text);
   box-shadow: var(--shadow-lg);
   padding: 24px;
   max-width: 360px;

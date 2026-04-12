@@ -41,6 +41,16 @@ beforeEach(() => {
 })
 
 describe('review fixes', () => {
+  it('defines theme-aware surfaces for dialogs and native controls', () => {
+    const stylesheet = readFileSync(join(process.cwd(), 'css/style.css'), 'utf8')
+
+    expect(stylesheet).toMatch(/:root\s*\{[\s\S]*color-scheme:\s*light;/)
+    expect(stylesheet).toMatch(/\[data-theme='dark'\]\s*\{[\s\S]*color-scheme:\s*dark;/)
+    expect(stylesheet).toMatch(/\.app-modal\s*\{[\s\S]*background:\s*var\(--c-surface\);/)
+    expect(stylesheet).toMatch(/\.confirm-modal\s*\{[\s\S]*background:\s*var\(--c-surface\);/)
+    expect(stylesheet).toMatch(/\.form-input,\s*\.filter-select,\s*\.filter-input,\s*\.skill-add-input\s*\{[\s\S]*color-scheme:\s*inherit;/)
+  })
+
   it('keeps an inactive assignee selected when editing a task', () => {
     const inactivePerson = { id: 'person-1', name: '停用成员', status: 'inactive' }
     store.people = [inactivePerson]

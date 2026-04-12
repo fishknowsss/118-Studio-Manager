@@ -9,6 +9,18 @@
 - 预览地址：[https://fishknowsss.github.io/118-Studio-Manager/vc/](https://fishknowsss.github.io/118-Studio-Manager/vc/)
 - 分支地址：[https://github.com/fishknowsss/118-Studio-Manager/tree/vc](https://github.com/fishknowsss/118-Studio-Manager/tree/vc)
 
+## 分支状态
+
+当前仓库以 `vc` 作为默认分支，也是唯一持续开发的版本。
+
+| 分支 | 状态 | 说明 |
+| --- | --- | --- |
+| `vc` | 主力开发 | 当前最满意、也在持续迭代的版本 |
+| `main` | 历史保留 | 保留早期 Pages 版本，默认不再继续开发 |
+| `singleD` | 历史保留 | 保留单屏方案和 README 记录，默认不再继续开发 |
+
+如果只是继续做 118 Studio Manager 的功能和界面，请直接基于 `vc` 开发，不再把变更分散到 `main` 或 `singleD`。
+
 ## 界面截图
 
 以下截图都来自 `vc` 分支本地运行页面，不是示意图。  
