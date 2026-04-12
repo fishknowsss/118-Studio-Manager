@@ -249,6 +249,7 @@ describe('current app regressions', () => {
     expect(workflowSource).toMatch(/actions\/configure-pages@v6/)
     expect(workflowSource).toMatch(/actions\/deploy-pages@v5/)
     expect(workflowSource).toMatch(/actions\/upload-artifact@v6/)
+    expect(workflowSource).toMatch(/node-version:\s*24/)
     expect(workflowSource).not.toMatch(/actions\/upload-pages-artifact@v4/)
   })
 
