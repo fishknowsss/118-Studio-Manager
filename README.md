@@ -11,19 +11,36 @@
 
 ## 界面截图
 
-以下截图都来自 `vc` 分支本地运行页面，不是示意图。
+以下截图都来自 `vc` 分支本地运行页面，不是示意图。  
+本次截图统一基于 `118studio-backup-2026-04-11.json` 导入后的页面状态拍摄。
 
-**Projects**
+**今日**
+
+![VC Dashboard](docs/screenshots/vc-dashboard.png)
+
+**项目**
 
 ![VC Projects](docs/screenshots/vc-projects.png)
 
-**Tasks**
+**任务**
 
 ![VC Tasks](docs/screenshots/vc-tasks.png)
 
-**People**
+**人员**
 
 ![VC People](docs/screenshots/vc-people.png)
+
+**日历**
+
+![VC Calendar](docs/screenshots/vc-calendar.png)
+
+**深色**
+
+![VC Dashboard Dark](docs/screenshots/vc-dashboard-dark.png)
+
+**设置**
+
+![VC Settings](docs/screenshots/vc-settings.png)
 
 ## 这条分支现在是什么
 
@@ -205,6 +222,7 @@ tests/
 
 | 版本 | 日期 | 说明 |
 | --- | --- | --- |
+| vc-readme-4 | 2026-04-12 | 按 `118studio-backup-2026-04-11.json` 备份数据重做 7 张 README 页面截图 |
 | vc-readme-2 | 2026-04-12 | README 改成带真实截图的版本，并补充当前迁移状态说明 |
 | vc-readme-1 | 2026-04-12 | 首次补充 `vc` 分支专用 README |
 | 3e45bf2 | 2026-04-11 | 重做 VC workspace 的视图和交互 |
