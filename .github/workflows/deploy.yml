@@ -141,25 +141,10 @@ jobs:
           git commit -m "Deploy ${GITHUB_REF_NAME} (${GITHUB_SHA})"
           git push origin gh-pages
 
-      - name: Package Pages artifact
-        run: |
-          set -euo pipefail
-          artifact_dir="${RUNNER_TEMP}/pages-artifact"
-          mkdir -p "${artifact_dir}"
-          tar \
-            --dereference \
-            --hard-dereference \
-            --directory "${RUNNER_TEMP}/site" \
-            -czf "${artifact_dir}/github-pages.tar.gz" \
-            .
-
       - name: Upload artifact
-        uses: actions/upload-artifact@v6
+        uses: ./.github/actions/upload-pages-artifact
         with:
-          name: github-pages
-          path: ${{ runner.temp }}/pages-artifact/github-pages.tar.gz
-          retention-days: 1
-          if-no-files-found: error
+          path: ${{ runner.temp }}/site
 
   deploy:
     environment:

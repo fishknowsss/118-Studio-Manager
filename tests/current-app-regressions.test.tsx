@@ -245,12 +245,14 @@ describe('current app regressions', () => {
 
   it('uses node24-compatible GitHub Pages actions in deploy workflow', () => {
     const workflowSource = readFileSync(join(process.cwd(), '.github/workflows/deploy.yml'), 'utf8')
+    const localPagesArtifactSource = readFileSync(join(process.cwd(), '.github/actions/upload-pages-artifact/action.yml'), 'utf8')
 
     expect(workflowSource).toMatch(/actions\/configure-pages@v6/)
     expect(workflowSource).toMatch(/actions\/deploy-pages@v5/)
-    expect(workflowSource).toMatch(/actions\/upload-artifact@v6/)
+    expect(workflowSource).toMatch(/uses:\s+\.\/\.github\/actions\/upload-pages-artifact/)
     expect(workflowSource).toMatch(/node-version:\s*24/)
     expect(workflowSource).not.toMatch(/actions\/upload-pages-artifact@v4/)
+    expect(localPagesArtifactSource).toMatch(/actions\/upload-artifact@v6/)
   })
 
   it('keeps dashboard skill tags clipped inside compact person cards', () => {
