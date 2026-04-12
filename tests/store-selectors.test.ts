@@ -1,0 +1,411 @@
+import { describe, expect, it } from 'vitest'
+import {
+  buildBackupSummary,
+  buildDashboardHeaderModel,
+  buildDashboardMiniCalendarModel,
+  buildCalendarEventMap,
+  buildDashboardFocusCards,
+  buildEntityMaps,
+  buildPersonCardModels,
+  buildProjectCardModels,
+  buildProjectEventSummaryMap,
+  buildProjectTimelineModel,
+  buildTaskListItemModels,
+  formatRecentLogs,
+  getDashboardFocusData,
+  getProjectEventsForDate,
+  getTaskPool,
+} from '../src/legacy/selectors'
+import { buildTaskRecord } from '../src/legacy/actions'
+
+describe('store selectors', () => {
+  it('builds fast lookup maps and open task counts', () => {
+    const maps = buildEntityMaps(
+      [{ id: 'project-1', name: '项目 A' }],
+      [
+        { id: 'task-1', projectId: 'project-1', assigneeId: 'person-1', status: 'todo' },
+        { id: 'task-2', projectId: 'project-1', assigneeId: 'person-1', status: 'done' },
+      ],
+      [{ id: 'person-1', name: '张三', status: 'active' }],
+    )
+
+    expect(maps.projectsById['project-1']?.name).toBe('项目 A')
+    expect(maps.peopleById['person-1']?.name).toBe('张三')
+    expect(maps.tasksByProjectId['project-1']).toHaveLength(2)
+    expect(maps.openTaskCountByPersonId['person-1']).toBe(1)
+  })
+
+  it('keeps dashboard task pool actionable and priority-sorted', () => {
+    const pool = getTaskPool([
+      { id: 'task-4', title: '低优先级', status: 'todo', priority: 'low', endDate: '2026-04-20' },
+      { id: 'task-3', title: '进行中', status: 'in-progress', priority: 'medium', endDate: '2026-04-18' },
+      { id: 'task-2', title: '紧急', status: 'todo', priority: 'urgent', endDate: '2026-04-16' },
+      { id: 'task-1', title: '已完成', status: 'done', priority: 'urgent', endDate: '2026-04-15' },
+      { id: 'task-5', title: '受阻', status: 'blocked', priority: 'high', endDate: '2026-04-17' },
+    ])
+
+    expect(pool.map((task) => task.id)).toEqual(['task-2', 'task-3', 'task-4'])
+  })
+
+  it('computes dashboard focus counters and next milestone from one place', () => {
+    const focus = getDashboardFocusData(
+      {
+        id: 'project-1',
+        name: '项目 A',
+        status: 'active',
+        ddl: '2026-04-15',
+        milestones: [
+          { id: 'ms-1', title: '已完成节点', date: '2026-04-11', completed: true },
+          { id: 'ms-2', title: '下一个节点', date: '2026-04-14', completed: false },
+        ],
+      },
+      [
+        { id: 'task-1', projectId: 'project-1', status: 'todo', scheduledDate: '2026-04-12', endDate: '2026-04-12' },
+        { id: 'task-2', projectId: 'project-1', status: 'todo', scheduledDate: null, endDate: '2026-04-10' },
+        { id: 'task-3', projectId: 'project-1', status: 'done', scheduledDate: null, endDate: '2026-04-09' },
+      ],
+      '2026-04-12',
+    )
+
+    expect(focus?.todayCount).toBe(1)
+    expect(focus?.overdueCount).toBe(1)
+    expect(focus?.remainingCount).toBe(2)
+    expect(focus?.nextMs?.title).toBe('下一个节点')
+  })
+
+  it('builds dashboard secondary focus cards from one selector', () => {
+    const cards = buildDashboardFocusCards(
+      [
+        {
+          id: 'project-1',
+          name: '项目 A',
+          status: 'active',
+          ddl: '2026-04-15',
+          milestones: [
+            { id: 'ms-1', title: '验收', date: '2026-04-14', completed: false },
+          ],
+        },
+        {
+          id: 'project-2',
+          name: '项目 B',
+          status: 'active',
+          ddl: '2026-04-18',
+          milestones: [],
+        },
+      ],
+      [
+        { id: 'task-1', projectId: 'project-1', status: 'todo' },
+        { id: 'task-2', projectId: 'project-1', status: 'done' },
+        { id: 'task-3', projectId: 'project-2', status: 'in-progress' },
+      ],
+      '2026-04-12',
+    )
+
+    expect(cards[0]).toMatchObject({
+      id: 'project-1',
+      name: '项目 A',
+      openTaskCount: 1,
+      urgencyKey: 'urg-soon',
+    })
+    expect(cards[0].nextMilestone?.title).toBe('验收')
+    expect(cards[1]).toMatchObject({
+      id: 'project-2',
+      openTaskCount: 1,
+      urgencyKey: 'urg-near',
+    })
+  })
+
+  it('builds dashboard header copy from one model selector', () => {
+    const header = buildDashboardHeaderModel(
+      new Date('2026-04-12T10:00:00+08:00'),
+      { text: '先完成最关键的一步', src: '测试语录' },
+      '今天也往前推一点',
+    )
+
+    expect(header).toEqual({
+      dateText: '4月12日',
+      motivation: '今天也往前推一点',
+      quoteSource: '测试语录',
+      quoteText: '先完成最关键的一步',
+      weekdayText: '2026 · 星期日',
+    })
+  })
+
+  it('builds dashboard mini calendar cells and event flags from one selector', () => {
+    const model = buildDashboardMiniCalendarModel(
+      new Date('2026-04-12T10:00:00+08:00'),
+      {
+        '2026-04-12': { ddls: [], hasDdl: false, hasMs: true, milestones: ['检查点'], urgent: false },
+        '2026-04-18': { ddls: ['毕业设计'], hasDdl: true, hasMs: false, milestones: [], urgent: true },
+      },
+      '2026-04-12',
+    )
+
+    expect(model.title).toBe('2026 · 四月')
+    expect(model.weekdays).toEqual(['日', '一', '二', '三', '四', '五', '六'])
+
+    const todayCell = model.days.find((day) => day.dateKey === '2026-04-12')
+    expect(todayCell).toMatchObject({
+      dateKey: '2026-04-12',
+      dayOfMonth: 12,
+      hasEvents: true,
+      hasUrgent: false,
+      isOtherMonth: false,
+      isToday: true,
+    })
+
+    const urgentCell = model.days.find((day) => day.dateKey === '2026-04-18')
+    expect(urgentCell).toMatchObject({
+      hasEvents: true,
+      hasUrgent: true,
+    })
+  })
+
+  it('builds calendar events from project ddl and milestones in one place', () => {
+    const eventMap = buildCalendarEventMap([
+      {
+        id: 'project-1',
+        name: '毕业设计',
+        ddl: '2026-04-18',
+        milestones: [
+          { id: 'ms-1', title: '中期检查', date: '2026-04-14' },
+          { id: 'ms-2', title: '终稿提交', date: '2026-04-18' },
+        ],
+      },
+    ])
+
+    expect(eventMap['2026-04-14']).toEqual({
+      ddls: [],
+      milestones: ['中期检查'],
+    })
+    expect(eventMap['2026-04-18']).toEqual({
+      ddls: ['毕业设计'],
+      milestones: ['终稿提交'],
+    })
+  })
+
+  it('builds one event summary map for dashboard markers and planner details', () => {
+    const eventMap = buildProjectEventSummaryMap([
+      {
+        id: 'project-1',
+        name: '毕业设计',
+        status: 'active',
+        ddl: '2026-04-18',
+        milestones: [
+          { id: 'ms-1', title: '中期检查', date: '2026-04-14' },
+          { id: 'ms-2', title: '终稿提交', date: '2026-04-18' },
+        ],
+      },
+      {
+        id: 'project-2',
+        name: '旧项目',
+        status: 'active',
+        ddl: '2026-04-10',
+      },
+    ])
+
+    expect(eventMap['2026-04-18']).toEqual({
+      ddls: ['毕业设计'],
+      hasDdl: true,
+      hasMs: true,
+      milestones: ['终稿提交'],
+      urgent: false,
+    })
+    expect(eventMap['2026-04-10']?.urgent).toBe(true)
+  })
+
+  it('builds planner event rows from the same event summary map', () => {
+    const eventMap = buildProjectEventSummaryMap([
+      {
+        id: 'project-1',
+        name: '毕业设计',
+        status: 'active',
+        ddl: '2026-04-18',
+        milestones: [
+          { id: 'ms-1', title: '中期检查', date: '2026-04-18' },
+        ],
+      },
+    ])
+
+    expect(getProjectEventsForDate(eventMap, '2026-04-18')).toEqual([
+      { label: 'DDL · 毕业设计', type: 'ddl' },
+      { label: '里程碑 · 中期检查', type: 'milestone' },
+    ])
+  })
+
+  it('builds project timeline rows using local calendar dates instead of UTC parsing', () => {
+    const timeline = buildProjectTimelineModel([
+      {
+        id: 'project-1',
+        name: '答辩周',
+        createdAt: '2026-04-12T00:30:00+08:00',
+        ddl: '2026-04-15',
+      },
+    ], 14)
+
+    expect(timeline.startDate).toBe('2026-04-01')
+    expect(timeline.rows[0]).toMatchObject({
+      id: 'project-1',
+      offsetDays: 11,
+      durationDays: 3,
+      startDate: '2026-04-12',
+      endDate: '2026-04-15',
+    })
+  })
+
+  it('builds project card models with progress and milestone summary', () => {
+    const cards = buildProjectCardModels(
+      [
+        {
+          id: 'project-1',
+          name: '毕业设计',
+          description: '终稿与答辩',
+          status: 'active',
+          priority: 'urgent',
+          ddl: '2026-04-18',
+          milestones: [
+            { id: 'ms-1', title: '中期检查', date: '2026-04-14', completed: true },
+            { id: 'ms-2', title: '终稿提交', date: '2026-04-18', completed: false },
+          ],
+        },
+      ],
+      [
+        { id: 'task-1', projectId: 'project-1', status: 'todo' },
+        { id: 'task-2', projectId: 'project-1', status: 'done' },
+      ],
+    )
+
+    expect(cards[0]).toMatchObject({
+      doneCount: 1,
+      taskCount: 2,
+      name: '毕业设计',
+      statusLabel: '进行中',
+      priorityLabel: '紧急',
+    })
+    expect(cards[0].milestones[0]).toMatchObject({
+      title: '中期检查',
+      dateText: '2026/4/14',
+      completed: true,
+    })
+  })
+
+  it('builds task list item models with resolved project and assignee labels', () => {
+    const items = buildTaskListItemModels(
+      [
+        {
+          id: 'task-1',
+          title: '整理答辩稿',
+          projectId: 'project-1',
+          assigneeId: 'person-1',
+          priority: 'high',
+          status: 'todo',
+          endDate: '2026-04-11',
+          estimatedHours: 3,
+        },
+      ],
+      [{ id: 'project-1', name: '毕业设计' }],
+      [{ id: 'person-1', name: '张三', status: 'active' }],
+      '2026-04-12',
+    )
+
+    expect(items[0]).toMatchObject({
+      assigneeName: '张三',
+      dateText: '逾期 2026/4/11',
+      estimatedHoursText: '3h',
+      isDone: false,
+      isOverdue: true,
+      priorityLabel: '高',
+      projectName: '毕业设计',
+      statusLabel: '待处理',
+      title: '整理答辩稿',
+    })
+  })
+
+  it('builds person card models with task counts and note preview', () => {
+    const items = buildPersonCardModels(
+      [
+        {
+          id: 'person-1',
+          name: '李四',
+          status: 'inactive',
+          gender: 'female',
+          skills: ['剪辑', '动画'],
+          notes: '负责视频包装与字幕校对',
+        },
+      ],
+      [
+        { id: 'task-1', assigneeId: 'person-1', status: 'todo' },
+        { id: 'task-2', assigneeId: 'person-1', status: 'done' },
+      ],
+    )
+
+    expect(items[0]).toMatchObject({
+      genderLabel: '女',
+      isInactive: true,
+      name: '李四',
+      notePreview: '备注: 负责视频包装与字幕校对',
+      statusLabel: '已停用',
+      taskCount: 1,
+    })
+    expect(items[0].skills).toEqual(['剪辑', '动画'])
+  })
+
+  it('summarizes backup payload counts for import and export feedback', () => {
+    const summary = buildBackupSummary({
+      projects: [{ id: 'project-1' }],
+      tasks: [{ id: 'task-1' }, { id: 'task-2' }],
+      people: [{ id: 'person-1' }],
+      logs: [{ id: 'log-1' }, { id: 'log-2' }, { id: 'log-3' }],
+      settings: [{ key: 'theme', value: 'light' }],
+    })
+
+    expect(summary).toEqual({
+      projectCount: 1,
+      taskCount: 2,
+      personCount: 1,
+      logCount: 3,
+      settingsCount: 1,
+    })
+  })
+
+  it('formats recent logs into readable date and time tokens', () => {
+    const items = formatRecentLogs([
+      {
+        id: 'log-1',
+        text: '导出备份',
+        ts: '2026-04-12T08:05:00+08:00',
+      },
+    ])
+
+    expect(items[0]).toEqual({
+      id: 'log-1',
+      text: '导出备份',
+      date: '4/12',
+      time: '08:05',
+    })
+  })
+
+  it('builds task records with strict defaults from form input', () => {
+    const task = buildTaskRecord(null, {
+      title: '  继续排期  ',
+      projectId: null,
+      status: null,
+      priority: null,
+      assigneeId: null,
+      scheduledDate: null,
+      startDate: null,
+      endDate: null,
+      estimatedHours: null,
+      description: '',
+    }, '2026-04-12T10:00:00+08:00')
+
+    expect(task).toMatchObject({
+      title: '继续排期',
+      status: 'todo',
+      priority: 'medium',
+      description: '',
+      createdAt: '2026-04-12T10:00:00+08:00',
+      updatedAt: '2026-04-12T10:00:00+08:00',
+    })
+  })
+})

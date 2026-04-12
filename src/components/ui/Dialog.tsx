@@ -1,0 +1,56 @@
+import { useEffect, type ReactNode } from 'react'
+
+type DialogProps = {
+  open: boolean
+  title: string
+  onClose: () => void
+  children: ReactNode
+  footer?: ReactNode
+  width?: 'default' | 'wide'
+}
+
+export function Dialog({ open, title, onClose, children, footer, width = 'default' }: DialogProps) {
+  useEffect(() => {
+    if (!open) return undefined
+
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') onClose()
+    }
+
+    document.addEventListener('keydown', onKeyDown)
+    document.body.style.overflow = 'hidden'
+
+    return () => {
+      document.removeEventListener('keydown', onKeyDown)
+      document.body.style.overflow = ''
+    }
+  }, [onClose, open])
+
+  if (!open) return null
+
+  return (
+    <div className="dialog-backdrop" onClick={onClose} role="presentation">
+      <div
+        className={`app-modal app-modal-react ${width === 'wide' ? 'wide' : ''}`}
+        role="dialog"
+        aria-modal="true"
+        aria-label={title}
+        onClick={(event) => event.stopPropagation()}
+      >
+        <div className="modal-inner">
+          <div className="modal-header">
+            <h3 className="modal-title">{title}</h3>
+            <button className="modal-close" type="button" aria-label="关闭" onClick={onClose}>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <line x1="18" y1="6" x2="6" y2="18" />
+                <line x1="6" y1="6" x2="18" y2="18" />
+              </svg>
+            </button>
+          </div>
+          <div className="modal-body">{children}</div>
+          {footer ? <div className="modal-footer">{footer}</div> : null}
+        </div>
+      </div>
+    </div>
+  )
+}

@@ -1,3 +1,5 @@
+import { buildBackupPayload, normalizeImportedBackup, type BackupPayload } from './utils'
+
 const DB_NAME = 'studio118db'
 const DB_VERSION = 1
 
@@ -72,22 +74,33 @@ export const db = {
     return fromRequest(getStore(name).index(indexName).getAll(value))
   },
   async clearAll() {
-    for (const name of ['projects', 'tasks', 'people', 'logs']) {
+    for (const name of ['projects', 'tasks', 'people', 'logs', 'settings']) {
       await this.clear(name)
     }
   },
   async exportAll() {
-    const [projects, tasks, people] = await Promise.all([
+    const [projects, tasks, people, logs, settings] = await Promise.all([
       this.getAll('projects'),
       this.getAll('tasks'),
       this.getAll('people'),
+      this.getAll('logs'),
+      this.getAll('settings'),
     ])
-    return { projects, tasks, people, exportedAt: new Date().toISOString() }
+    return buildBackupPayload({
+      projects: projects as BackupPayload['projects'],
+      tasks: tasks as BackupPayload['tasks'],
+      people: people as BackupPayload['people'],
+      logs: logs as BackupPayload['logs'],
+      settings: settings as BackupPayload['settings'],
+    })
   },
-  async importAll(data: { projects?: unknown[]; tasks?: unknown[]; people?: unknown[] }) {
+  async importAll(data: unknown) {
+    const backup = normalizeImportedBackup(data)
     await this.clearAll()
-    for (const project of data.projects || []) await this.put('projects', project)
-    for (const task of data.tasks || []) await this.put('tasks', task)
-    for (const person of data.people || []) await this.put('people', person)
+    for (const project of backup.projects) await this.put('projects', project)
+    for (const task of backup.tasks) await this.put('tasks', task)
+    for (const person of backup.people) await this.put('people', person)
+    for (const log of backup.logs) await this.put('logs', log)
+    for (const setting of backup.settings) await this.put('settings', setting)
   },
 }

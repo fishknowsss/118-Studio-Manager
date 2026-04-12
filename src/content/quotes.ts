@@ -1,5 +1,5 @@
 export const PHILOSOPHY_QUOTES = [
-  { text: '知足者富。',            src: '老子《道德经》' },
+  { text: '知足者富。', src: '老子《道德经》' },
   { text: '业精于勤，荒于嬉；行成于思，毁于随。', src: '韩愈' },
   { text: '路漫漫其修远兮，吾将上下而求索。', src: '屈原《离骚》' },
   { text: '千里之行，始于足下。', src: '老子' },
@@ -17,7 +17,7 @@ export const PHILOSOPHY_QUOTES = [
   { text: '锲而舍之，朽木不折；锲而不舍，金石可镂。', src: '荀子' },
   { text: '问渠那得清如许？为有源头活水来。', src: '朱熹' },
   { text: 'Simplicity is the ultimate sophistication.', src: 'Leonardo da Vinci' },
-];
+]
 
 export const MOTIVATIONS = [
   '今天的专注，是明天的从容。',
@@ -32,12 +32,12 @@ export const MOTIVATIONS = [
   '不要等灵感，行动本身就是灵感。',
   '专注于可控之事，接受不可控之变。',
   '今天的付出，是明天作品集里的一帧。',
-];
+]
 
 export function getRandQuote() {
-  return PHILOSOPHY_QUOTES[Math.floor(Math.random() * PHILOSOPHY_QUOTES.length)];
+  return PHILOSOPHY_QUOTES[Math.floor(Math.random() * PHILOSOPHY_QUOTES.length)]
 }
 
 export function getRandMotivation() {
-  return MOTIVATIONS[Math.floor(Math.random() * MOTIVATIONS.length)];
+  return MOTIVATIONS[Math.floor(Math.random() * MOTIVATIONS.length)]
 }

@@ -1,56 +1,59 @@
-import { useSyncExternalStore, useMemo } from 'react'
-import { store } from '../legacy/store'
-import { db } from '../legacy/db'
-import { toCSV, downloadFile } from '../legacy/utils'
-import { toast, confirm } from '../../js/components.js'
+import { useMemo, useState } from 'react'
+import { useConfirm } from '../components/feedback/ConfirmProvider'
+import { useToast } from '../components/feedback/ToastProvider'
+import { clearAllData, exportBackupData, importBackupText } from '../legacy/actions'
+import { downloadFile, formatFileDate, toCSV } from '../legacy/utils'
+import {
+  buildBackupSummary,
+  buildEntityMaps,
+  buildTaskExportRows,
+  formatRecentLogs,
+  getNeedsBackup,
+} from '../legacy/selectors'
+import { useLegacyStoreSnapshot } from '../legacy/useLegacyStore'
+
+type TransferState = {
+  action: 'clear' | 'export' | 'import'
+  summary: ReturnType<typeof buildBackupSummary>
+}
 
 export function Settings() {
-  useSyncExternalStore(store.subscribe, () => store.getSnapshot())
+  const store = useLegacyStoreSnapshot()
   const { projects, tasks, people, logs } = store
-
-  // Backup reminder: check if any log contains "JSON 已导出" in the last 7 days
-  const needsBackup = useMemo(() => {
-    const sevenDaysAgo = new Date()
-    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7)
-    const recentExport = logs.find(l => 
-      l.text.includes('JSON 已导出') && new Date(l.ts) > sevenDaysAgo
-    )
-    return !recentExport && projects.length > 0
-  }, [logs, projects])
+  const { toast } = useToast()
+  const { confirm } = useConfirm()
+  const [transferState, setTransferState] = useState<TransferState | null>(null)
+  const entityMaps = useMemo(() => buildEntityMaps(projects, tasks, people), [people, projects, tasks])
+  const needsBackup = useMemo(() => getNeedsBackup(logs, projects), [logs, projects])
+  const currentSummary = useMemo(() => buildBackupSummary({ projects, tasks, people, logs, settings: [] }), [logs, people, projects, tasks])
+  const recentLogs = useMemo(() => formatRecentLogs(logs), [logs])
 
   const handleExportJSON = async () => {
-    const data = await db.exportAll()
-    const json = JSON.stringify(data, null, 2)
-    const ts = new Date().toISOString().slice(0, 10)
-    downloadFile(json, `118studio-backup-${ts}.json`)
-    await store.addLog('JSON 已导出（全量备份）')
+    const result = await exportBackupData()
+    downloadFile(JSON.stringify(result.data, null, 2), result.filename)
+    setTransferState({ action: 'export', summary: result.summary })
     toast('JSON 已导出', 'success')
   }
 
   const handleExportProjectsCSV = () => {
-    const rows = projects.map(p => ({
-      id: p.id, name: p.name, status: p.status, priority: p.priority,
-      ddl: p.ddl, description: p.description, createdAt: p.createdAt,
+    const rows = projects.map((project) => ({
+      id: project.id,
+      name: project.name,
+      status: project.status,
+      priority: project.priority,
+      ddl: project.ddl,
+      description: project.description,
+      createdAt: project.createdAt,
     }))
-    const csv = toCSV(rows, ['id','name','status','priority','ddl','description','createdAt'])
-    downloadFile(csv, `118-projects-${new Date().toISOString().slice(0,10)}.csv`, 'text/csv;charset=utf-8')
+    const csv = toCSV(rows, ['id', 'name', 'status', 'priority', 'ddl', 'description', 'createdAt'])
+    downloadFile(csv, `118-projects-${formatFileDate(new Date())}.csv`, 'text/csv;charset=utf-8')
     toast('项目 CSV 已导出', 'success')
   }
 
   const handleExportTasksCSV = () => {
-    const rows = tasks.map(t => {
-      const proj = projects.find(p => p.id === t.projectId)
-      const person = people.find(p => p.id === t.assigneeId)
-      return {
-        id: t.id, title: t.title, project: proj?.name || '',
-        status: t.status, priority: t.priority,
-        assignee: person?.name || '', startDate: t.startDate,
-        endDate: t.endDate, scheduledDate: t.scheduledDate,
-        estimatedHours: t.estimatedHours, createdAt: t.createdAt,
-      }
-    })
-    const csv = toCSV(rows, ['id','title','project','status','priority','assignee','startDate','endDate','scheduledDate','estimatedHours','createdAt'])
-    downloadFile(csv, `118-tasks-${new Date().toISOString().slice(0,10)}.csv`, 'text/csv;charset=utf-8')
+    const rows = buildTaskExportRows(tasks, entityMaps)
+    const csv = toCSV(rows, ['id', 'title', 'project', 'status', 'priority', 'assignee', 'startDate', 'endDate', 'scheduledDate', 'estimatedHours', 'createdAt'])
+    downloadFile(csv, `118-tasks-${formatFileDate(new Date())}.csv`, 'text/csv;charset=utf-8')
     toast('任务 CSV 已导出', 'success')
   }
 
@@ -58,17 +61,16 @@ export function Settings() {
     const input = document.createElement('input')
     input.type = 'file'
     input.accept = '.json'
-    input.onchange = async (e: Event) => {
-      const target = e.target as HTMLInputElement
+    input.onchange = async (event: Event) => {
+      const target = event.target as HTMLInputElement
       const file = target.files?.[0]
       if (!file) return
-      const ok = await confirm('确认导入', '导入将清空现有所有数据，用文件内容替换。建议先导出备份。确认继续？')
+      const ok = await confirm('确认导入', '导入会用备份内容覆盖当前数据。建议先导出一份当前备份。')
       if (!ok) return
+
       try {
-        const text = await file.text()
-        const data = JSON.parse(text)
-        await db.importAll(data)
-        await store.loadAll()
+        const result = await importBackupText(await file.text())
+        setTransferState({ action: 'import', summary: result.summary })
         toast('数据已恢复', 'success')
       } catch {
         toast('文件格式错误', 'error')
@@ -78,10 +80,10 @@ export function Settings() {
   }
 
   const handleClearAll = async () => {
-    const ok = await confirm('清空数据', '将清除所有项目、任务和人员数据，且无法撤销。是否继续？')
+    const ok = await confirm('清空数据', '将清除所有项目、任务、人员和日志，且无法撤销。')
     if (!ok) return
-    await db.clearAll()
-    await store.loadAll()
+    const summary = await clearAllData()
+    setTransferState({ action: 'clear', summary })
     toast('数据已清空', 'error')
   }
 
@@ -93,35 +95,46 @@ export function Settings() {
 
       <div className="settings-layout">
         <div className="settings-body">
-          {needsBackup && (
-            <div className="backup-alert" style={{ 
-              background: 'var(--c-today-bg)', color: 'var(--c-today)', 
-              padding: '12px 16px', borderRadius: 'var(--r-md)', marginBottom: '16px',
-              fontSize: '13px', display: 'flex', alignItems: 'center', gap: '8px',
-              border: '1px solid var(--c-today)'
-            }}>
+          {needsBackup ? (
+            <div className="backup-alert">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="16" height="16"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-              您已超过一周未进行备份，建议导出 JSON 以确保数据安全。
+              您已超过一周未备份，建议导出 JSON。
             </div>
-          )}
+          ) : null}
+
+          <div className="settings-section">
+            <div className="settings-section-title">当前数据</div>
+            <div className="settings-summary-grid">
+              <div className="settings-summary-item"><span>项目</span><strong>{currentSummary.projectCount}</strong></div>
+              <div className="settings-summary-item"><span>任务</span><strong>{currentSummary.taskCount}</strong></div>
+              <div className="settings-summary-item"><span>人员</span><strong>{currentSummary.personCount}</strong></div>
+              <div className="settings-summary-item"><span>日志</span><strong>{currentSummary.logCount}</strong></div>
+            </div>
+            {transferState ? (
+              <div className="settings-transfer-note">
+                最近一次{transferState.action === 'export' ? '导出' : transferState.action === 'import' ? '导入' : '清空'}：
+                {transferState.summary.projectCount} 项目 · {transferState.summary.taskCount} 任务 · {transferState.summary.personCount} 人员 · {transferState.summary.logCount} 日志
+              </div>
+            ) : null}
+          </div>
 
           <div className="settings-section">
             <div className="settings-section-title">数据导出</div>
             <div className="settings-row">
               <div className="settings-row-info">
-                <div className="settings-row-label">导出 JSON（全量备份）</div>
-                <div className="settings-row-desc">包含所有项目、任务、人员数据，可用于恢复。</div>
+                <div className="settings-row-label">导出 JSON</div>
+                <div className="settings-row-desc">完整备份项目、任务、人员、日志和设置。</div>
               </div>
-              <button className="btn btn-primary" onClick={handleExportJSON}>导出 JSON</button>
+              <button className="btn btn-primary" type="button" onClick={() => void handleExportJSON()}>导出 JSON</button>
             </div>
             <div className="settings-row">
               <div className="settings-row-info">
-                <div className="settings-row-label">导出 CSV 列表</div>
-                <div className="settings-row-desc">导出项目或任务的表格文件。</div>
+                <div className="settings-row-label">导出 CSV</div>
+                <div className="settings-row-desc">导出项目或任务列表，方便整理和分享。</div>
               </div>
-              <div style={{ display: 'flex', gap: '8px' }}>
-                <button className="btn btn-secondary btn-sm" onClick={handleExportProjectsCSV}>项目</button>
-                <button className="btn btn-secondary btn-sm" onClick={handleExportTasksCSV}>任务</button>
+              <div className="settings-inline-actions">
+                <button className="btn btn-secondary btn-sm" type="button" onClick={handleExportProjectsCSV}>项目</button>
+                <button className="btn btn-secondary btn-sm" type="button" onClick={handleExportTasksCSV}>任务</button>
               </div>
             </div>
           </div>
@@ -131,9 +144,9 @@ export function Settings() {
             <div className="settings-row">
               <div className="settings-row-info">
                 <div className="settings-row-label">从 JSON 恢复</div>
-                <div className="settings-row-desc">导入前将清空现有数据，请确认后操作。</div>
+                <div className="settings-row-desc">导入前会提示确认，导入后会显示恢复摘要。</div>
               </div>
-              <button className="btn btn-secondary" onClick={handleImportJSON}>导入备份</button>
+              <button className="btn btn-secondary" type="button" onClick={handleImportJSON}>导入备份</button>
             </div>
           </div>
 
@@ -141,10 +154,10 @@ export function Settings() {
             <div className="settings-section-title">危险操作</div>
             <div className="settings-row">
               <div className="settings-row-info">
-                <div className="settings-row-label" style={{ color: 'var(--c-overdue)' }}>清空所有数据</div>
-                <div className="settings-row-desc">删除全部项目、任务、人员，不可恢复。建议先备份。</div>
+                <div className="settings-row-label danger-text">清空所有数据</div>
+                <div className="settings-row-desc">删除全部项目、任务、人员和日志。建议先备份。</div>
               </div>
-              <button className="btn btn-danger" onClick={handleClearAll}>清空</button>
+              <button className="btn btn-danger" type="button" onClick={() => void handleClearAll()}>清空</button>
             </div>
           </div>
 
@@ -153,38 +166,25 @@ export function Settings() {
             <div className="settings-row">
               <div className="settings-row-info">
                 <div className="settings-row-label">118 Studio Manager VC</div>
-                <div className="settings-row-desc">本地优先 · 数据存于 IndexedDB · 专为数媒工作室组长设计</div>
+                <div className="settings-row-desc">本地优先，数据存于 IndexedDB。</div>
               </div>
               <span className="badge badge-active">v1.1</span>
-            </div>
-            <div className="settings-row">
-              <div className="settings-row-info">
-                <div className="settings-row-label">当前数据统计</div>
-              </div>
-              <span className="text-muted text-sm">
-                {projects.length} 项目 · {tasks.length} 任务 · {people.length} 人员
-              </span>
             </div>
           </div>
         </div>
 
         <div className="settings-log-panel">
-          <div className="settings-section-title" style={{ marginBottom: '10px' }}>最近操作</div>
+          <div className="settings-section-title settings-log-title">最近操作</div>
           <div className="log-list">
-            {logs.length === 0 ? (
-              <div className="text-muted text-sm">暂无操作记录</div>
+            {recentLogs.length === 0 ? (
+              <div className="text-muted text-sm">先做一次导入或导出</div>
             ) : (
-              logs.slice(0, 30).map(l => {
-                const d = new Date(l.ts)
-                const time = `${d.getHours().toString().padStart(2, '0')}:${d.getMinutes().toString().padStart(2, '0')}`
-                const date = `${d.getMonth() + 1}/${d.getDate()}`
-                return (
-                  <div key={l.id} className="log-item">
-                    <span className="log-time">{date} {time}</span>
-                    <span className="log-text">{l.text}</span>
-                  </div>
-                )
-              })
+              recentLogs.map((log) => (
+                <div key={log.id} className="log-item">
+                  <span className="log-time">{log.date} {log.time}</span>
+                  <span className="log-text">{log.text}</span>
+                </div>
+              ))
             )}
           </div>
         </div>

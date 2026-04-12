@@ -1,15 +1,80 @@
 export const uid = () => crypto.randomUUID()
 export const now = () => new Date().toISOString()
 
+export type BackupRecord = Record<string, unknown>
+
+export type BackupPayload = {
+  schemaVersion: number
+  exportedAt: string
+  projects: BackupRecord[]
+  tasks: BackupRecord[]
+  people: BackupRecord[]
+  logs: BackupRecord[]
+  settings: BackupRecord[]
+}
+
+export const BACKUP_SCHEMA_VERSION = 2
+
+function pad(value: number) {
+  return String(value).padStart(2, '0')
+}
+
+export function formatLocalDateKey(date = new Date()) {
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`
+}
+
+export function coerceToLocalDateKey(value: string | Date | null | undefined) {
+  if (!value) return null
+  if (value instanceof Date) return formatLocalDateKey(value)
+  if (/^\d{4}-\d{2}-\d{2}$/.test(value)) return value
+
+  const parsed = new Date(value)
+  if (Number.isNaN(parsed.getTime())) return null
+  return formatLocalDateKey(parsed)
+}
+
+export function formatFileDate(date = new Date()) {
+  return formatLocalDateKey(date)
+}
+
+export function parseLocalDateKey(dateStr: string | null | undefined) {
+  if (!dateStr) return null
+  const [yearText, monthText, dayText] = dateStr.split('-')
+  const year = Number(yearText)
+  const month = Number(monthText)
+  const day = Number(dayText)
+
+  if (!Number.isInteger(year) || !Number.isInteger(month) || !Number.isInteger(day)) {
+    return null
+  }
+
+  return new Date(year, month - 1, day, 12, 0, 0, 0)
+}
+
+export function shiftLocalDateKey(date = new Date(), offsetDays = 0) {
+  const next = new Date(
+    date.getFullYear(),
+    date.getMonth(),
+    date.getDate(),
+    12,
+    0,
+    0,
+    0,
+  )
+  next.setDate(next.getDate() + offsetDays)
+  return formatLocalDateKey(next)
+}
+
 export function today() {
-  return new Date().toISOString().slice(0, 10)
+  return formatLocalDateKey(new Date())
 }
 
 export function daysUntil(dateStr: string | null | undefined) {
   if (!dateStr) return null
-  const d = new Date(`${dateStr}T00:00:00`)
+  const d = parseLocalDateKey(dateStr)
+  if (!d) return null
   const t = new Date()
-  t.setHours(0, 0, 0, 0)
+  t.setHours(12, 0, 0, 0)
   return Math.round((d.getTime() - t.getTime()) / 86400000)
 }
 
@@ -45,12 +110,14 @@ export function formatDate(dateStr: string | null | undefined) {
 
 export function formatDateFull(dateStr: string | null | undefined) {
   if (!dateStr) return ''
-  const dt = new Date(`${dateStr}T00:00:00`)
+  const dt = parseLocalDateKey(dateStr)
+  if (!dt) return ''
   return dt.toLocaleDateString('zh-CN', { month: 'long', day: 'numeric', weekday: 'short' })
 }
 
 export function weekdayLabel(dateStr: string) {
-  const dt = new Date(`${dateStr}T00:00:00`)
+  const dt = parseLocalDateKey(dateStr)
+  if (!dt) return ''
   return ['日', '一', '二', '三', '四', '五', '六'][dt.getDay()]
 }
 
@@ -127,6 +194,43 @@ export function dateToStr(date: Date) {
 export function toCSV(rows: Record<string, unknown>[], headers: string[]) {
   const escape = (value: unknown) => `"${String(value ?? '').replace(/"/g, '""')}"`
   return [headers.map(escape).join(','), ...rows.map(row => headers.map(header => escape(row[header])).join(','))].join('\n')
+}
+
+export function buildBackupPayload(data: Partial<BackupPayload>): BackupPayload {
+  return {
+    schemaVersion: data.schemaVersion ?? BACKUP_SCHEMA_VERSION,
+    exportedAt: data.exportedAt ?? now(),
+    projects: Array.isArray(data.projects) ? data.projects : [],
+    tasks: Array.isArray(data.tasks) ? data.tasks : [],
+    people: Array.isArray(data.people) ? data.people : [],
+    logs: Array.isArray(data.logs) ? data.logs : [],
+    settings: Array.isArray(data.settings) ? data.settings : [],
+  }
+}
+
+export function normalizeImportedBackup(data: unknown): BackupPayload {
+  if (!data || typeof data !== 'object') {
+    throw new Error('备份文件格式无效')
+  }
+
+  const payload = data as Partial<BackupPayload>
+  const hasKnownCollection = ['projects', 'tasks', 'people', 'logs', 'settings'].some((key) =>
+    Array.isArray(payload[key as keyof BackupPayload]),
+  )
+
+  if (!hasKnownCollection) {
+    throw new Error('备份文件缺少可识别的数据表')
+  }
+
+  return buildBackupPayload({
+    schemaVersion: typeof payload.schemaVersion === 'number' ? payload.schemaVersion : BACKUP_SCHEMA_VERSION,
+    exportedAt: typeof payload.exportedAt === 'string' ? payload.exportedAt : now(),
+    projects: payload.projects,
+    tasks: payload.tasks,
+    people: payload.people,
+    logs: payload.logs,
+    settings: payload.settings,
+  })
 }
 
 export function downloadFile(content: string, filename: string, mime = 'application/json') {

@@ -85,7 +85,7 @@
 
 ## 技术说明
 
-这个版本不是纯 React 重写版，而是“React 外壳 + legacy 能力托底”的混合结构。
+这个版本目前是“React 页面 + legacy 数据层”的结构。
 
 ### 前端壳
 
@@ -104,14 +104,14 @@
 
 ### 数据与交互底层
 
-- legacy 模块负责启动初始化、IndexedDB 读写、store、seed 数据和部分旧交互
-- React 启动后会加载 `js/app.js` 完成底层初始化
+- `legacy` 模块负责启动初始化、IndexedDB 读写、store 和演示数据
+- 通用交互由 React 组件接管，包括弹窗、确认框、Toast 和日程侧栏
 - 相关文件：
-  - [app.js](/Users/fishknowsss/Documents/MMSS/118SM/118studio-vc/js/app.js)
-  - [components.js](/Users/fishknowsss/Documents/MMSS/118SM/118studio-vc/js/components.js)
-  - [calendar.js](/Users/fishknowsss/Documents/MMSS/118SM/118studio-vc/js/views/calendar.js)
+  - [bootstrap.ts](/Users/fishknowsss/Documents/MMSS/118SM/118studio-vc/src/legacy/bootstrap.ts)
   - [db.ts](/Users/fishknowsss/Documents/MMSS/118SM/118studio-vc/src/legacy/db.ts)
   - [store.ts](/Users/fishknowsss/Documents/MMSS/118SM/118studio-vc/src/legacy/store.ts)
+  - [Dialog.tsx](/Users/fishknowsss/Documents/MMSS/118SM/118studio-vc/src/components/ui/Dialog.tsx)
+  - [PlannerProvider.tsx](/Users/fishknowsss/Documents/MMSS/118SM/118studio-vc/src/features/planner/PlannerProvider.tsx)
 
 ## 数据与备份
 
@@ -132,6 +132,14 @@ studio118db
 | `settings` | 本地设置 |
 
 空库时会自动写入一组演示数据，方便直接查看页面状态和交互流程。
+
+JSON 备份当前会包含：
+
+- 项目
+- 任务
+- 人员
+- 操作日志
+- 本地设置
 
 ## 本地开发
 
@@ -161,7 +169,7 @@ npm run test
 npm run build
 ```
 
-测试文件见 [review-fixes.test.js](/Users/fishknowsss/Documents/MMSS/118SM/118studio-vc/tests/review-fixes.test.js)。
+当前回归测试见 [current-app-regressions.test.tsx](/Users/fishknowsss/Documents/MMSS/118SM/118studio-vc/tests/current-app-regressions.test.tsx)。
 
 ## 部署说明
 
@@ -180,14 +188,13 @@ GitHub Pages 采用“分支对应子目录”的方式发布：
 ```text
 src/
   App.tsx
-  views/
+  components/
+  content/
+  features/
   legacy/
-js/
-  app.js
-  components.js
   views/
 tests/
-  review-fixes.test.js
+  current-app-regressions.test.tsx
 ```
 
 ## 更新记录

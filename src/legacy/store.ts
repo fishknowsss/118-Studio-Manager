@@ -1,5 +1,18 @@
 import { db } from './db'
 
+export const PROJECT_STATUSES = ['active', 'paused', 'completed', 'cancelled'] as const
+export const PROJECT_PRIORITIES = ['urgent', 'high', 'medium', 'low'] as const
+export const TASK_STATUSES = ['todo', 'in-progress', 'done', 'blocked'] as const
+export const PERSON_STATUSES = ['active', 'inactive'] as const
+export const PERSON_GENDERS = ['male', 'female', 'other'] as const
+
+export type ProjectStatus = (typeof PROJECT_STATUSES)[number]
+export type ProjectPriority = (typeof PROJECT_PRIORITIES)[number]
+export type TaskStatus = (typeof TASK_STATUSES)[number]
+export type TaskPriority = ProjectPriority
+export type PersonStatus = (typeof PERSON_STATUSES)[number]
+export type PersonGender = (typeof PERSON_GENDERS)[number]
+
 export type LegacyEntity = {
   id: string
   createdAt?: string
@@ -15,8 +28,8 @@ export type LegacyMilestone = {
 
 export type LegacyProject = LegacyEntity & {
   name?: string
-  status?: string
-  priority?: string
+  status?: ProjectStatus
+  priority?: ProjectPriority
   ddl?: string | null
   description?: string
   milestones?: LegacyMilestone[]
@@ -25,8 +38,8 @@ export type LegacyProject = LegacyEntity & {
 export type LegacyTask = LegacyEntity & {
   title?: string
   projectId?: string | null
-  status?: string
-  priority?: string
+  status?: TaskStatus
+  priority?: TaskPriority
   assigneeId?: string | null
   scheduledDate?: string | null
   startDate?: string | null
@@ -37,8 +50,8 @@ export type LegacyTask = LegacyEntity & {
 
 export type LegacyPerson = LegacyEntity & {
   name?: string
-  gender?: string
-  status?: string
+  gender?: PersonGender | ''
+  status?: PersonStatus
   skills?: string[]
   notes?: string
 }

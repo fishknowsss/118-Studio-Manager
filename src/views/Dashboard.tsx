@@ -1,144 +1,139 @@
-import React, { useState, useMemo, useSyncExternalStore } from 'react'
-import { store, type LegacyProject } from '../legacy/store'
-import { getRandQuote, getRandMotivation } from '../../js/quotes'
+import { useMemo, useState, type DragEvent } from 'react'
+import { DashboardHeader } from '../features/dashboard/DashboardHeader'
+import { DashboardMiniCalendar } from '../features/dashboard/DashboardMiniCalendar'
+import { FocusPrimaryCard } from '../features/dashboard/FocusPrimaryCard'
+import { FocusSecondaryCards } from '../features/dashboard/FocusSecondaryCards'
+import { PeopleAssignmentPanel } from '../features/dashboard/PeopleAssignmentPanel'
+import { TaskPoolPanel } from '../features/dashboard/TaskPoolPanel'
+import { usePlanner } from '../features/planner/PlannerProvider'
+import { getRandMotivation, getRandQuote } from '../content/quotes'
+import { assignTaskToPerson } from '../legacy/actions'
 import {
-  today, daysUntil, urgencyClass, ddlLabel, formatDate, initials,
-  sortByUrgency, getCalendarDays, dateToStr
-} from '../../js/utils'
-import { openPlanner } from '../../js/views/calendar'
-
-const URGENCY_TEXT: Record<string, string> = {
-  'urg-overdue': '逾期',
-  'urg-today': '今日截止',
-  'urg-soon': '3天内',
-  'urg-near': '7天内',
-  '': '未迫近',
-}
+  buildDashboardHeaderModel,
+  buildDashboardFocusCards,
+  buildDashboardMiniCalendarModel,
+  buildPersonCardModels,
+  buildEntityMaps,
+  buildProjectEventSummaryMap,
+  getActivePeople,
+  getDashboardFocusData,
+  getTaskPool,
+  getTopProjects,
+} from '../legacy/selectors'
+import { type LegacyProject } from '../legacy/store'
+import { useLegacyStoreSnapshot } from '../legacy/useLegacyStore'
+import { today } from '../legacy/utils'
 
 export function Dashboard() {
-  useSyncExternalStore(store.subscribe, () => store.getSnapshot())
+  const store = useLegacyStoreSnapshot()
   const { projects, tasks, people } = store
+  const { openPlanner } = usePlanner()
 
   const [calDate, setCalDate] = useState(() => new Date())
+  const [draggingPersonId, setDraggingPersonId] = useState<string | null>(null)
+  const [draggingTaskId, setDraggingTaskId] = useState<string | null>(null)
+  const [dropOverPersonId, setDropOverPersonId] = useState<string | null>(null)
+  const [dropOverTaskId, setDropOverTaskId] = useState<string | null>(null)
   const quote = useMemo(() => getRandQuote(), [])
   const motivation = useMemo(() => getRandMotivation(), [])
+  const dateObj = useMemo(() => new Date(), [])
+  const todayStr = today()
 
-  const dateObj = new Date()
-  const weekdays = ['星期日', '星期一', '星期二', '星期三', '星期四', '星期五', '星期六']
-  const months = ['一月', '二月', '三月', '四月', '五月', '六月', '七月', '八月', '九月', '十月', '十一月', '十二月']
-
-  const activeProjects = useMemo(() => {
-    return projects.filter(p => p.status !== 'cancelled' && p.status !== 'completed')
-  }, [projects])
-
-  const sortedProjects = useMemo(() => sortByUrgency(activeProjects), [activeProjects])
-  const topProjects = sortedProjects.slice(0, 8)
-
-  const taskPool = useMemo(() => {
-    const PRIO_ORDER: Record<string, number> = { urgent: 0, high: 1, medium: 2, low: 3 }
-    return tasks
-      .filter(t => {
-        const s = t.status as string
-        return (s !== 'done' && s !== 'blocked') || (s === 'in-progress' as string)
-      })
-      .sort((a, b) => {
-        const po = (PRIO_ORDER[a.priority || 'medium']) - (PRIO_ORDER[b.priority || 'medium'])
-        if (po !== 0) return po
-        return (a.endDate || '9999').localeCompare(b.endDate || '9999')
-      })
-      .slice(0, 20)
-  }, [tasks])
-
-  const activePeople = useMemo(() => people.filter(p => p.status === 'active'), [people])
-
-  const calendarDays = getCalendarDays(calDate.getFullYear(), calDate.getMonth())
-
-  const eventMap = useMemo(() => {
-    const map: Record<string, { hasDdl?: boolean; hasMs?: boolean; urgent?: boolean }> = {}
-    projects.forEach(proj => {
-      if (proj.ddl) {
-        if (!map[proj.ddl]) map[proj.ddl] = {}
-        map[proj.ddl].hasDdl = true
-        if (urgencyClass(proj.ddl, proj.status || 'active').includes('overdue')) map[proj.ddl].urgent = true
-      }
-      (proj.milestones || []).forEach((ms) => {
-        if (ms.date) {
-          if (!map[ms.date]) map[ms.date] = {}
-          map[ms.date].hasMs = true
-        }
-      })
-    })
-    return map
-  }, [projects])
+  const entityMaps = useMemo(() => buildEntityMaps(projects, tasks, people), [people, projects, tasks])
+  const topProjects = useMemo(() => getTopProjects(projects), [projects])
+  const focusCards = useMemo(() => buildDashboardFocusCards(projects, tasks, todayStr), [projects, tasks, todayStr])
+  const taskPool = useMemo(() => getTaskPool(tasks), [tasks])
+  const activePeople = useMemo(() => getActivePeople(people), [people])
+  const activePersonCards = useMemo(() => buildPersonCardModels(activePeople, tasks), [activePeople, tasks])
+  const poolRows = useMemo(() => taskPool.map((task) => ({
+    ...task,
+    person: task.assigneeId ? entityMaps.peopleById[task.assigneeId] : null,
+    project: task.projectId ? entityMaps.projectsById[task.projectId] : null,
+  })), [entityMaps.peopleById, entityMaps.projectsById, taskPool])
+  const eventMap = useMemo(() => buildProjectEventSummaryMap(projects), [projects])
+  const headerModel = useMemo(() => buildDashboardHeaderModel(dateObj, quote, motivation), [dateObj, motivation, quote])
+  const calendarModel = useMemo(() => buildDashboardMiniCalendarModel(calDate, eventMap, todayStr), [calDate, eventMap, todayStr])
 
   const navigate = (view: string) => {
-    window.location.hash = '#' + view
+    window.location.hash = `#${view}`
   }
 
-  const handleDragStart = (e: React.DragEvent, taskId: string) => {
-    e.dataTransfer.setData('text/task-id', taskId)
+  const clearDragState = () => {
+    setDraggingPersonId(null)
+    setDraggingTaskId(null)
+    setDropOverPersonId(null)
+    setDropOverTaskId(null)
   }
 
-  const handleDrop = async (e: React.DragEvent, personId: string) => {
-    e.preventDefault()
-    const taskId = e.dataTransfer.getData('text/task-id')
-    if (!taskId) return
-    const task = store.getTask(taskId)
-    const person = store.getPerson(personId)
-    if (!task || !person) return
+  const readTransferData = (event: DragEvent<HTMLDivElement>, type: string) => {
+    return event.dataTransfer.getData(type)
+  }
 
-    const updatedTask = {
-      ...task,
-      assigneeId: personId,
-      updatedAt: new Date().toISOString()
+  const handleTaskDragStart = (event: DragEvent<HTMLDivElement>, taskId: string) => {
+    setDraggingTaskId(taskId)
+    setDraggingPersonId(null)
+    setDropOverTaskId(null)
+    event.dataTransfer.setData('text/task-id', taskId)
+    event.dataTransfer.setData('application/x-118studio-task-id', taskId)
+    event.dataTransfer.effectAllowed = 'move'
+  }
+
+  const handlePersonDragStart = (event: DragEvent<HTMLDivElement>, personId: string) => {
+    setDraggingPersonId(personId)
+    setDraggingTaskId(null)
+    setDropOverPersonId(null)
+    event.dataTransfer.setData('application/x-118studio-person-id', personId)
+    event.dataTransfer.effectAllowed = 'move'
+  }
+
+  const handleDropToPerson = (event: DragEvent<HTMLDivElement>, personId: string) => {
+    event.preventDefault()
+    setDropOverPersonId(null)
+    const taskId = draggingTaskId
+      || readTransferData(event, 'application/x-118studio-task-id')
+      || readTransferData(event, 'text/task-id')
+    if (!taskId) {
+      clearDragState()
+      return
     }
-    await store.saveTask(updatedTask)
-    await store.addLog(`分配任务「${task.title}」给 ${person.name || ''}`)
+    void assignTaskToPerson(taskId, personId)
+    clearDragState()
+  }
+
+  const handleDragOverPerson = (event: DragEvent<HTMLDivElement>, personId: string) => {
+    const taskId = draggingTaskId
+      || readTransferData(event, 'application/x-118studio-task-id')
+      || readTransferData(event, 'text/task-id')
+    if (!taskId) return
+    event.preventDefault()
+    setDropOverPersonId(personId)
+  }
+
+  const handleDropToTask = (event: DragEvent<HTMLDivElement>, taskId: string) => {
+    event.preventDefault()
+    setDropOverTaskId(null)
+    const personId = draggingPersonId || readTransferData(event, 'application/x-118studio-person-id')
+    if (!personId) {
+      clearDragState()
+      return
+    }
+    void assignTaskToPerson(taskId, personId)
+    clearDragState()
+  }
+
+  const handleDragOverTask = (event: DragEvent<HTMLDivElement>, taskId: string) => {
+    const personId = draggingPersonId || readTransferData(event, 'application/x-118studio-person-id')
+    if (!personId) return
+    event.preventDefault()
+    setDropOverTaskId(taskId)
   }
 
   const focusProj = topProjects[0] as LegacyProject | undefined
-  const focusData = useMemo(() => {
-    if (!focusProj) return null
-    const todayStr = today()
-    const pTasks = tasks.filter(t => t.projectId === focusProj.id)
-    const nextMs = (focusProj.milestones || [])
-      .filter((m) => !m.completed && m.date && m.date >= todayStr)
-      .sort((a, b) => (a.date || '').localeCompare(b.date || ''))[0]
-    const days = daysUntil(focusProj.ddl)
-    
-    let brief = '该项目未设置 DDL，请尽快补齐时间点。'
-    if (days !== null) {
-      if (days < 0) brief = `已逾期 ${Math.abs(days)} 天，建议立即处理交付风险。`
-      else if (days === 0) brief = '今天截止，请优先完成最终交付与确认。'
-      else if (days <= 3) brief = `距离截止 ${days} 天，进入冲刺窗口。`
-      else if (days <= 7) brief = `距离截止 ${days} 天，请锁定关键里程碑。`
-      else brief = `距离截止 ${days} 天，保持节奏推进。`
-    }
-
-    return {
-      uc: urgencyClass(focusProj.ddl, focusProj.status || 'active'),
-      todayCount: pTasks.filter(t => t.scheduledDate === todayStr && t.status !== 'done').length,
-      overdueCount: pTasks.filter(t => t.endDate && t.endDate < todayStr && t.status !== 'done').length,
-      remainingCount: pTasks.filter(t => t.status !== 'done').length,
-      nextMs,
-      brief
-    }
-    // eslint-disable-next-line react-hooks/preserve-manual-memoization
-  }, [focusProj, tasks])
+  const focusData = useMemo(() => getDashboardFocusData(focusProj, tasks, todayStr), [focusProj, tasks, todayStr])
 
   return (
     <div className="dashboard fade-in">
-      <div className="dash-header">
-        <div className="dash-date-block">
-          <div className="dash-date-big">{dateObj.getMonth() + 1}月{dateObj.getDate()}日</div>
-          <div className="dash-date-weekday">{dateObj.getFullYear()} · {weekdays[dateObj.getDay()]}</div>
-        </div>
-        <div className="dash-quote-block">
-          <div className="dash-quote-text">"{quote.text}"</div>
-          <div className="dash-quote-src">— {quote.src}</div>
-          <div className="dash-motivation">{motivation}</div>
-        </div>
-      </div>
+      <DashboardHeader model={headerModel} />
 
       <div className="today-focus">
         <div className="focus-label">今日焦点</div>
@@ -147,191 +142,51 @@ export function Dashboard() {
             <div className="focus-empty">暂无活跃项目 — 新建一个开始吧</div>
           ) : (
             <>
-              <div 
-                className={`focus-highlight ${focusData?.uc || ''}`}
-                onClick={() => navigate('projects')}
-              >
-                <div className="focus-highlight-head">
-                  <div>
-                    <div className="focus-highlight-label">最紧急项目</div>
-                    <div className="focus-highlight-name">{focusProj.name}</div>
-                    <div className="focus-highlight-ddl">{ddlLabel(focusProj.ddl || null, focusProj.status || 'active')}</div>
-                  </div>
-                  <div className="focus-highlight-tier">{URGENCY_TEXT[focusData?.uc || ''] || '未迫近'}</div>
-                </div>
-                <div className="focus-highlight-brief">{focusData?.brief}</div>
-                <div className="focus-highlight-meta">
-                  <span>今日事项 {focusData?.todayCount}</span>
-                  <span>逾期任务 {focusData?.overdueCount}</span>
-                  <span>未完成 {focusData?.remainingCount}</span>
-                  {focusData?.nextMs ? (
-                    <span>关键节点 {focusData.nextMs.title} · {formatDate(focusData.nextMs.date || null)}</span>
-                  ) : (
-                    <span>关键节点 暂无</span>
-                  )}
-                </div>
-              </div>
-              <div className="focus-secondary-list">
-                {topProjects.slice(1).map((proj) => {
-                  const uc = urgencyClass(proj.ddl || null, proj.status || 'active')
-                  const pTasks = tasks.filter(t => t.projectId === proj.id)
-                  const nextMs = (proj.milestones || [])
-                    .filter((m) => !m.completed && m.date && m.date >= today())
-                    .sort((a, b) => (a.date || '').localeCompare(b.date || ''))[0]
-                  return (
-                    <div 
-                      key={proj.id} 
-                      className={`focus-card ${uc}`}
-                      onClick={() => navigate('projects')}
-                    >
-                      <div className="focus-card-name">{proj.name}</div>
-                      <div className="focus-card-ddl">{ddlLabel(proj.ddl || null, proj.status || 'active')}</div>
-                      <div className="focus-card-meta">
-                        <span>{URGENCY_TEXT[uc] || '未迫近'}</span>
-                        <span>{pTasks.filter(t => t.status !== 'done').length} 个任务</span>
-                      </div>
-                      {nextMs && (
-                        <div className="focus-card-milestone">◆ {nextMs.title} · {formatDate(nextMs.date || null)}</div>
-                      )}
-                    </div>
-                  )
-                })}
-                {topProjects.length === 1 && <div className="focus-empty">当前仅 1 个活跃项目</div>}
-              </div>
+              <FocusPrimaryCard
+                focusData={focusData}
+                project={focusProj}
+                onOpenProjects={() => navigate('projects')}
+              />
+              <FocusSecondaryCards
+                cards={focusCards.slice(1)}
+                onOpenProjects={() => navigate('projects')}
+                showSingleProjectEmpty={topProjects.length === 1}
+              />
             </>
           )}
         </div>
       </div>
 
       <div className="dash-bottom">
-        <div className="dash-left">
-          <div className="panel">
-            <div className="panel-header">
-              <span className="panel-title">任务池</span>
-              <span className="panel-action" onClick={() => navigate('tasks')}>全部任务 →</span>
-            </div>
-            <div className="panel-body">
-              {taskPool.length === 0 ? (
-                <div className="empty-state"><div className="empty-text">暂无待处理任务</div></div>
-              ) : (
-                taskPool.map(t => {
-                  const proj = projects.find(p => p.id === t.projectId)
-                  const person = t.assigneeId ? people.find(p => p.id === t.assigneeId) : null
-                  const isOverdue = t.endDate && t.endDate < today() && t.status !== 'done'
-                  return (
-                    <div 
-                      key={t.id} 
-                      className="task-row" 
-                      draggable 
-                      onDragStart={(e) => handleDragStart(e, t.id)}
-                    >
-                      <div className={`prio-dot ${t.priority || 'medium'}`}></div>
-                      <span className="task-title-text">{t.title}</span>
-                      {proj && <span className="task-proj-tag">{proj.name}</span>}
-                      {person && <span className="task-assignee-tag">{initials(person.name || '')}</span>}
-                      {isOverdue && <span className="date-chip overdue">{formatDate(t.endDate || null)}</span>}
-                    </div>
-                  )
-                })
-              )}
-            </div>
-          </div>
-          <div className="panel">
-            <div className="panel-header">
-              <span className="panel-title">人员</span>
-              <span className="panel-action" onClick={() => navigate('people')}>管理 →</span>
-            </div>
-            <div className="panel-body">
-              {activePeople.length === 0 ? (
-                <div className="empty-state"><div className="empty-text">暂无人员</div></div>
-              ) : (
-                activePeople.map(p => {
-                  const tCount = tasks.filter(t => t.assigneeId === p.id && t.status !== 'done').length
-                  return (
-                    <div 
-                      key={p.id} 
-                      className="person-row"
-                      onDragOver={(e) => {
-                        e.preventDefault()
-                        e.currentTarget.classList.add('drop-zone-active')
-                      }}
-                      onDragLeave={(e) => {
-                        e.currentTarget.classList.remove('drop-zone-active')
-                      }}
-                      onDrop={(e) => {
-                        e.currentTarget.classList.remove('drop-zone-active')
-                        handleDrop(e, p.id)
-                      }}
-                    >
-                      <div className="avatar">{initials(p.name || '')}</div>
-                      <div className="person-info">
-                        <div className="person-name">{p.name}</div>
-                        <div className="person-skills">{(p.skills || []).slice(0, 3).join(' · ')}</div>
-                      </div>
-                      <span className="person-task-count">{tCount} 任务</span>
-                    </div>
-                  )
-                })
-              )}
-            </div>
-          </div>
-        </div>
+        <TaskPoolPanel
+          dragOverTaskId={dropOverTaskId}
+          draggingPersonId={draggingPersonId}
+          onDragLeaveTask={() => setDropOverTaskId(null)}
+          onDragOverTask={handleDragOverTask}
+          onDropToTask={handleDropToTask}
+          onNavigateTasks={() => navigate('tasks')}
+          onTaskDragEnd={clearDragState}
+          onTaskDragStart={handleTaskDragStart}
+          tasks={poolRows}
+        />
+        <PeopleAssignmentPanel
+          dragOverPersonId={dropOverPersonId}
+          draggingTaskId={draggingTaskId}
+          onDragLeavePerson={() => setDropOverPersonId(null)}
+          onDragOverPerson={handleDragOverPerson}
+          onNavigatePeople={() => navigate('people')}
+          onDropToPerson={handleDropToPerson}
+          onPersonDragEnd={clearDragState}
+          onPersonDragStart={handlePersonDragStart}
+          people={activePersonCards}
+        />
 
-        <div className="dash-right">
-          <div className="mini-cal-header">
-            <span className="mini-cal-title">{calDate.getFullYear()} · {months[calDate.getMonth()]}</span>
-            <div className="mini-cal-nav">
-              <button 
-                className="mini-cal-btn" 
-                title="上月"
-                onClick={() => setCalDate(prev => new Date(prev.getFullYear(), prev.getMonth() - 1, 1))}
-              >
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="15 18 9 12 15 6"/></svg>
-              </button>
-              <button 
-                className="mini-cal-btn" 
-                title="下月"
-                onClick={() => setCalDate(prev => new Date(prev.getFullYear(), prev.getMonth() + 1, 1))}
-              >
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="9 18 15 12 9 6"/></svg>
-              </button>
-            </div>
-          </div>
-          <div className="mini-cal-grid">
-            {['日', '一', '二', '三', '四', '五', '六'].map(d => (
-              <div key={d} className="mini-cal-dow">{d}</div>
-            ))}
-            {calendarDays.map(({ date, otherMonth }, idx) => {
-              const ds = dateToStr(date)
-              const ev = eventMap[ds] || {}
-              const isToday = ds === today()
-              const cls = [
-                'mini-cal-day',
-                isToday ? 'today' : '',
-                otherMonth ? 'other-month' : '',
-                ev.hasDdl || ev.hasMs ? 'has-events' : '',
-                ev.urgent ? 'has-urgent' : '',
-              ].filter(Boolean).join(' ')
-              return (
-                <div 
-                  key={idx} 
-                  className={cls}
-                  onClick={() => openPlanner(ds)}
-                >
-                  {date.getDate()}
-                </div>
-              )
-            })}
-          </div>
-          <div className="cal-legend">
-            <div className="cal-legend-item">
-              <div className="cal-legend-dot" style={{ background: 'var(--c-overdue)' }}></div> DDL
-            </div>
-            <div className="cal-legend-item">
-              <div className="cal-legend-dot" style={{ background: 'var(--c-primary)' }}></div> 里程碑
-            </div>
-          </div>
-        </div>
+        <DashboardMiniCalendar
+          model={calendarModel}
+          onNextMonth={() => setCalDate((prev) => new Date(prev.getFullYear(), prev.getMonth() + 1, 1))}
+          onOpenDate={openPlanner}
+          onPrevMonth={() => setCalDate((prev) => new Date(prev.getFullYear(), prev.getMonth() - 1, 1))}
+        />
       </div>
     </div>
   )
