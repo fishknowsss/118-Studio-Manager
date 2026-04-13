@@ -8,7 +8,7 @@ export function TaskPoolPanel({
   onDragLeaveTask,
   onDragOverTask,
   onDropToTask,
-  onNavigateTasks,
+  onExpand,
   onTaskDragEnd,
   onTaskDragStart,
   tasks,
@@ -18,16 +18,16 @@ export function TaskPoolPanel({
   onDragLeaveTask: () => void
   onDragOverTask: (event: DragEvent<HTMLDivElement>, taskId: string) => void
   onDropToTask: (event: DragEvent<HTMLDivElement>, taskId: string) => void
-  onNavigateTasks: () => void
+  onExpand: (x: number, y: number) => void
   onTaskDragEnd: () => void
   onTaskDragStart: (event: DragEvent<HTMLDivElement>, taskId: string) => void
   tasks: Array<LegacyTask & { person?: LegacyPerson | null; project?: LegacyProject | null }>
 }) {
   return (
     <div className="panel">
-      <div className="panel-header">
+      <div className="panel-header panel-header--expandable" onClick={(e) => { const r = e.currentTarget.getBoundingClientRect(); onExpand(r.left + r.width / 2, r.top + r.height / 2) }}>
         <span className="panel-title">任务池</span>
-        <span className="panel-action" onClick={onNavigateTasks}>全部任务</span>
+        <span className="panel-action">展开全部</span>
       </div>
       <div className="panel-body">
         {tasks.length === 0 ? (

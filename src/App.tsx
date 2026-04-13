@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useMemo, useState } from 'react'
 import { ConfirmProvider } from './components/feedback/ConfirmProvider'
 import { ToastProvider } from './components/feedback/ToastProvider'
 import { PlannerProvider } from './features/planner/PlannerProvider'
@@ -57,11 +57,11 @@ export default function App() {
     return () => window.removeEventListener('hashchange', onHash)
   }, [])
 
-  const urgentCount = store.projects.filter(p => {
+  const urgentCount = useMemo(() => store.projects.filter(p => {
     if (p.status === 'completed' || p.status === 'cancelled') return false
     const days = daysUntil(p.ddl)
     return days !== null && days <= 3
-  }).length
+  }).length, [store.projects])
 
   if (initError) {
     return (

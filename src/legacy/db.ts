@@ -73,10 +73,26 @@ export const db = {
   getAllByIndex(name: string, indexName: string, value: IDBValidKey | IDBKeyRange) {
     return fromRequest(getStore(name).index(indexName).getAll(value))
   },
+  runTransaction(
+    storeNames: string[],
+    mode: IDBTransactionMode,
+    callback: (stores: Record<string, IDBObjectStore>) => void,
+  ): Promise<void> {
+    if (!dbInstance) throw new Error('Database is not opened yet')
+    const tx = dbInstance.transaction(storeNames, mode)
+    const stores = Object.fromEntries(storeNames.map(name => [name, tx.objectStore(name)]))
+    callback(stores)
+    return new Promise<void>((resolve, reject) => {
+      tx.oncomplete = () => resolve()
+      tx.onerror = () => reject(tx.error)
+      tx.onabort = () => reject(tx.error)
+    })
+  },
   async clearAll() {
-    for (const name of ['projects', 'tasks', 'people', 'logs', 'settings']) {
-      await this.clear(name)
-    }
+    const names = ['projects', 'tasks', 'people', 'logs', 'settings']
+    await this.runTransaction(names, 'readwrite', (stores) => {
+      for (const name of names) stores[name].clear()
+    })
   },
   async exportAll() {
     const [projects, tasks, people, logs, settings] = await Promise.all([
@@ -96,11 +112,14 @@ export const db = {
   },
   async importAll(data: unknown) {
     const backup = normalizeImportedBackup(data)
-    await this.clearAll()
-    for (const project of backup.projects) await this.put('projects', project)
-    for (const task of backup.tasks) await this.put('tasks', task)
-    for (const person of backup.people) await this.put('people', person)
-    for (const log of backup.logs) await this.put('logs', log)
-    for (const setting of backup.settings) await this.put('settings', setting)
+    const names = ['projects', 'tasks', 'people', 'logs', 'settings']
+    await this.runTransaction(names, 'readwrite', (stores) => {
+      for (const name of names) stores[name].clear()
+      for (const project of backup.projects) stores.projects.put(project)
+      for (const task of backup.tasks) stores.tasks.put(task)
+      for (const person of backup.people) stores.people.put(person)
+      for (const log of backup.logs) stores.logs.put(log)
+      for (const setting of backup.settings) stores.settings.put(setting)
+    })
   },
 }

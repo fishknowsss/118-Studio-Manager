@@ -69,9 +69,6 @@ type TimelineModel = {
 
 export type DashboardHeaderModel = {
   dateText: string
-  motivation: string
-  quoteSource: string
-  quoteText: string
   weekdayText: string
 }
 
@@ -224,14 +221,9 @@ export function getTaskPool(tasks: LegacyTask[]) {
 
 export function buildDashboardHeaderModel(
   currentDate: Date,
-  quote: { src: string; text: string },
-  motivation: string,
 ): DashboardHeaderModel {
   return {
     dateText: `${currentDate.getMonth() + 1}月${currentDate.getDate()}日`,
-    motivation,
-    quoteSource: quote.src,
-    quoteText: quote.text,
     weekdayText: `${currentDate.getFullYear()} · ${DASHBOARD_WEEKDAY_LABELS[currentDate.getDay()]}`,
   }
 }
@@ -392,7 +384,13 @@ export function buildProjectCardModels(
   projects: LegacyProject[],
   tasks: LegacyTask[],
 ): ProjectCardModel[] {
-  const tasksByProjectId = buildEntityMaps(projects, tasks, []).tasksByProjectId
+  const tasksByProjectId: Record<string, LegacyTask[]> = {}
+  for (const task of tasks) {
+    if (task.projectId) {
+      tasksByProjectId[task.projectId] ||= []
+      tasksByProjectId[task.projectId].push(task)
+    }
+  }
 
   return projects.map((project) => {
     const projectTasks = tasksByProjectId[project.id] || []

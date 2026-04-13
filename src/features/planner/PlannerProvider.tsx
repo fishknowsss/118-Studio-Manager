@@ -1,37 +1,44 @@
 /* eslint-disable react-refresh/only-export-components */
 
-import { createContext, useContext, useMemo, useState, type DragEvent, type ReactNode } from 'react'
+import { createContext, useContext, useMemo, useState, type ReactNode } from 'react'
+import { ExpandPanel } from '../../components/ui/ExpandPanel'
 import { buildProjectEventSummaryMap, getActivePeople, getProjectEventsForDate } from '../../legacy/selectors'
-import { store, type LegacyTask } from '../../legacy/store'
-import { formatDateFull, today } from '../../legacy/utils'
+import { type LegacyProject } from '../../legacy/store'
+import { ddlLabel, formatDateFull, formatDate, shiftLocalDateKey, parseLocalDateKey, today, urgencyClass, STATUS_LABELS } from '../../legacy/utils'
 import { useLegacyStoreSnapshot } from '../../legacy/useLegacyStore'
-import { PlannerAssignedList } from './PlannerAssignedList'
-import { PlannerBacklogList } from './PlannerBacklogList'
-import { getAssignableTasks } from './plannerUtils'
 
 type PlannerContextValue = {
   closePlanner: () => void
-  openPlanner: (dateStr: string) => void
+  openPlanner: (dateStr: string, ox: number, oy: number) => void
 }
+
+type PlannerState = { dateStr: string; ox: number; oy: number }
 
 const PlannerContext = createContext<PlannerContextValue | null>(null)
 
 export function PlannerProvider({ children }: { children: ReactNode }) {
-  const [dateStr, setDateStr] = useState<string | null>(null)
+  const [plannerState, setPlannerState] = useState<PlannerState | null>(null)
 
   const value = useMemo<PlannerContextValue>(() => ({
-    openPlanner(nextDateStr) {
-      setDateStr(nextDateStr)
+    openPlanner(dateStr, ox, oy) {
+      setPlannerState({ dateStr, ox, oy })
     },
     closePlanner() {
-      setDateStr(null)
+      setPlannerState(null)
     },
   }), [])
 
   return (
     <PlannerContext.Provider value={value}>
       {children}
-      <PlannerDrawer dateStr={dateStr} onClose={() => setDateStr(null)} />
+      {plannerState ? (
+        <PlannerDrawer
+          dateStr={plannerState.dateStr}
+          originX={plannerState.ox}
+          originY={plannerState.oy}
+          onClose={() => setPlannerState(null)}
+        />
+      ) : null}
     </PlannerContext.Provider>
   )
 }
@@ -44,127 +51,171 @@ export function usePlanner() {
   return context
 }
 
-function PlannerDrawer({ dateStr, onClose }: { dateStr: string | null; onClose: () => void }) {
+function PlannerDrawer({
+  dateStr,
+  originX,
+  originY,
+  onClose,
+}: {
+  dateStr: string
+  originX: number
+  originY: number
+  onClose: () => void
+}) {
   const storeSnapshot = useLegacyStoreSnapshot()
-  const [dragOverPersonId, setDragOverPersonId] = useState<string | null>(null)
-
-  if (!dateStr) return null
 
   const todayStr = today()
   const dateLabel = formatDateFull(dateStr)
   const activePeople = getActivePeople(storeSnapshot.people)
   const eventMap = buildProjectEventSummaryMap(storeSnapshot.projects)
-  const backlogTasks = getAssignableTasks(storeSnapshot.tasks).map((task) => ({
-    ...task,
-    project: task.projectId ? storeSnapshot.getProject(task.projectId) : null,
-  }))
   const events = getProjectEventsForDate(eventMap, dateStr)
 
-  const handleAssignTask = (taskId: string, personId: string, targetDate: string) => {
-    void assignTask(taskId, personId, targetDate)
-  }
+  // Tasks scheduled for this day, enriched with project + assignee
+  const todayTasks = useMemo(() =>
+    storeSnapshot.tasks
+      .filter((t) => t.scheduledDate === dateStr)
+      .map((t) => ({
+        ...t,
+        project: t.projectId ? storeSnapshot.getProject(t.projectId) : null,
+        assignee: t.assigneeId ? storeSnapshot.getPerson(t.assigneeId) : null,
+      })),
+    [storeSnapshot, dateStr],
+  )
 
-  const handleDropToPerson = (event: DragEvent<HTMLDivElement>, personId: string, targetDate: string) => {
-    event.preventDefault()
-    setDragOverPersonId(null)
-    const taskId = event.dataTransfer.getData('text/task-id')
-    if (!taskId) return
-    void assignTask(taskId, personId, targetDate)
-  }
+  // Tasks due on this day (endDate) that aren't done
+  const dueTodayTasks = useMemo(() =>
+    storeSnapshot.tasks
+      .filter((t) => t.endDate === dateStr && t.status !== 'done')
+      .map((t) => ({
+        ...t,
+        project: t.projectId ? storeSnapshot.getProject(t.projectId) : null,
+        assignee: t.assigneeId ? storeSnapshot.getPerson(t.assigneeId) : null,
+      })),
+    [storeSnapshot, dateStr],
+  )
 
-  const handleDragOverPerson = (event: DragEvent<HTMLDivElement>, personId: string) => {
-    event.preventDefault()
-    setDragOverPersonId(personId)
-  }
-
-  const handleUnassignTask = (taskId: string) => {
-    void unassignTask(taskId)
-  }
+  // Upcoming DDL projects within 14 days from selected date
+  const upcomingDdlProjects = useMemo(() => {
+    const windowEnd = shiftLocalDateKey(parseLocalDateKey(dateStr) ?? new Date(), 14)
+    return storeSnapshot.projects
+      .filter((p): p is LegacyProject & { ddl: string } =>
+        p.status !== 'completed' &&
+        p.status !== 'cancelled' &&
+        !!p.ddl &&
+        p.ddl >= dateStr &&
+        p.ddl <= windowEnd,
+      )
+      .sort((a, b) => a.ddl.localeCompare(b.ddl))
+      .slice(0, 6)
+  }, [storeSnapshot.projects, dateStr])
 
   return (
-    <div className="planner-panel is-open">
-      <div className="planner-overlay" onClick={onClose} role="presentation" />
-      <div className="planner-content" role="dialog" aria-modal="true" aria-label={dateLabel}>
-        <div className="planner-header">
-          <div>
-            <div className="planner-date-big">{dateLabel}</div>
-            <div className="planner-date-sub">{dateStr === todayStr ? '今天' : dateStr}</div>
-          </div>
-          <button className="btn btn-ghost btn-icon" type="button" onClick={onClose}>
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="18" height="18">
-              <line x1="18" y1="6" x2="6" y2="18" />
-              <line x1="6" y1="6" x2="18" y2="18" />
-            </svg>
-          </button>
+    <ExpandPanel
+      variant="slim"
+      title={dateLabel}
+      originX={originX}
+      originY={originY}
+      onClose={onClose}
+    >
+      <div className="planner-body">
+        <div className="planner-date-sub-row">
+          {dateStr === todayStr ? '今天 · ' : ''}{dateStr}
         </div>
 
-        <div className="planner-body">
-          {events.length ? (
-            <div className="planner-section">
-              <div className="planner-section-title">关键节点</div>
-              {events.map((event) => (
-                <div key={`${event.type}-${event.label}`} className={`planner-event-row ${event.type}`}>
-                  {event.label}
+        {/* 当日摘要 */}
+        <div className="planner-stats-row">
+          <div className="planner-stat">
+            <span className="planner-stat-num">{todayTasks.length}</span>
+            <span className="planner-stat-label">已排任务</span>
+          </div>
+          <div className="planner-stat">
+            <span className={`planner-stat-num${dueTodayTasks.length > 0 ? ' warn' : ''}`}>{dueTodayTasks.length}</span>
+            <span className="planner-stat-label">今日截止</span>
+          </div>
+          <div className="planner-stat">
+            <span className="planner-stat-num">{activePeople.length}</span>
+            <span className="planner-stat-label">可用成员</span>
+          </div>
+          <div className="planner-stat">
+            <span className="planner-stat-num">{upcomingDdlProjects.length}</span>
+            <span className="planner-stat-label">临近截止</span>
+          </div>
+        </div>
+
+        {/* 今日截止任务 */}
+        {dueTodayTasks.length > 0 ? (
+          <div className="planner-section">
+            <div className="planner-section-title">今日截止</div>
+            {dueTodayTasks.map((task) => (
+              <div key={task.id} className="planner-due-row">
+                <div className={`task-check${task.status === 'in-progress' ? ' in-progress' : ''}`} />
+                <div className="planner-due-info">
+                  <span className="planner-due-title">{task.title}</span>
+                  <div className="planner-due-meta">
+                    {task.project ? <span className="planner-task-project">{task.project.name}</span> : null}
+                    {task.assignee
+                      ? <span className="planner-due-assignee">@{task.assignee.name}</span>
+                      : <span className="planner-due-unassigned">未分配</span>}
+                    <span className="task-status-chip">{STATUS_LABELS[task.status || 'todo'] ?? task.status}</span>
+                  </div>
                 </div>
-              ))}
-            </div>
-          ) : null}
-
-          <div className="planner-section">
-            <div className="planner-section-title">当天人员安排</div>
-            <PlannerAssignedList
-              dateStr={dateStr}
-              dragOverPersonId={dragOverPersonId}
-              onDropToPerson={handleDropToPerson}
-              onLeavePerson={() => setDragOverPersonId(null)}
-              onOverPerson={handleDragOverPerson}
-              onUnassignTask={handleUnassignTask}
-              people={activePeople}
-              tasks={storeSnapshot.tasks}
-            />
+              </div>
+            ))}
           </div>
+        ) : null}
 
+        {/* 关键节点 */}
+        {events.length ? (
           <div className="planner-section">
-            <div className="planner-section-title">可分配任务</div>
-            <PlannerBacklogList
-              activePeople={activePeople}
-              dateStr={dateStr}
-              onAssignTask={handleAssignTask}
-              tasks={backlogTasks}
-            />
+            <div className="planner-section-title">关键节点</div>
+            {events.map((event) => (
+              <div key={`${event.type}-${event.label}`} className={`planner-event-row ${event.type}`}>
+                {event.label}
+              </div>
+            ))}
           </div>
+        ) : null}
+
+        {/* 即将截止项目 */}
+        {upcomingDdlProjects.length > 0 ? (
+          <div className="planner-section">
+            <div className="planner-section-title">即将截止（14天内）</div>
+            {upcomingDdlProjects.map((proj) => (
+              <div key={proj.id} className={`planner-ddl-card ${urgencyClass(proj.ddl, proj.status || 'active')}`}>
+                <span className="planner-ddl-name">{proj.name}</span>
+                <div className="planner-ddl-meta">
+                  <span className="planner-ddl-date">{formatDate(proj.ddl)}</span>
+                  <span>{ddlLabel(proj.ddl ?? null, proj.status || 'active')}</span>
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : null}
+
+        {/* 今日任务 */}
+        <div className="planner-section">
+          <div className="planner-section-title">今日任务</div>
+          {todayTasks.length === 0 ? (
+            <div className="text-muted text-sm">当天暂无排期任务</div>
+          ) : (
+            todayTasks.map((task) => (
+              <div key={task.id} className="planner-due-row">
+                <div className={`task-check${task.status === 'done' ? ' done' : task.status === 'in-progress' ? ' in-progress' : ''}`} />
+                <div className="planner-due-info">
+                  <span className="planner-due-title">{task.title}</span>
+                  <div className="planner-due-meta">
+                    {task.project ? <span className="planner-task-project">{task.project.name}</span> : null}
+                    {task.assignee
+                      ? <span className="planner-due-assignee">@{task.assignee.name}</span>
+                      : <span className="planner-due-unassigned">未分配</span>}
+                    <span className="task-status-chip">{STATUS_LABELS[task.status || 'todo'] ?? task.status}</span>
+                  </div>
+                </div>
+              </div>
+            ))
+          )}
         </div>
       </div>
-    </div>
+    </ExpandPanel>
   )
-}
-
-async function assignTask(taskId: string, personId: string, dateStr: string) {
-  const task = store.getTask(taskId)
-  const person = store.getPerson(personId)
-  if (!task || !person) return
-
-  const updatedTask: LegacyTask = {
-    ...task,
-    assigneeId: personId,
-    scheduledDate: dateStr,
-    updatedAt: new Date().toISOString(),
-  }
-
-  await store.saveTask(updatedTask)
-  await store.addLog(`安排任务「${task.title}」给 ${person.name} · ${dateStr}`)
-}
-
-async function unassignTask(taskId: string) {
-  const task = store.getTask(taskId)
-  if (!task) return
-
-  const updatedTask: LegacyTask = {
-    ...task,
-    scheduledDate: null,
-    updatedAt: new Date().toISOString(),
-  }
-
-  await store.saveTask(updatedTask)
-  await store.addLog(`取消当天排期「${task.title}」`)
 }

@@ -6,16 +6,16 @@ import { URGENCY_TEXT } from './focusLabels'
 export function FocusPrimaryCard({
   focusData,
   project,
-  onOpenProjects,
+  onExpandProject,
 }: {
   focusData: ReturnType<typeof getDashboardFocusData>
-  onOpenProjects: () => void
+  onExpandProject: (x: number, y: number) => void
   project: LegacyProject
 }) {
   return (
     <div
       className={`focus-highlight ${focusData?.uc || ''}`}
-      onClick={onOpenProjects}
+      onClick={(e) => { const r = e.currentTarget.getBoundingClientRect(); onExpandProject(r.left + r.width / 2, r.top + r.height / 2) }}
     >
       <div className="focus-highlight-head">
         <div>

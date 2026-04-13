@@ -4,11 +4,11 @@ import { URGENCY_TEXT } from './focusLabels'
 
 export function FocusSecondaryCards({
   cards,
-  onOpenProjects,
+  onExpandProject,
   showSingleProjectEmpty,
 }: {
   cards: DashboardFocusCard[]
-  onOpenProjects: () => void
+  onExpandProject: (id: string, x: number, y: number) => void
   showSingleProjectEmpty: boolean
 }) {
   return (
@@ -17,7 +17,7 @@ export function FocusSecondaryCards({
         <div
           key={card.id}
           className={`focus-card ${card.urgencyKey}`}
-          onClick={onOpenProjects}
+          onClick={(e) => { const r = e.currentTarget.getBoundingClientRect(); onExpandProject(card.id, r.left + r.width / 2, r.top + r.height / 2) }}
         >
           <div className="focus-card-name">{card.name}</div>
           <div className="focus-card-ddl">{card.ddlLabel}</div>

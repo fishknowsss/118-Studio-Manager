@@ -1,12 +1,13 @@
-import { useMemo, useState, type DragEvent } from 'react'
+import { useEffect, useMemo, useState, type DragEvent } from 'react'
 import { DashboardHeader } from '../features/dashboard/DashboardHeader'
 import { DashboardMiniCalendar } from '../features/dashboard/DashboardMiniCalendar'
 import { FocusPrimaryCard } from '../features/dashboard/FocusPrimaryCard'
 import { FocusSecondaryCards } from '../features/dashboard/FocusSecondaryCards'
 import { PeopleAssignmentPanel } from '../features/dashboard/PeopleAssignmentPanel'
+import { ProjectDetailPanel } from '../features/dashboard/ProjectDetailPanel'
 import { TaskPoolPanel } from '../features/dashboard/TaskPoolPanel'
+import { ExpandPanel } from '../components/ui/ExpandPanel'
 import { usePlanner } from '../features/planner/PlannerProvider'
-import { getRandMotivation, getRandQuote } from '../content/quotes'
 import { assignTaskToPerson } from '../legacy/actions'
 import {
   buildDashboardHeaderModel,
@@ -22,7 +23,26 @@ import {
 } from '../legacy/selectors'
 import { type LegacyProject } from '../legacy/store'
 import { useLegacyStoreSnapshot } from '../legacy/useLegacyStore'
-import { today } from '../legacy/utils'
+import { formatLocalDateKey } from '../legacy/utils'
+import { Tasks } from './Tasks'
+import { People } from './People'
+import { Calendar } from './Calendar'
+
+type Origin = { ox: number; oy: number }
+type ExpandedPanel =
+  | ({ type: 'tasks' }    & Origin)
+  | ({ type: 'people' }   & Origin)
+  | ({ type: 'calendar' } & Origin)
+  | ({ type: 'project'; projectId: string } & Origin)
+  | null
+
+function getPanelTitle(panel: NonNullable<ExpandedPanel>, projects: LegacyProject[]): string {
+  if (panel.type === 'tasks') return '全部任务'
+  if (panel.type === 'people') return '团队成员'
+  if (panel.type === 'calendar') return '项目日历'
+  const proj = projects.find((p) => p.id === panel.projectId)
+  return proj?.name || '项目详情'
+}
 
 export function Dashboard() {
   const store = useLegacyStoreSnapshot()
@@ -34,10 +54,16 @@ export function Dashboard() {
   const [draggingTaskId, setDraggingTaskId] = useState<string | null>(null)
   const [dropOverPersonId, setDropOverPersonId] = useState<string | null>(null)
   const [dropOverTaskId, setDropOverTaskId] = useState<string | null>(null)
-  const quote = useMemo(() => getRandQuote(), [])
-  const motivation = useMemo(() => getRandMotivation(), [])
-  const dateObj = useMemo(() => new Date(), [])
-  const todayStr = today()
+  const [expandedPanel, setExpandedPanel] = useState<ExpandedPanel>(null)
+  const [dateObj, setDateObj] = useState(() => new Date())
+  const todayStr = useMemo(() => formatLocalDateKey(dateObj), [dateObj])
+
+  useEffect(() => {
+    const now = new Date()
+    const midnight = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1, 0, 0, 0, 0)
+    const id = setTimeout(() => setDateObj(new Date()), midnight.getTime() - now.getTime())
+    return () => clearTimeout(id)
+  }, [dateObj])
 
   const entityMaps = useMemo(() => buildEntityMaps(projects, tasks, people), [people, projects, tasks])
   const topProjects = useMemo(() => getTopProjects(projects), [projects])
@@ -51,12 +77,11 @@ export function Dashboard() {
     project: task.projectId ? entityMaps.projectsById[task.projectId] : null,
   })), [entityMaps.peopleById, entityMaps.projectsById, taskPool])
   const eventMap = useMemo(() => buildProjectEventSummaryMap(projects), [projects])
-  const headerModel = useMemo(() => buildDashboardHeaderModel(dateObj, quote, motivation), [dateObj, motivation, quote])
+  const headerModel = useMemo(() => buildDashboardHeaderModel(dateObj), [dateObj])
   const calendarModel = useMemo(() => buildDashboardMiniCalendarModel(calDate, eventMap, todayStr), [calDate, eventMap, todayStr])
 
-  const navigate = (view: string) => {
-    window.location.hash = `#${view}`
-  }
+  const focusProj = topProjects[0] as LegacyProject | undefined
+  const focusData = useMemo(() => getDashboardFocusData(focusProj, tasks, todayStr), [focusProj, tasks, todayStr])
 
   const clearDragState = () => {
     setDraggingPersonId(null)
@@ -92,10 +117,7 @@ export function Dashboard() {
     const taskId = draggingTaskId
       || readTransferData(event, 'application/x-118studio-task-id')
       || readTransferData(event, 'text/task-id')
-    if (!taskId) {
-      clearDragState()
-      return
-    }
+    if (!taskId) { clearDragState(); return }
     void assignTaskToPerson(taskId, personId)
     clearDragState()
   }
@@ -113,10 +135,7 @@ export function Dashboard() {
     event.preventDefault()
     setDropOverTaskId(null)
     const personId = draggingPersonId || readTransferData(event, 'application/x-118studio-person-id')
-    if (!personId) {
-      clearDragState()
-      return
-    }
+    if (!personId) { clearDragState(); return }
     void assignTaskToPerson(taskId, personId)
     clearDragState()
   }
@@ -128,8 +147,7 @@ export function Dashboard() {
     setDropOverTaskId(taskId)
   }
 
-  const focusProj = topProjects[0] as LegacyProject | undefined
-  const focusData = useMemo(() => getDashboardFocusData(focusProj, tasks, todayStr), [focusProj, tasks, todayStr])
+  const closePanel = () => setExpandedPanel(null)
 
   return (
     <div className="dashboard fade-in">
@@ -145,11 +163,11 @@ export function Dashboard() {
               <FocusPrimaryCard
                 focusData={focusData}
                 project={focusProj}
-                onOpenProjects={() => navigate('projects')}
+                onExpandProject={(ox, oy) => setExpandedPanel({ type: 'project', projectId: focusProj.id, ox, oy })}
               />
               <FocusSecondaryCards
                 cards={focusCards.slice(1)}
-                onOpenProjects={() => navigate('projects')}
+                onExpandProject={(id, ox, oy) => setExpandedPanel({ type: 'project', projectId: id, ox, oy })}
                 showSingleProjectEmpty={topProjects.length === 1}
               />
             </>
@@ -164,7 +182,7 @@ export function Dashboard() {
           onDragLeaveTask={() => setDropOverTaskId(null)}
           onDragOverTask={handleDragOverTask}
           onDropToTask={handleDropToTask}
-          onNavigateTasks={() => navigate('tasks')}
+          onExpand={(ox, oy) => setExpandedPanel({ type: 'tasks', ox, oy })}
           onTaskDragEnd={clearDragState}
           onTaskDragStart={handleTaskDragStart}
           tasks={poolRows}
@@ -174,20 +192,36 @@ export function Dashboard() {
           draggingTaskId={draggingTaskId}
           onDragLeavePerson={() => setDropOverPersonId(null)}
           onDragOverPerson={handleDragOverPerson}
-          onNavigatePeople={() => navigate('people')}
+          onExpand={(ox, oy) => setExpandedPanel({ type: 'people', ox, oy })}
           onDropToPerson={handleDropToPerson}
           onPersonDragEnd={clearDragState}
           onPersonDragStart={handlePersonDragStart}
           people={activePersonCards}
         />
-
         <DashboardMiniCalendar
           model={calendarModel}
+          onExpand={(ox, oy) => setExpandedPanel({ type: 'calendar', ox, oy })}
           onNextMonth={() => setCalDate((prev) => new Date(prev.getFullYear(), prev.getMonth() + 1, 1))}
-          onOpenDate={openPlanner}
+          onOpenDate={(dateKey, ox, oy) => openPlanner(dateKey, ox, oy)}
           onPrevMonth={() => setCalDate((prev) => new Date(prev.getFullYear(), prev.getMonth() - 1, 1))}
         />
       </div>
+
+      {expandedPanel ? (
+        <ExpandPanel
+          title={getPanelTitle(expandedPanel, projects)}
+          originX={expandedPanel.ox}
+          originY={expandedPanel.oy}
+          onClose={closePanel}
+        >
+          {expandedPanel.type === 'tasks' && <Tasks />}
+          {expandedPanel.type === 'people' && <People />}
+          {expandedPanel.type === 'calendar' && <Calendar />}
+          {expandedPanel.type === 'project' && (
+            <ProjectDetailPanel projectId={expandedPanel.projectId} />
+          )}
+        </ExpandPanel>
+      ) : null}
     </div>
   )
 }

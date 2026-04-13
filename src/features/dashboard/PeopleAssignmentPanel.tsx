@@ -7,7 +7,7 @@ export function PeopleAssignmentPanel({
   draggingTaskId,
   onDragLeavePerson,
   onDragOverPerson,
-  onNavigatePeople,
+  onExpand,
   onDropToPerson,
   onPersonDragEnd,
   onPersonDragStart,
@@ -18,7 +18,7 @@ export function PeopleAssignmentPanel({
   draggingTaskId: string | null
   onDragLeavePerson: () => void
   onDragOverPerson: (event: DragEvent<HTMLDivElement>, personId: string) => void
-  onNavigatePeople: () => void
+  onExpand: (x: number, y: number) => void
   onDropToPerson: (event: DragEvent<HTMLDivElement>, personId: string) => void
   onPersonDragEnd: () => void
   onPersonDragStart: (event: DragEvent<HTMLDivElement>, personId: string) => void
@@ -29,9 +29,9 @@ export function PeopleAssignmentPanel({
 
   return (
     <div className="panel">
-      <div className="panel-header">
+      <div className="panel-header panel-header--expandable" onClick={(e) => { const r = e.currentTarget.getBoundingClientRect(); onExpand(r.left + r.width / 2, r.top + r.height / 2) }}>
         <span className="panel-title">人员</span>
-        <span className="panel-action" onClick={onNavigatePeople}>管理</span>
+        <span className="panel-action">展开全部</span>
       </div>
       <div className="panel-body people-panel-body">
         <div className="people-assignment-grid">

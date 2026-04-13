@@ -99,15 +99,17 @@ export const store = {
   async saveProject(project: LegacyProject) {
     await db.put('projects', project)
     const index = this.projects.findIndex(item => item.id === project.id)
-    if (index >= 0) this.projects[index] = project
-    else this.projects.push(project)
+    if (index >= 0) this.projects = this.projects.map(p => p.id === project.id ? project : p)
+    else this.projects = [...this.projects, project]
     emitStoreUpdated({ type: 'project', action: 'save', id: project.id })
   },
 
   async deleteProject(id: string) {
-    await db.delete('projects', id)
-    const related = this.tasks.filter(task => task.projectId === id)
-    for (const task of related) await db.delete('tasks', task.id)
+    const relatedIds = this.tasks.filter(task => task.projectId === id).map(task => task.id)
+    await db.runTransaction(['projects', 'tasks'], 'readwrite', (stores) => {
+      stores.projects.delete(id)
+      for (const taskId of relatedIds) stores.tasks.delete(taskId)
+    })
     this.tasks = this.tasks.filter(task => task.projectId !== id)
     this.projects = this.projects.filter(project => project.id !== id)
     emitStoreUpdated({ type: 'project', action: 'delete', id })
@@ -120,8 +122,8 @@ export const store = {
   async saveTask(task: LegacyTask) {
     await db.put('tasks', task)
     const index = this.tasks.findIndex(item => item.id === task.id)
-    if (index >= 0) this.tasks[index] = task
-    else this.tasks.push(task)
+    if (index >= 0) this.tasks = this.tasks.map(t => t.id === task.id ? task : t)
+    else this.tasks = [...this.tasks, task]
     emitStoreUpdated({ type: 'task', action: 'save', id: task.id })
   },
 
@@ -150,17 +152,20 @@ export const store = {
   async savePerson(person: LegacyPerson) {
     await db.put('people', person)
     const index = this.people.findIndex(item => item.id === person.id)
-    if (index >= 0) this.people[index] = person
-    else this.people.push(person)
+    if (index >= 0) this.people = this.people.map(p => p.id === person.id ? person : p)
+    else this.people = [...this.people, person]
     emitStoreUpdated({ type: 'person', action: 'save', id: person.id })
   },
 
   async deletePerson(id: string) {
-    await db.delete('people', id)
-    for (const task of this.tasks.filter(item => item.assigneeId === id)) {
-      task.assigneeId = null
-      await db.put('tasks', task)
-    }
+    const updatedTasks = this.tasks
+      .filter(item => item.assigneeId === id)
+      .map(t => ({ ...t, assigneeId: null as string | null }))
+    await db.runTransaction(['people', 'tasks'], 'readwrite', (stores) => {
+      stores.people.delete(id)
+      for (const task of updatedTasks) stores.tasks.put(task)
+    })
+    this.tasks = this.tasks.map(t => t.assigneeId === id ? { ...t, assigneeId: null } : t)
     this.people = this.people.filter(person => person.id !== id)
     emitStoreUpdated({ type: 'person', action: 'delete', id })
   },
@@ -176,11 +181,13 @@ export const store = {
   async addLog(text: string) {
     const log = { id: crypto.randomUUID(), text, ts: new Date().toISOString() }
     await db.put('logs', log)
-    this.logs.unshift(log)
-    if (this.logs.length > 50) {
-      const removed = this.logs.splice(50)
+    let newLogs = [log, ...this.logs]
+    if (newLogs.length > 50) {
+      const removed = newLogs.slice(50)
+      newLogs = newLogs.slice(0, 50)
       for (const entry of removed) await db.delete('logs', entry.id)
     }
+    this.logs = newLogs
     emitStoreUpdated()
   },
 }

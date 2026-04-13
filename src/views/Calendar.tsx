@@ -62,7 +62,7 @@ export function Calendar() {
                 key={dateStr}
                 type="button"
                 className={`cal-cell ${isToday ? 'today' : ''} ${otherMonth ? 'other-month' : ''}`}
-                onClick={() => openPlanner(dateStr)}
+                onClick={(e) => { const r = e.currentTarget.getBoundingClientRect(); openPlanner(dateStr, r.left + r.width / 2, r.top + r.height / 2) }}
               >
                 <div className="cal-day-num">{date.getDate()}</div>
                 {events.ddls.slice(0, 2).map((item) => (
