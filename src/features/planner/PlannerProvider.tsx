@@ -2,9 +2,9 @@
 
 import { createContext, useContext, useMemo, useState, type ReactNode } from 'react'
 import { ExpandPanel } from '../../components/ui/ExpandPanel'
-import { buildProjectEventSummaryMap, getActivePeople, getProjectEventsForDate } from '../../legacy/selectors'
+import { buildProjectDeadlineToneMap, buildProjectEventSummaryMap, getActivePeople, getProjectEventsForDate, sortProjectsByDeadlineTone } from '../../legacy/selectors'
 import { type LegacyProject, getTaskAssigneeIds } from '../../legacy/store'
-import { ddlLabel, formatDateFull, formatDate, shiftLocalDateKey, parseLocalDateKey, today, urgencyClass, STATUS_LABELS } from '../../legacy/utils'
+import { ddlLabel, formatDateFull, formatDate, shiftLocalDateKey, parseLocalDateKey, today, STATUS_LABELS } from '../../legacy/utils'
 import { useLegacyStoreSnapshot } from '../../legacy/useLegacyStore'
 
 type PlannerContextValue = {
@@ -97,7 +97,7 @@ function PlannerDrawer({
   // Upcoming DDL projects within 14 days from selected date
   const upcomingDdlProjects = useMemo(() => {
     const windowEnd = shiftLocalDateKey(parseLocalDateKey(dateStr) ?? new Date(), 14)
-    return storeSnapshot.projects
+    const filteredProjects = storeSnapshot.projects
       .filter((p): p is LegacyProject & { ddl: string } =>
         p.status !== 'completed' &&
         p.status !== 'cancelled' &&
@@ -105,9 +105,13 @@ function PlannerDrawer({
         p.ddl >= dateStr &&
         p.ddl <= windowEnd,
       )
-      .sort((a, b) => a.ddl.localeCompare(b.ddl))
+    return sortProjectsByDeadlineTone(filteredProjects, dateStr)
       .slice(0, 6)
   }, [storeSnapshot.projects, dateStr])
+  const upcomingProjectToneMap = useMemo(
+    () => buildProjectDeadlineToneMap(upcomingDdlProjects, dateStr),
+    [dateStr, upcomingDdlProjects],
+  )
 
   return (
     <ExpandPanel
@@ -181,7 +185,7 @@ function PlannerDrawer({
           <div className="planner-section">
             <div className="planner-section-title">即将截止（14天内）</div>
             {upcomingDdlProjects.map((proj) => (
-              <div key={proj.id} className={`planner-ddl-card ${urgencyClass(proj.ddl, proj.status || 'active')}`}>
+              <div key={proj.id} className={`planner-ddl-card ${upcomingProjectToneMap[proj.id] || 'focus-neutral'}`}>
                 <span className="planner-ddl-name">{proj.name}</span>
                 <div className="planner-ddl-meta">
                   <span className="planner-ddl-date">{formatDate(proj.ddl)}</span>

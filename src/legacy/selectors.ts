@@ -9,7 +9,6 @@ import {
   PRIORITY_LABELS,
   STATUS_LABELS,
   shiftLocalDateKey,
-  sortByUrgency,
   urgencyClass,
 } from './utils'
 import type { BackupPayload } from './utils'
@@ -60,6 +59,7 @@ type TimelineRow = {
   name: string
   offsetDays: number
   startDate: string
+  urgencyKey: string
 }
 
 type TimelineModel = {
@@ -155,15 +155,110 @@ export type PersonCardModel = {
   taskCount: number
 }
 
+export type ProjectDeadlineToneKey =
+  | 'focus-overdue'
+  | 'focus-critical'
+  | 'focus-strong'
+  | 'focus-medium'
+  | 'focus-calm'
+  | 'focus-neutral'
+  | 'urg-done'
+
 const PRIORITY_ORDER: Record<string, number> = { urgent: 0, high: 1, medium: 2, low: 3 }
 const DASHBOARD_WEEKDAY_LABELS = ['星期日', '星期一', '星期二', '星期三', '星期四', '星期五', '星期六']
 const DASHBOARD_MONTH_LABELS = ['一月', '二月', '三月', '四月', '五月', '六月', '七月', '八月', '九月', '十月', '十一月', '十二月']
 const MINI_CALENDAR_WEEKDAYS = ['日', '一', '二', '三', '四', '五', '六']
+const PROJECT_TONE_ORDER: Record<ProjectDeadlineToneKey, number> = {
+  'focus-overdue': 0,
+  'focus-critical': 1,
+  'focus-strong': 2,
+  'focus-medium': 3,
+  'focus-calm': 4,
+  'focus-neutral': 5,
+  'urg-done': 6,
+}
 
 function formatSlashDate(dateStr: string | null | undefined) {
   if (!dateStr) return ''
   const [year, month, day] = dateStr.split('-')
   return `${year}/${parseInt(month, 10)}/${parseInt(day, 10)}`
+}
+
+function daysFromReference(dateStr: string | null | undefined, referenceDate: string) {
+  if (!dateStr) return null
+  const target = parseLocalDateKey(dateStr)
+  const reference = parseLocalDateKey(referenceDate)
+  if (!target || !reference) return null
+  return Math.round((target.getTime() - reference.getTime()) / 86400000)
+}
+
+function compareProjectDeadline(left: LegacyProject, right: LegacyProject) {
+  const leftDdl = left.ddl || '9999-12-31'
+  const rightDdl = right.ddl || '9999-12-31'
+  if (leftDdl !== rightDdl) return leftDdl.localeCompare(rightDdl)
+  return (left.name || '').localeCompare(right.name || '', 'zh-CN')
+}
+
+function getFocusToneByIndex(index: number): ProjectDeadlineToneKey {
+  if (index === 0) return 'focus-critical'
+  if (index === 1) return 'focus-strong'
+  if (index === 2) return 'focus-medium'
+  if (index === 3) return 'focus-calm'
+  return 'focus-neutral'
+}
+
+export function buildProjectDeadlineToneMap(
+  projects: LegacyProject[],
+  referenceDate: string,
+) {
+  const toneMap: Record<string, ProjectDeadlineToneKey> = {}
+  const openProjects = projects.filter((project) => project.status !== 'completed' && project.status !== 'cancelled')
+  const overdueProjects = openProjects
+    .filter((project) => {
+      const days = daysFromReference(project.ddl || null, referenceDate)
+      return days !== null && days < 0
+    })
+    .sort(compareProjectDeadline)
+  const upcomingProjects = openProjects
+    .filter((project) => {
+      const days = daysFromReference(project.ddl || null, referenceDate)
+      return days !== null && days >= 0
+    })
+    .sort(compareProjectDeadline)
+  const noDeadlineProjects = openProjects
+    .filter((project) => daysFromReference(project.ddl || null, referenceDate) === null)
+    .sort(compareProjectDeadline)
+
+  overdueProjects.forEach((project) => {
+    toneMap[project.id] = 'focus-overdue'
+  })
+  upcomingProjects.forEach((project, index) => {
+    toneMap[project.id] = getFocusToneByIndex(index)
+  })
+  noDeadlineProjects.forEach((project) => {
+    toneMap[project.id] = 'focus-neutral'
+  })
+  projects
+    .filter((project) => project.status === 'completed' || project.status === 'cancelled')
+    .forEach((project) => {
+      toneMap[project.id] = 'urg-done'
+    })
+
+  return toneMap
+}
+
+export function sortProjectsByDeadlineTone(
+  projects: LegacyProject[],
+  referenceDate: string,
+) {
+  const toneMap = buildProjectDeadlineToneMap(projects, referenceDate)
+
+  return [...projects].sort((left, right) => {
+    const leftOrder = PROJECT_TONE_ORDER[toneMap[left.id] || 'focus-neutral']
+    const rightOrder = PROJECT_TONE_ORDER[toneMap[right.id] || 'focus-neutral']
+    if (leftOrder !== rightOrder) return leftOrder - rightOrder
+    return compareProjectDeadline(left, right)
+  })
 }
 
 export function buildEntityMaps(
@@ -207,8 +302,8 @@ export function getActiveProjects(projects: LegacyProject[]) {
   return projects.filter((project) => project.status !== 'cancelled' && project.status !== 'completed')
 }
 
-export function getTopProjects(projects: LegacyProject[], limit = 8) {
-  return sortByUrgency(getActiveProjects(projects)).slice(0, limit)
+export function getTopProjects(projects: LegacyProject[], limit = 8, referenceDate = shiftLocalDateKey(new Date(), 0)) {
+  return sortProjectsByDeadlineTone(getActiveProjects(projects), referenceDate).slice(0, limit)
 }
 
 const POOL_STATUS_ORDER: Record<string, number> = { blocked: 0, 'in-progress': 1, todo: 2, done: 3 }
@@ -338,7 +433,9 @@ export function buildProjectTimelineModel(
   projects: LegacyProject[],
   rangeDays = 90,
   forcedStartDate?: string,
+  referenceDate = shiftLocalDateKey(new Date(), 0),
 ): TimelineModel {
+  const toneMap = buildProjectDeadlineToneMap(projects, referenceDate)
   const projectStartKeys = projects
     .map((project) => coerceToLocalDateKey(project.createdAt) || coerceToLocalDateKey(project.ddl))
     .filter((value): value is string => Boolean(value))
@@ -380,6 +477,7 @@ export function buildProjectTimelineModel(
       name: project.name || '未命名项目',
       offsetDays,
       startDate: projectStartDate,
+      urgencyKey: toneMap[project.id] || 'focus-neutral',
     }
   })
 
@@ -389,7 +487,9 @@ export function buildProjectTimelineModel(
 export function buildProjectCardModels(
   projects: LegacyProject[],
   tasks: LegacyTask[],
+  referenceDate = shiftLocalDateKey(new Date(), 0),
 ): ProjectCardModel[] {
+  const toneMap = buildProjectDeadlineToneMap(projects, referenceDate)
   const tasksByProjectId: Record<string, LegacyTask[]> = {}
   for (const task of tasks) {
     if (task.projectId) {
@@ -424,7 +524,7 @@ export function buildProjectCardModels(
       statusKey,
       statusLabel: STATUS_LABELS[statusKey] || STATUS_LABELS.active,
       taskCount: projectTasks.length,
-      urgencyKey: urgencyClass(project.ddl || null, statusKey),
+      urgencyKey: toneMap[project.id] || 'focus-neutral',
     } satisfies ProjectCardModel
   })
 }
@@ -520,37 +620,20 @@ export function getDashboardFocusData(
   }
 }
 
-function getFocusToneByIndex(index: number) {
-  if (index === 0) return 'focus-critical'
-  if (index === 1) return 'focus-strong'
-  if (index === 2) return 'focus-medium'
-  if (index === 3) return 'focus-calm'
-  return 'focus-neutral'
-}
-
 export function buildDashboardFocusCards(
   projects: LegacyProject[],
   tasks: LegacyTask[],
   todayStr: string,
   limit = 8,
 ) {
-  const topProjects = getTopProjects(projects, limit)
-  let upcomingIndex = 0
+  const topProjects = getTopProjects(projects, limit, todayStr)
+  const toneMap = buildProjectDeadlineToneMap(topProjects, todayStr)
 
   return topProjects.map((project) => {
     const projectTasks = tasks.filter((task) => task.projectId === project.id)
     const nextMilestone = (project.milestones || [])
       .filter((milestone) => !milestone.completed && milestone.date && milestone.date >= todayStr)
       .sort((left, right) => (left.date || '').localeCompare(right.date || ''))[0]
-    const days = daysUntil(project.ddl || null)
-    let urgencyKey = 'focus-neutral'
-
-    if (days !== null && days < 0) {
-      urgencyKey = 'focus-overdue'
-    } else if (days !== null) {
-      urgencyKey = getFocusToneByIndex(upcomingIndex)
-      upcomingIndex += 1
-    }
 
     return {
       ddlLabel: ddlLabel(project.ddl || null, project.status || 'active'),
@@ -558,7 +641,7 @@ export function buildDashboardFocusCards(
       name: project.name || '未命名项目',
       nextMilestone,
       openTaskCount: projectTasks.filter((task) => task.status !== 'done').length,
-      urgencyKey,
+      urgencyKey: toneMap[project.id] || 'focus-neutral',
     } satisfies DashboardFocusCard
   })
 }
@@ -571,12 +654,14 @@ export function getFilteredProjects(
   projects: LegacyProject[],
   statusFilter: string,
   prioFilter: string,
+  referenceDate = shiftLocalDateKey(new Date(), 0),
 ) {
-  return sortByUrgency(
+  return sortProjectsByDeadlineTone(
     projects.filter((project) =>
       (!statusFilter || project.status === statusFilter) &&
       (!prioFilter || project.priority === prioFilter),
     ),
+    referenceDate,
   )
 }
 

@@ -35,12 +35,15 @@ jobs:
           case "${GITHUB_REF_NAME}" in
             main)
               deploy_target="v1"
+              deploy_base="/118-Studio-Manager/${deploy_target}/"
               ;;
             singleD)
               deploy_target="singleD"
+              deploy_base="/118-Studio-Manager/${deploy_target}/"
               ;;
             vc)
               deploy_target="vc"
+              deploy_base="/"
               ;;
             *)
               echo "Unsupported branch: ${GITHUB_REF_NAME}" >&2
@@ -48,7 +51,7 @@ jobs:
               ;;
           esac
           echo "deploy_target=${deploy_target}" >> "${GITHUB_OUTPUT}"
-          echo "deploy_base=/118-Studio-Manager/${deploy_target}/" >> "${GITHUB_OUTPUT}"
+          echo "deploy_base=${deploy_base}" >> "${GITHUB_OUTPUT}"
 
       - name: Setup Node
         uses: actions/setup-node@v6
@@ -90,24 +93,21 @@ jobs:
           fi
 
           find . -mindepth 1 -maxdepth 1 ! -name '.git' -exec cp -R {} "${site_dir}/" \;
-          rm -rf "${site_dir}/${DEPLOY_TARGET}"
-          mkdir -p "${site_dir}/${DEPLOY_TARGET}"
-          cp -R "${GITHUB_WORKSPACE}/dist/." "${site_dir}/${DEPLOY_TARGET}/"
           touch "${site_dir}/.nojekyll"
-          cat > "${site_dir}/index.html" <<'EOF'
-          <!doctype html>
-          <html lang="en">
-            <head>
-              <meta charset="utf-8" />
-              <meta http-equiv="refresh" content="0; url=/118-Studio-Manager/vc/" />
-              <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-              <title>118 Studio Manager</title>
-            </head>
-            <body>
-              <p>Redirecting to <a href="/118-Studio-Manager/vc/">/118-Studio-Manager/vc/</a>...</p>
-            </body>
-          </html>
-          EOF
+
+          if [ "${DEPLOY_TARGET}" = "vc" ]; then
+            find "${site_dir}" -mindepth 1 -maxdepth 1 \
+              ! -name 'v1' \
+              ! -name 'singleD' \
+              ! -name '.nojekyll' \
+              ! -name 'CNAME' \
+              -exec rm -rf {} +
+            cp -R "${GITHUB_WORKSPACE}/dist/." "${site_dir}/"
+          else
+            rm -rf "${site_dir}/${DEPLOY_TARGET}"
+            mkdir -p "${site_dir}/${DEPLOY_TARGET}"
+            cp -R "${GITHUB_WORKSPACE}/dist/." "${site_dir}/${DEPLOY_TARGET}/"
+          fi
 
       - name: Sync gh-pages branch
         env:

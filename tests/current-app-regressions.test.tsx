@@ -257,12 +257,14 @@ describe('current app regressions', () => {
     expect(localPagesArtifactSource).toMatch(/actions\/upload-artifact@v6/)
   })
 
-  it('redirects the GitHub Pages root entry to vc', () => {
+  it('publishes the vc custom domain from the site root', () => {
     const workflowSource = readFileSync(join(process.cwd(), '.github/workflows/deploy.yml'), 'utf8')
+    const viteConfigSource = readFileSync(join(process.cwd(), 'vite.config.ts'), 'utf8')
 
-    expect(workflowSource).toMatch(/url=\/118-Studio-Manager\/vc\//)
-    expect(workflowSource).toMatch(/Redirecting to <a href="\/118-Studio-Manager\/vc\/">/)
-    expect(workflowSource).not.toMatch(/url=\/118-Studio-Manager\/v1\//)
+    expect(viteConfigSource).toMatch(/process\.env\.DEPLOY_BASE \|\| '\/'/)
+    expect(workflowSource).toMatch(/vc\)[\s\S]*deploy_base="\/"/)
+    expect(workflowSource).not.toMatch(/url=\/118-Studio-Manager\/vc\//)
+    expect(workflowSource).not.toMatch(/Redirecting to <a href="\/118-Studio-Manager\/vc\/">/)
   })
 
   it('keeps dashboard skill tags clipped inside compact person cards', () => {

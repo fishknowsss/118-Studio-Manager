@@ -3,7 +3,7 @@ import react from '@vitejs/plugin-react'
 
 export default defineConfig(({ command }) => ({
   base: command === 'build'
-    ? (process.env.DEPLOY_BASE || '/118-Studio-Manager/vc/')
+    ? (process.env.DEPLOY_BASE || '/')
     : '/',
   plugins: [react()],
   resolve: {

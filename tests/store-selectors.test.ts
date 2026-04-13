@@ -12,6 +12,7 @@ import {
   buildProjectTimelineModel,
   buildTaskListItemModels,
   formatRecentLogs,
+  getFilteredProjects,
   getDashboardFocusData,
   getProjectEventsForDate,
   getTaskPool,
@@ -271,7 +272,13 @@ describe('store selectors', () => {
         createdAt: '2026-04-12T00:30:00+08:00',
         ddl: '2026-04-15',
       },
-    ], 14)
+      {
+        id: 'project-2',
+        name: '中期项目',
+        createdAt: '2026-04-11T00:30:00+08:00',
+        ddl: '2026-04-18',
+      },
+    ], 14, undefined, '2026-04-12')
 
     expect(timeline.startDate).toBe('2026-04-01')
     expect(timeline.rows[0]).toMatchObject({
@@ -280,7 +287,9 @@ describe('store selectors', () => {
       durationDays: 3,
       startDate: '2026-04-12',
       endDate: '2026-04-15',
+      urgencyKey: 'focus-critical',
     })
+    expect(timeline.rows[1].urgencyKey).toBe('focus-strong')
   })
 
   it('builds project card models with progress and milestone summary', () => {
@@ -298,11 +307,21 @@ describe('store selectors', () => {
             { id: 'ms-2', title: '终稿提交', date: '2026-04-18', completed: false },
           ],
         },
+        {
+          id: 'project-2',
+          name: '宣发收尾',
+          description: '收尾阶段',
+          status: 'active',
+          priority: 'high',
+          ddl: '2026-04-22',
+          milestones: [],
+        },
       ],
       [
         { id: 'task-1', projectId: 'project-1', status: 'todo' },
         { id: 'task-2', projectId: 'project-1', status: 'done' },
       ],
+      '2026-04-12',
     )
 
     expect(cards[0]).toMatchObject({
@@ -311,12 +330,30 @@ describe('store selectors', () => {
       name: '毕业设计',
       statusLabel: '进行中',
       priorityLabel: '紧急',
+      urgencyKey: 'focus-critical',
     })
     expect(cards[0].milestones[0]).toMatchObject({
       title: '中期检查',
       dateText: '2026/4/14',
       completed: true,
     })
+    expect(cards[1].urgencyKey).toBe('focus-strong')
+  })
+
+  it('sorts project lists by the shared deadline tone order', () => {
+    const items = getFilteredProjects(
+      [
+        { id: 'project-1', name: '远期项目', status: 'active', ddl: '2026-05-02' },
+        { id: 'project-2', name: '最近项目', status: 'active', ddl: '2026-04-15' },
+        { id: 'project-3', name: '逾期项目', status: 'active', ddl: '2026-04-10' },
+        { id: 'project-4', name: '较近项目', status: 'active', ddl: '2026-04-18' },
+      ],
+      '',
+      '',
+      '2026-04-12',
+    )
+
+    expect(items.map((item) => item.id)).toEqual(['project-3', 'project-2', 'project-4', 'project-1'])
   })
 
   it('builds task list item models with resolved project and assignee labels', () => {

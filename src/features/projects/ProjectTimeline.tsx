@@ -28,7 +28,7 @@ export function ProjectTimeline({
             <div className="timeline-name-cell">{row.name}</div>
             <div className="timeline-track">
               <div
-                className="timeline-bar"
+                className={`timeline-bar ${row.urgencyKey}`}
                 style={{
                   '--timeline-offset': String(row.offsetDays),
                   '--timeline-span': String(row.durationDays),

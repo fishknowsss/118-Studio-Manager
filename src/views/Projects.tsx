@@ -12,7 +12,7 @@ import {
   type LegacyProject,
   type ProjectStatus,
 } from '../legacy/store'
-import { STATUS_LABELS } from '../legacy/utils'
+import { formatLocalDateKey, STATUS_LABELS } from '../legacy/utils'
 import { useLegacyStoreSnapshot } from '../legacy/useLegacyStore'
 
 export function Projects() {
@@ -26,9 +26,10 @@ export function Projects() {
   const [editingProject, setEditingProject] = useState<LegacyProject | null | undefined>(undefined)
   const { confirm } = useConfirm()
   const { toast } = useToast()
-  const filteredProjects = useMemo(() => getFilteredProjects(projects, statusFilter, prioFilter) as LegacyProject[], [projects, prioFilter, statusFilter])
-  const projectCards = useMemo(() => buildProjectCardModels(filteredProjects, tasks), [filteredProjects, tasks])
-  const timeline = useMemo(() => buildProjectTimelineModel(filteredProjects), [filteredProjects])
+  const todayStr = useMemo(() => formatLocalDateKey(new Date()), [])
+  const filteredProjects = useMemo(() => getFilteredProjects(projects, statusFilter, prioFilter, todayStr) as LegacyProject[], [projects, prioFilter, statusFilter, todayStr])
+  const projectCards = useMemo(() => buildProjectCardModels(filteredProjects, tasks, todayStr), [filteredProjects, tasks, todayStr])
+  const timeline = useMemo(() => buildProjectTimelineModel(filteredProjects, 90, undefined, todayStr), [filteredProjects, todayStr])
 
   const contextItems = useMemo<ContextMenuItem[]>(() => {
     if (!contextMenu) return []

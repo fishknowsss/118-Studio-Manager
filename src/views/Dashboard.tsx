@@ -72,7 +72,7 @@ export function Dashboard() {
   }, [dateObj])
 
   const entityMaps = useMemo(() => buildEntityMaps(projects, tasks, people), [people, projects, tasks])
-  const topProjects = useMemo(() => getTopProjects(projects), [projects])
+  const topProjects = useMemo(() => getTopProjects(projects, 8, todayStr), [projects, todayStr])
   const focusCards = useMemo(() => buildDashboardFocusCards(projects, tasks, todayStr), [projects, tasks, todayStr])
   const taskPool = useMemo(() => getTaskPool(tasks), [tasks])
   const activePeople = useMemo(() => getActivePeople(people), [people])

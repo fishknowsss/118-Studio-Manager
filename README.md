@@ -5,7 +5,7 @@
 ## 当前版本
 
 - 默认分支：`vc`
-- 在线预览：[https://fishknowsss.github.io/118-Studio-Manager/vc/](https://fishknowsss.github.io/118-Studio-Manager/vc/)
+- 在线预览：[https://118.fishknowsss.com/](https://118.fishknowsss.com/)
 - 仓库地址：[https://github.com/fishknowsss/118-Studio-Manager/tree/vc](https://github.com/fishknowsss/118-Studio-Manager/tree/vc)
 
 ## 这个版本能做什么
@@ -173,15 +173,15 @@ npm run build
 
 ## 部署说明
 
-GitHub Pages 采用“分支对应子目录”的方式发布：
+GitHub Pages 现在采用“`vc` 占根路径、其他分支保留子目录”的方式发布：
 
+- `vc` -> `https://118.fishknowsss.com/`
 - `main` -> `/118-Studio-Manager/v1/`
 - `singleD` -> `/118-Studio-Manager/singleD/`
-- `vc` -> `/118-Studio-Manager/vc/`
 
-`vc` 构建 base 定义在 [vite.config.ts](/Users/fishknowsss/Documents/MMSS/118SM/118studio-vc/vite.config.ts)，部署流程在 [deploy.yml](/Users/fishknowsss/Documents/MMSS/118SM/118studio-vc/.github/workflows/deploy.yml)。
+`vc` 自定义域名构建 base 定义在 [vite.config.ts](/Users/fishknowsss/Documents/MMSS/118SM/118studio-vc/vite.config.ts)，部署流程在 [deploy.yml](/Users/fishknowsss/Documents/MMSS/118SM/118studio-vc/.github/workflows/deploy.yml)。
 
-GitHub Pages 根路径会重定向到 `/vc/`，作为当前默认入口；`/v1/` 和 `/singleD/` 仍保留为独立版本路径。
+`vc` 部署会直接覆盖站点根目录，`v1` 和 `singleD` 继续作为独立版本路径保留。
 
 ## 目录结构
 

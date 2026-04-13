@@ -1113,10 +1113,12 @@ svg { display: block; flex-shrink: 0; }
   border-left: 3px solid var(--c-border);
 }
 .project-card:hover { box-shadow: var(--shadow-md); transform: translateY(-1px); }
-.project-card.urg-overdue { border-left-color: var(--c-overdue); }
-.project-card.urg-today   { border-left-color: var(--c-today); }
-.project-card.urg-soon    { border-left-color: var(--c-soon); }
-.project-card.urg-near    { border-left-color: var(--c-near); }
+.project-card.focus-overdue { border-left-color: var(--c-rose); }
+.project-card.focus-critical   { border-left-color: var(--c-overdue); }
+.project-card.focus-strong    { border-left-color: var(--c-today); }
+.project-card.focus-medium     { border-left-color: var(--c-soon); }
+.project-card.focus-calm    { border-left-color: var(--c-near); }
+.project-card.focus-neutral  { border-left-color: var(--c-border); }
 .project-card.urg-done    { border-left-color: var(--c-done); opacity: .7; }
 
 .project-card-top {
@@ -1169,10 +1171,13 @@ svg { display: block; flex-shrink: 0; }
   font-size: 11px;
   font-weight: 600;
 }
-.project-ddl-label.urg-overdue { color: var(--c-overdue); }
-.project-ddl-label.urg-today { color: var(--c-today); }
-.project-ddl-label.urg-soon { color: var(--c-soon); }
-.project-ddl-label.urg-near { color: var(--c-near); }
+.project-ddl-label.focus-overdue { color: var(--c-rose); }
+.project-ddl-label.focus-critical { color: var(--c-overdue); }
+.project-ddl-label.focus-strong { color: var(--c-today); }
+.project-ddl-label.focus-medium { color: var(--c-soon); }
+.project-ddl-label.focus-calm { color: var(--c-near); }
+.project-ddl-label.focus-neutral,
+.project-ddl-label.urg-done { color: var(--c-text-2); }
 .project-ddl-val { font-size: 11px; color: var(--c-text-2); }
 .project-task-count { font-size: 11px; color: var(--c-text-3); margin-left: auto; }
 
@@ -1265,6 +1270,13 @@ svg { display: block; flex-shrink: 0; }
   white-space: nowrap;
   overflow: hidden;
 }
+.timeline-bar.focus-overdue { border-color: var(--c-rose); background: var(--c-rose-bg); color: var(--c-rose); }
+.timeline-bar.focus-critical { border-color: var(--c-overdue); background: var(--c-overdue-bg); color: var(--c-overdue); }
+.timeline-bar.focus-strong { border-color: var(--c-today); background: var(--c-today-bg); color: var(--c-today); }
+.timeline-bar.focus-medium { border-color: var(--c-soon); background: var(--c-soon-bg); color: var(--c-soon); }
+.timeline-bar.focus-calm { border-color: var(--c-near); background: var(--c-near-bg); color: var(--c-near); }
+.timeline-bar.focus-neutral { border-color: var(--c-border); background: var(--c-bg); color: var(--c-text-2); }
+.timeline-bar.urg-done { border-color: var(--c-done); background: var(--c-sage-light); color: var(--c-sage); }
 
 /* Card actions */
 .card-actions {
@@ -1927,9 +1939,12 @@ select.form-input { cursor: pointer; }
   border-radius: var(--r-md);
   border-left: 3px solid var(--c-primary);
 }
-.planner-ddl-card.urg-overdue { border-left-color: var(--c-overdue); background: var(--c-overdue-bg); }
-.planner-ddl-card.urg-today   { border-left-color: var(--c-today);   background: var(--c-today-bg); }
-.planner-ddl-card.urg-soon    { border-left-color: var(--c-soon);    background: var(--c-soon-bg); }
+.planner-ddl-card.focus-overdue { border-left-color: var(--c-rose); background: var(--c-rose-bg); }
+.planner-ddl-card.focus-critical { border-left-color: var(--c-overdue); background: var(--c-overdue-bg); }
+.planner-ddl-card.focus-strong   { border-left-color: var(--c-today);   background: var(--c-today-bg); }
+.planner-ddl-card.focus-medium   { border-left-color: var(--c-soon);    background: var(--c-soon-bg); }
+.planner-ddl-card.focus-calm     { border-left-color: var(--c-near);    background: var(--c-near-bg); }
+.planner-ddl-card.focus-neutral  { border-left-color: var(--c-border);  background: var(--c-bg); }
 .planner-ddl-name {
   font-size: 13px;
   font-weight: 600;
