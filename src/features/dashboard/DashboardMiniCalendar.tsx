@@ -42,7 +42,9 @@ export function DashboardMiniCalendar({
             day.isToday ? 'today' : '',
             day.isOtherMonth ? 'other-month' : '',
             day.hasEvents ? 'has-events' : '',
-            day.hasUrgent ? 'has-urgent' : '',
+            day.markerKind === 'ddl' ? 'has-ddl' : '',
+            day.markerKind === 'milestone' ? 'has-milestone' : '',
+            day.markerTone || '',
           ].filter(Boolean).join(' ')
 
           return (
@@ -55,7 +57,15 @@ export function DashboardMiniCalendar({
       </div>
       <div className="cal-legend">
         <div className="cal-legend-item">
-          <div className="cal-legend-dot ddl"></div> DDL
+          <div className="cal-legend-scale">
+            <div className="cal-legend-dot focus-overdue"></div>
+            <div className="cal-legend-dot focus-critical"></div>
+            <div className="cal-legend-dot focus-strong"></div>
+            <div className="cal-legend-dot focus-medium"></div>
+            <div className="cal-legend-dot focus-calm"></div>
+            <div className="cal-legend-dot focus-neutral"></div>
+          </div>
+          截止越近越暖
         </div>
         <div className="cal-legend-item">
           <div className="cal-legend-dot milestone"></div> 里程碑

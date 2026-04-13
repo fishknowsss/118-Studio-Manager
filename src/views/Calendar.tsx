@@ -66,10 +66,10 @@ export function Calendar() {
               >
                 <div className="cal-day-num">{date.getDate()}</div>
                 {events.ddls.slice(0, 2).map((item) => (
-                  <div key={`ddl-${item}`} className="cal-event ddl" title={item}>⬡ {item}</div>
+                  <div key={`ddl-${item.label}`} className={`cal-event ddl ${item.toneKey}`} title={item.label}>⬡ {item.label}</div>
                 ))}
                 {events.milestones.slice(0, 2).map((item) => (
-                  <div key={`ms-${item}`} className="cal-event milestone" title={item}>◆ {item}</div>
+                  <div key={`ms-${item.label}`} className={`cal-event milestone ${item.toneKey}`} title={item.label}>◆ {item.label}</div>
                 ))}
                 {moreCount > 0 ? <div className="cal-event more">+{moreCount} 项</div> : null}
               </button>

@@ -166,8 +166,24 @@ describe('store selectors', () => {
     const model = buildDashboardMiniCalendarModel(
       new Date('2026-04-12T10:00:00+08:00'),
       {
-        '2026-04-12': { ddls: [], hasDdl: false, hasMs: true, milestones: ['检查点'], urgent: false },
-        '2026-04-18': { ddls: ['毕业设计'], hasDdl: true, hasMs: false, milestones: [], urgent: true },
+        '2026-04-12': {
+          ddls: [],
+          hasDdl: false,
+          hasMs: true,
+          markerKind: 'milestone',
+          markerTone: 'focus-calm',
+          milestones: [{ label: '检查点', toneKey: 'focus-calm' }],
+          urgent: false,
+        },
+        '2026-04-18': {
+          ddls: [{ label: '毕业设计', toneKey: 'focus-critical' }],
+          hasDdl: true,
+          hasMs: false,
+          markerKind: 'ddl',
+          markerTone: 'focus-critical',
+          milestones: [],
+          urgent: true,
+        },
       },
       '2026-04-12',
     )
@@ -183,12 +199,16 @@ describe('store selectors', () => {
       hasUrgent: false,
       isOtherMonth: false,
       isToday: true,
+      markerKind: 'milestone',
+      markerTone: 'focus-calm',
     })
 
     const urgentCell = model.days.find((day) => day.dateKey === '2026-04-18')
     expect(urgentCell).toMatchObject({
       hasEvents: true,
       hasUrgent: true,
+      markerKind: 'ddl',
+      markerTone: 'focus-critical',
     })
   })
 
@@ -236,13 +256,16 @@ describe('store selectors', () => {
     ])
 
     expect(eventMap['2026-04-18']).toEqual({
-      ddls: ['毕业设计'],
+      ddls: [{ label: '毕业设计', toneKey: 'focus-critical' }],
       hasDdl: true,
       hasMs: true,
-      milestones: ['终稿提交'],
+      markerKind: 'ddl',
+      markerTone: 'focus-critical',
+      milestones: [{ label: '终稿提交', toneKey: 'focus-critical' }],
       urgent: false,
     })
     expect(eventMap['2026-04-10']?.urgent).toBe(true)
+    expect(eventMap['2026-04-10']?.markerTone).toBe('focus-overdue')
   })
 
   it('builds planner event rows from the same event summary map', () => {
@@ -259,8 +282,8 @@ describe('store selectors', () => {
     ])
 
     expect(getProjectEventsForDate(eventMap, '2026-04-18')).toEqual([
-      { label: 'DDL · 毕业设计', type: 'ddl' },
-      { label: '里程碑 · 中期检查', type: 'milestone' },
+      { label: 'DDL · 毕业设计', toneKey: 'focus-critical', type: 'ddl' },
+      { label: '里程碑 · 中期检查', toneKey: 'focus-critical', type: 'milestone' },
     ])
   })
 

@@ -80,6 +80,8 @@ export type DashboardMiniCalendarDay = {
   hasUrgent: boolean
   isOtherMonth: boolean
   isToday: boolean
+  markerKind?: 'ddl' | 'milestone' | ''
+  markerTone?: ProjectDeadlineToneKey | ''
 }
 
 export type DashboardMiniCalendarModel = {
@@ -97,11 +99,18 @@ export type DashboardFocusCard = {
   urgencyKey: string
 }
 
+export type ProjectEventItem = {
+  label: string
+  toneKey: ProjectDeadlineToneKey
+}
+
 export type ProjectEventSummary = {
-  ddls: string[]
+  ddls: ProjectEventItem[]
   hasDdl: boolean
   hasMs: boolean
-  milestones: string[]
+  markerKind?: 'ddl' | 'milestone' | ''
+  markerTone?: ProjectDeadlineToneKey | ''
+  milestones: ProjectEventItem[]
   urgent: boolean
 }
 
@@ -176,6 +185,14 @@ const PROJECT_TONE_ORDER: Record<ProjectDeadlineToneKey, number> = {
   'focus-calm': 4,
   'focus-neutral': 5,
   'urg-done': 6,
+}
+
+function isToneMoreUrgent(
+  nextTone: ProjectDeadlineToneKey,
+  currentTone: ProjectDeadlineToneKey | '' | undefined,
+) {
+  if (!currentTone) return true
+  return (PROJECT_TONE_ORDER[nextTone] ?? 99) < (PROJECT_TONE_ORDER[currentTone] ?? 99)
 }
 
 function formatSlashDate(dateStr: string | null | undefined) {
@@ -345,6 +362,8 @@ export function buildDashboardMiniCalendarModel(
       hasUrgent: Boolean(eventSummary?.urgent),
       isOtherMonth: otherMonth,
       isToday: dateKey === todayStr,
+      markerKind: eventSummary?.markerKind || '',
+      markerTone: eventSummary?.markerTone || '',
     } satisfies DashboardMiniCalendarDay
   })
 
@@ -372,20 +391,26 @@ export function buildCalendarEventMap(projects: LegacyProject[]) {
 
   return Object.fromEntries(
     Object.entries(summaryMap).map(([key, value]) => [key, {
-      ddls: value.ddls,
-      milestones: value.milestones,
+      ddls: value.ddls.map((item) => item.label),
+      milestones: value.milestones.map((item) => item.label),
     }]),
   )
 }
 
-export function buildProjectEventSummaryMap(projects: LegacyProject[]) {
+export function buildProjectEventSummaryMap(
+  projects: LegacyProject[],
+  referenceDate = shiftLocalDateKey(new Date(), 0),
+) {
   const nextMap: Record<string, ProjectEventSummary> = {}
+  const toneMap = buildProjectDeadlineToneMap(projects, referenceDate)
 
   const ensureDay = (key: string) => {
     nextMap[key] ||= {
       ddls: [],
       hasDdl: false,
       hasMs: false,
+      markerKind: '',
+      markerTone: '',
       milestones: [],
       urgent: false,
     }
@@ -394,12 +419,17 @@ export function buildProjectEventSummaryMap(projects: LegacyProject[]) {
 
   for (const project of projects) {
     const ddlKey = coerceToLocalDateKey(project.ddl)
+    const toneKey = toneMap[project.id] || 'focus-neutral'
     if (ddlKey && project.name) {
       const day = ensureDay(ddlKey)
-      day.ddls.push(project.name)
+      day.ddls.push({ label: project.name, toneKey })
       day.hasDdl = true
       if (urgencyClass(ddlKey, project.status || 'active').includes('overdue')) {
         day.urgent = true
+      }
+      if (isToneMoreUrgent(toneKey, day.markerTone)) {
+        day.markerTone = toneKey
+        day.markerKind = 'ddl'
       }
     }
 
@@ -407,8 +437,12 @@ export function buildProjectEventSummaryMap(projects: LegacyProject[]) {
       const milestoneKey = coerceToLocalDateKey(milestone.date)
       if (milestoneKey && milestone.title) {
         const day = ensureDay(milestoneKey)
-        day.milestones.push(milestone.title)
+        day.milestones.push({ label: milestone.title, toneKey })
         day.hasMs = true
+        if (!day.hasDdl && isToneMoreUrgent(toneKey, day.markerTone)) {
+          day.markerTone = toneKey
+          day.markerKind = 'milestone'
+        }
       }
     }
   }
@@ -424,8 +458,8 @@ export function getProjectEventsForDate(
   if (!day) return []
 
   return [
-    ...day.ddls.map((name) => ({ label: `DDL · ${name}`, type: 'ddl' as const })),
-    ...day.milestones.map((name) => ({ label: `里程碑 · ${name}`, type: 'milestone' as const })),
+    ...day.ddls.map((item) => ({ label: `DDL · ${item.label}`, toneKey: item.toneKey, type: 'ddl' as const })),
+    ...day.milestones.map((item) => ({ label: `里程碑 · ${item.label}`, toneKey: item.toneKey, type: 'milestone' as const })),
   ]
 }
 

@@ -915,8 +915,25 @@ svg { display: block; flex-shrink: 0; }
   border-radius: 50%;
   background: var(--c-teal);
 }
-.mini-cal-day.today.has-events::after { background: rgba(255,255,255,.75); }
-.mini-cal-day.has-urgent::after { background: var(--c-overdue); }
+.mini-cal-day.has-ddl.focus-overdue::after { background: var(--c-rose); }
+.mini-cal-day.has-ddl.focus-critical::after { background: var(--c-overdue); }
+.mini-cal-day.has-ddl.focus-strong::after { background: var(--c-today); }
+.mini-cal-day.has-ddl.focus-medium::after { background: var(--c-soon); }
+.mini-cal-day.has-ddl.focus-calm::after { background: var(--c-near); }
+.mini-cal-day.has-ddl.focus-neutral::after { background: var(--c-text-3); }
+.mini-cal-day.has-ddl.urg-done::after { background: var(--c-done); }
+.mini-cal-day.has-milestone::after {
+  background: transparent;
+  border: 1px solid var(--c-teal);
+}
+.mini-cal-day.has-milestone.focus-overdue::after { border-color: var(--c-rose); }
+.mini-cal-day.has-milestone.focus-critical::after { border-color: var(--c-overdue); }
+.mini-cal-day.has-milestone.focus-strong::after { border-color: var(--c-today); }
+.mini-cal-day.has-milestone.focus-medium::after { border-color: var(--c-soon); }
+.mini-cal-day.has-milestone.focus-calm::after { border-color: var(--c-near); }
+.mini-cal-day.has-milestone.focus-neutral::after { border-color: var(--c-text-3); }
+.mini-cal-day.has-milestone.urg-done::after { border-color: var(--c-done); }
+.mini-cal-day.today.has-events::after { background: rgba(255,255,255,.75); border-color: rgba(255,255,255,.75); }
 
 .cal-legend {
   margin-top: 10px;
@@ -938,8 +955,21 @@ svg { display: block; flex-shrink: 0; }
   border-radius: 50%;
   flex-shrink: 0;
 }
-.cal-legend-dot.ddl { background: var(--c-overdue); }
-.cal-legend-dot.milestone { background: var(--c-primary); }
+.cal-legend-scale {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+}
+.cal-legend-dot.focus-overdue { background: var(--c-rose); }
+.cal-legend-dot.focus-critical { background: var(--c-overdue); }
+.cal-legend-dot.focus-strong { background: var(--c-today); }
+.cal-legend-dot.focus-medium { background: var(--c-soon); }
+.cal-legend-dot.focus-calm { background: var(--c-near); }
+.cal-legend-dot.focus-neutral { background: var(--c-text-3); }
+.cal-legend-dot.milestone {
+  background: transparent;
+  border: 1px solid var(--c-teal);
+}
 
 /* ─── Full Calendar View ─────────────────────────────── */
 .view-calendar {
@@ -1042,8 +1072,25 @@ svg { display: block; flex-shrink: 0; }
   text-overflow: ellipsis;
   line-height: 1.4;
 }
-.cal-event.ddl { background: var(--c-overdue-bg); color: var(--c-overdue); }
-.cal-event.milestone { background: var(--c-primary-light); color: var(--c-primary); }
+.cal-event.ddl.focus-overdue { background: var(--c-rose-bg); color: var(--c-rose); }
+.cal-event.ddl.focus-critical { background: var(--c-overdue-bg); color: var(--c-overdue); }
+.cal-event.ddl.focus-strong { background: var(--c-today-bg); color: var(--c-today); }
+.cal-event.ddl.focus-medium { background: var(--c-soon-bg); color: var(--c-soon); }
+.cal-event.ddl.focus-calm { background: var(--c-near-bg); color: var(--c-near); }
+.cal-event.ddl.focus-neutral { background: var(--c-bg); color: var(--c-text-2); }
+.cal-event.ddl.urg-done { background: var(--c-sage-light); color: var(--c-sage); }
+.cal-event.milestone {
+  background: var(--c-surface);
+  color: var(--c-text-2);
+  border: 1px solid var(--c-border);
+}
+.cal-event.milestone.focus-overdue { border-color: rgba(217, 70, 138, 0.28); color: var(--c-rose); }
+.cal-event.milestone.focus-critical { border-color: rgba(229, 77, 77, 0.24); color: var(--c-overdue); }
+.cal-event.milestone.focus-strong { border-color: rgba(232, 132, 15, 0.24); color: var(--c-today); }
+.cal-event.milestone.focus-medium { border-color: rgba(202, 138, 4, 0.24); color: var(--c-soon); }
+.cal-event.milestone.focus-calm { border-color: rgba(65, 102, 245, 0.24); color: var(--c-near); }
+.cal-event.milestone.focus-neutral { color: var(--c-text-2); }
+.cal-event.milestone.urg-done { border-color: rgba(93, 173, 130, 0.24); color: var(--c-sage); }
 .cal-event.more { background: var(--c-bg); color: var(--c-text-3); }
 
 /* ─── Projects View ──────────────────────────────────── */
@@ -2200,8 +2247,24 @@ select.form-input { cursor: pointer; }
   margin-bottom: 4px;
   font-size: 12px;
 }
-.planner-event-row.ddl { background: var(--c-overdue-bg); color: var(--c-overdue); }
-.planner-event-row.milestone { background: var(--c-primary-light); color: var(--c-primary); }
+.planner-event-row.ddl.focus-overdue { background: var(--c-rose-bg); color: var(--c-rose); }
+.planner-event-row.ddl.focus-critical { background: var(--c-overdue-bg); color: var(--c-overdue); }
+.planner-event-row.ddl.focus-strong { background: var(--c-today-bg); color: var(--c-today); }
+.planner-event-row.ddl.focus-medium { background: var(--c-soon-bg); color: var(--c-soon); }
+.planner-event-row.ddl.focus-calm { background: var(--c-near-bg); color: var(--c-near); }
+.planner-event-row.ddl.focus-neutral { background: var(--c-bg); color: var(--c-text-2); }
+.planner-event-row.ddl.urg-done { background: var(--c-sage-light); color: var(--c-sage); }
+.planner-event-row.milestone {
+  background: var(--c-surface);
+  color: var(--c-text-2);
+  border: 1px solid var(--c-border);
+}
+.planner-event-row.milestone.focus-overdue { border-color: rgba(217, 70, 138, 0.28); color: var(--c-rose); }
+.planner-event-row.milestone.focus-critical { border-color: rgba(229, 77, 77, 0.24); color: var(--c-overdue); }
+.planner-event-row.milestone.focus-strong { border-color: rgba(232, 132, 15, 0.24); color: var(--c-today); }
+.planner-event-row.milestone.focus-medium { border-color: rgba(202, 138, 4, 0.24); color: var(--c-soon); }
+.planner-event-row.milestone.focus-calm { border-color: rgba(65, 102, 245, 0.24); color: var(--c-near); }
+.planner-event-row.milestone.urg-done { border-color: rgba(93, 173, 130, 0.24); color: var(--c-sage); }
 
 /* ─── Confirm Dialog ─────────────────────────────────── */
 .confirm-modal {

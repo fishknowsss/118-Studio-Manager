@@ -208,11 +208,15 @@ describe('current app regressions', () => {
     const dashboardSource = readFileSync(join(process.cwd(), 'src/views/Dashboard.tsx'), 'utf8')
     const calendarSource = readFileSync(join(process.cwd(), 'src/views/Calendar.tsx'), 'utf8')
     const plannerSource = readFileSync(join(process.cwd(), 'src/features/planner/PlannerProvider.tsx'), 'utf8')
+    const miniCalendarSource = readFileSync(join(process.cwd(), 'src/features/dashboard/DashboardMiniCalendar.tsx'), 'utf8')
 
     expect(dashboardSource).toMatch(/buildProjectEventSummaryMap/)
     expect(calendarSource).toMatch(/buildProjectEventSummaryMap/)
     expect(plannerSource).toMatch(/buildProjectEventSummaryMap/)
     expect(plannerSource).toMatch(/getProjectEventsForDate/)
+    expect(calendarSource).toMatch(/toneKey/)
+    expect(miniCalendarSource).toMatch(/markerTone/)
+    expect(miniCalendarSource).toMatch(/markerKind/)
   })
 
   it('keeps dashboard assignment drag feedback state-driven and split into dedicated panels', () => {

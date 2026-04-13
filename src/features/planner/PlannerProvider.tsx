@@ -173,7 +173,7 @@ function PlannerDrawer({
           <div className="planner-section">
             <div className="planner-section-title">关键节点</div>
             {events.map((event) => (
-              <div key={`${event.type}-${event.label}`} className={`planner-event-row ${event.type}`}>
+              <div key={`${event.type}-${event.label}`} className={`planner-event-row ${event.type} ${event.toneKey || ''}`}>
                 {event.label}
               </div>
             ))}
