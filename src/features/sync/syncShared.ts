@@ -16,7 +16,6 @@ export type SyncEnvelope = {
 export type SyncMetaResponse = {
   hasData: boolean
   current: SyncMeta | null
-  manualBackup: SyncMeta | null
 }
 
 export function hasBackupContent(payload: BackupPayload) {
@@ -31,40 +30,22 @@ export function hasBackupContent(payload: BackupPayload) {
 
 export function applyRemoteWrite({
   payload,
-  previousBackup,
   source,
   timestamp,
   version,
-  createBackup,
 }: {
   payload: BackupPayload
-  previousBackup: SyncEnvelope | null
   source: SyncSource
   timestamp: string
   version: string
-  createBackup: boolean
 }) {
-  const current: SyncEnvelope = {
+  return {
     meta: {
       version,
       updatedAt: timestamp,
       source,
     },
     data: payload,
-  }
-
-  return {
-    current,
-    manualBackup: createBackup
-      ? {
-          meta: {
-            version,
-            updatedAt: timestamp,
-            source: 'manual' as const,
-          },
-          data: payload,
-        }
-      : previousBackup,
   }
 }
 

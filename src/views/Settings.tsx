@@ -28,8 +28,7 @@ export function Settings() {
     statusLabel,
     lastSyncLabel,
     latestSyncLabel,
-    latestBackupLabel,
-    manualSyncAndBackup,
+    manualSync,
     restoreCloudToLocal,
   } = useCloudSync()
   const [transferState, setTransferState] = useState<TransferState | null>(null)
@@ -99,8 +98,11 @@ export function Settings() {
 
   const handleManualSyncAndBackup = async () => {
     try {
-      await manualSyncAndBackup()
-      toast('已同步到云端，并覆盖最新备份', 'success')
+      await manualSync()
+      const result = await exportBackupData()
+      downloadFile(JSON.stringify(result.data, null, 2), result.filename)
+      setTransferState({ action: 'export', summary: result.summary })
+      toast('已同步到云端，并下载本地备份', 'success')
     } catch (error) {
       toast(error instanceof Error ? error.message : '云端同步失败', 'error')
     }
@@ -154,10 +156,6 @@ export function Settings() {
                     <span className="settings-meta-label">最近同步/备份</span>
                     <strong className="settings-meta-value">{latestSyncLabel}</strong>
                   </div>
-                  <div className="settings-meta-item">
-                    <span className="settings-meta-label">最新手动备份</span>
-                    <strong className="settings-meta-value">{latestBackupLabel}</strong>
-                  </div>
                 </div>
                 {cloudSyncState.message && cloudSyncState.phase === 'error' ? (
                   <div className="settings-transfer-note">{cloudSyncState.message}</div>
@@ -169,7 +167,7 @@ export function Settings() {
                 <div className="settings-row">
                   <div className="settings-row-info">
                     <div className="settings-row-label">手动同步并备份</div>
-                    <div className="settings-row-desc">立即上传当前本地数据，并覆盖云端最新一次手动备份。</div>
+                    <div className="settings-row-desc">立即同步到云端，并下载一份当前 JSON 到本地。</div>
                   </div>
                   <button className="btn btn-primary" type="button" onClick={() => void handleManualSyncAndBackup()} disabled={!cloudSyncState.configured}>
                     同步并备份

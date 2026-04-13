@@ -37,7 +37,6 @@ type CloudSyncState = {
   message: string | null
   lastCompletedSyncAt: string | null
   latestSyncMeta: SyncMeta | null
-  latestBackupMeta: SyncMeta | null
   hasCloudData: boolean
 }
 
@@ -46,15 +45,14 @@ type CloudSyncContextValue = {
   statusLabel: string
   lastSyncLabel: string
   latestSyncLabel: string
-  latestBackupLabel: string
-  manualSyncAndBackup: () => Promise<void>
+  manualSync: () => Promise<void>
   restoreCloudToLocal: () => Promise<void>
   refreshRemoteMeta: () => Promise<void>
 }
 
 const CloudSyncContext = createContext<CloudSyncContextValue | null>(null)
 
-const AUTO_SYNC_DEBOUNCE_MS = 12_000
+const AUTO_SYNC_DEBOUNCE_MS = 2 * 60_000
 const META_POLL_MS = 10 * 60_000
 
 function hasLocalData() {
@@ -75,7 +73,6 @@ export function CloudSyncProvider({ children }: { children: ReactNode }) {
     message: configured ? null : '未配置云同步地址',
     lastCompletedSyncAt: initialPersisted.lastCompletedSyncAt,
     latestSyncMeta: null,
-    latestBackupMeta: null,
     hasCloudData: false,
   })
   const persistedRef = useRef(initialPersisted)
@@ -133,7 +130,6 @@ export function CloudSyncProvider({ children }: { children: ReactNode }) {
         phase: currentState.phase === 'disabled' ? 'disabled' : 'ready',
         message: null,
         latestSyncMeta: meta.current,
-        latestBackupMeta: meta.manualBackup,
         hasCloudData: meta.hasData,
       }))
 
@@ -160,20 +156,20 @@ export function CloudSyncProvider({ children }: { children: ReactNode }) {
     }
   }, [applyRemoteCurrentToLocal, configured])
 
-  const pushLocalData = useCallback(async (source: 'auto' | 'manual', createBackup: boolean) => {
+  const pushLocalData = useCallback(async (source: 'auto' | 'manual') => {
     if (!configured) return
     if (syncingRef.current) return
 
     syncingRef.current = true
     setState((currentState) => ({
       ...currentState,
-      phase: source === 'manual' ? 'syncing' : 'syncing',
-      message: source === 'manual' ? '正在手动同步并备份' : '正在同步到云端',
+      phase: 'syncing',
+      message: source === 'manual' ? '正在同步到云端' : '正在自动同步',
     }))
 
     try {
       const payload = await db.exportAll()
-      const result = await pushCloudSyncData({ payload, source, createBackup })
+      const result = await pushCloudSyncData({ payload, source })
       pendingLocalChangesRef.current = false
       updatePersistedState({
         lastCompletedSyncAt: new Date().toISOString(),
@@ -185,7 +181,6 @@ export function CloudSyncProvider({ children }: { children: ReactNode }) {
         message: null,
         lastCompletedSyncAt: persistedRef.current.lastCompletedSyncAt,
         latestSyncMeta: result.current.meta,
-        latestBackupMeta: result.manualBackup?.meta || currentState.latestBackupMeta,
         hasCloudData: true,
       }))
     } catch (error) {
@@ -210,7 +205,7 @@ export function CloudSyncProvider({ children }: { children: ReactNode }) {
       pendingLocalChangesRef.current = true
       if (syncTimerRef.current) window.clearTimeout(syncTimerRef.current)
       syncTimerRef.current = window.setTimeout(() => {
-        void pushLocalData('auto', false)
+        void pushLocalData('auto')
       }, AUTO_SYNC_DEBOUNCE_MS)
     })
 
@@ -235,7 +230,7 @@ export function CloudSyncProvider({ children }: { children: ReactNode }) {
 
   const value = useMemo<CloudSyncContextValue>(() => ({
     state,
-    statusLabel: state.phase === 'syncing' ? '正在实时自动同步' : '正在实时自动同步',
+    statusLabel: state.phase === 'syncing' ? '正在自动同步' : '正在自动同步',
     lastSyncLabel: state.phase === 'disabled'
       ? '未配置云同步地址'
       : state.phase === 'error'
@@ -244,11 +239,8 @@ export function CloudSyncProvider({ children }: { children: ReactNode }) {
     latestSyncLabel: state.latestSyncMeta
       ? `${formatSyncSource(state.latestSyncMeta.source)} · ${formatSyncDateTime(state.latestSyncMeta.updatedAt)}`
       : '云端还没有同步记录',
-    latestBackupLabel: state.latestBackupMeta
-      ? `${formatSyncDateTime(state.latestBackupMeta.updatedAt)}`
-      : '云端还没有手动备份',
-    manualSyncAndBackup: async () => {
-      await pushLocalData('manual', true)
+    manualSync: async () => {
+      await pushLocalData('manual')
     },
     restoreCloudToLocal: async () => {
       setState((currentState) => ({

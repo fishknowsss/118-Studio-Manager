@@ -44,11 +44,9 @@ export async function fetchCloudSyncData() {
 export async function pushCloudSyncData({
   payload,
   source,
-  createBackup,
 }: {
   payload: BackupPayload
   source: SyncSource
-  createBackup: boolean
 }) {
   if (!API_URL) throw new Error('未配置云同步地址')
   const response = await fetch(`${API_URL}/data`, {
@@ -57,8 +55,7 @@ export async function pushCloudSyncData({
     body: JSON.stringify({
       payload,
       source,
-      createBackup,
     }),
   })
-  return await readJson<{ current: SyncEnvelope; manualBackup: SyncEnvelope | null }>(response)
+  return await readJson<{ current: SyncEnvelope }>(response)
 }

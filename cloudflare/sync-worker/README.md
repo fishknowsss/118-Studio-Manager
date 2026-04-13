@@ -22,9 +22,7 @@ VITE_SYNC_API_URL=https://sync.fishknowsss.com
 
 ## 数据结构
 
-- `sync:current:data`
-- `sync:current:meta`
-- `sync:backup:manual:data`
-- `sync:backup:manual:meta`
+- `sync:current`
 
-其中“手动同步并备份”会覆盖 `sync:backup:manual:*`，始终只保留最新一次手动备份。
+Worker 只在云端保留一份当前快照。  
+“同步并备份”按钮的“备份”改为在前端下载本地 JSON，不再额外写入云端备份槽。
