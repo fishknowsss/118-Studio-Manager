@@ -181,7 +181,7 @@ GitHub Pages 采用“分支对应子目录”的方式发布：
 
 `vc` 构建 base 定义在 [vite.config.ts](/Users/fishknowsss/Documents/MMSS/118SM/118studio-vc/vite.config.ts)，部署流程在 [deploy.yml](/Users/fishknowsss/Documents/MMSS/118SM/118studio-vc/.github/workflows/deploy.yml)。
 
-需要注意的是，仓库默认分支已经是 `vc`，但 GitHub Pages 根路径当前仍会跳到 `/v1/`。如果后面要让站点首页直接展示 `vc`，还需要单独调整部署重定向策略。
+GitHub Pages 根路径会重定向到 `/vc/`，作为当前默认入口；`/v1/` 和 `/singleD/` 仍保留为独立版本路径。
 
 ## 目录结构
 

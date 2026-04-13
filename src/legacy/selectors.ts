@@ -520,18 +520,37 @@ export function getDashboardFocusData(
   }
 }
 
+function getFocusToneByIndex(index: number) {
+  if (index === 0) return 'focus-critical'
+  if (index === 1) return 'focus-strong'
+  if (index === 2) return 'focus-medium'
+  if (index === 3) return 'focus-calm'
+  return 'focus-neutral'
+}
+
 export function buildDashboardFocusCards(
   projects: LegacyProject[],
   tasks: LegacyTask[],
   todayStr: string,
   limit = 8,
 ) {
-  return getTopProjects(projects, limit).map((project) => {
+  const topProjects = getTopProjects(projects, limit)
+  let upcomingIndex = 0
+
+  return topProjects.map((project) => {
     const projectTasks = tasks.filter((task) => task.projectId === project.id)
     const nextMilestone = (project.milestones || [])
       .filter((milestone) => !milestone.completed && milestone.date && milestone.date >= todayStr)
       .sort((left, right) => (left.date || '').localeCompare(right.date || ''))[0]
-    const urgencyKey = urgencyClass(project.ddl || null, project.status || 'active')
+    const days = daysUntil(project.ddl || null)
+    let urgencyKey = 'focus-neutral'
+
+    if (days !== null && days < 0) {
+      urgencyKey = 'focus-overdue'
+    } else if (days !== null) {
+      urgencyKey = getFocusToneByIndex(upcomingIndex)
+      upcomingIndex += 1
+    }
 
     return {
       ddlLabel: ddlLabel(project.ddl || null, project.status || 'active'),

@@ -6,15 +6,17 @@ import { URGENCY_TEXT } from './focusLabels'
 export function FocusPrimaryCard({
   focusData,
   project,
+  toneKey,
   onExpandProject,
 }: {
   focusData: ReturnType<typeof getDashboardFocusData>
   onExpandProject: (x: number, y: number) => void
   project: LegacyProject
+  toneKey: string
 }) {
   return (
     <div
-      className={`focus-highlight ${focusData?.uc || ''}`}
+      className={`focus-highlight ${toneKey}`}
       onClick={(e) => { const r = e.currentTarget.getBoundingClientRect(); onExpandProject(r.left + r.width / 2, r.top + r.height / 2) }}
     >
       <div className="focus-highlight-head">
@@ -23,7 +25,7 @@ export function FocusPrimaryCard({
           <div className="focus-highlight-name">{project.name}</div>
           <div className="focus-highlight-ddl">{ddlLabel(project.ddl || null, project.status || 'active')}</div>
         </div>
-        <div className="focus-highlight-tier">{URGENCY_TEXT[focusData?.uc || ''] || '未迫近'}</div>
+        <div className="focus-highlight-tier">{URGENCY_TEXT[toneKey] || '未迫近'}</div>
       </div>
       <div className="focus-highlight-brief">{focusData?.brief}</div>
       <div className="focus-highlight-meta">

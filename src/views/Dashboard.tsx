@@ -88,6 +88,7 @@ export function Dashboard() {
 
   const focusProj = topProjects[0] as LegacyProject | undefined
   const focusData = useMemo(() => getDashboardFocusData(focusProj, tasks, todayStr), [focusProj, tasks, todayStr])
+  const primaryFocusTone = focusCards[0]?.urgencyKey || 'focus-neutral'
 
   const clearDragState = () => {
     setDraggingPersonId(null)
@@ -169,6 +170,7 @@ export function Dashboard() {
               <FocusPrimaryCard
                 focusData={focusData}
                 project={focusProj}
+                toneKey={primaryFocusTone}
                 onExpandProject={(ox, oy) => setExpandedPanel({ type: 'project', projectId: focusProj.id, ox, oy })}
               />
               <FocusSecondaryCards

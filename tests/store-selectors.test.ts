@@ -35,7 +35,7 @@ describe('store selectors', () => {
     expect(maps.openTaskCountByPersonId['person-1']).toBe(1)
   })
 
-  it('keeps dashboard task pool actionable and priority-sorted', () => {
+  it('keeps dashboard task pool sorted by status, priority, and deadline', () => {
     const pool = getTaskPool([
       { id: 'task-4', title: '低优先级', status: 'todo', priority: 'low', endDate: '2026-04-20' },
       { id: 'task-3', title: '进行中', status: 'in-progress', priority: 'medium', endDate: '2026-04-18' },
@@ -44,7 +44,7 @@ describe('store selectors', () => {
       { id: 'task-5', title: '受阻', status: 'blocked', priority: 'high', endDate: '2026-04-17' },
     ])
 
-    expect(pool.map((task) => task.id)).toEqual(['task-2', 'task-3', 'task-4'])
+    expect(pool.map((task) => task.id)).toEqual(['task-5', 'task-3', 'task-2', 'task-4', 'task-1'])
   })
 
   it('computes dashboard focus counters and next milestone from one place', () => {
@@ -77,6 +77,13 @@ describe('store selectors', () => {
     const cards = buildDashboardFocusCards(
       [
         {
+          id: 'project-0',
+          name: '项目 逾期',
+          status: 'active',
+          ddl: '2026-04-10',
+          milestones: [],
+        },
+        {
           id: 'project-1',
           name: '项目 A',
           status: 'active',
@@ -92,6 +99,27 @@ describe('store selectors', () => {
           ddl: '2026-04-18',
           milestones: [],
         },
+        {
+          id: 'project-3',
+          name: '项目 C',
+          status: 'active',
+          ddl: '2026-04-21',
+          milestones: [],
+        },
+        {
+          id: 'project-4',
+          name: '项目 D',
+          status: 'active',
+          ddl: '2026-04-25',
+          milestones: [],
+        },
+        {
+          id: 'project-5',
+          name: '项目 E',
+          status: 'active',
+          ddl: '2026-05-02',
+          milestones: [],
+        },
       ],
       [
         { id: 'task-1', projectId: 'project-1', status: 'todo' },
@@ -102,31 +130,33 @@ describe('store selectors', () => {
     )
 
     expect(cards[0]).toMatchObject({
+      id: 'project-0',
+      urgencyKey: 'focus-overdue',
+    })
+    expect(cards[1]).toMatchObject({
       id: 'project-1',
       name: '项目 A',
       openTaskCount: 1,
-      urgencyKey: 'urg-soon',
+      urgencyKey: 'focus-critical',
     })
-    expect(cards[0].nextMilestone?.title).toBe('验收')
-    expect(cards[1]).toMatchObject({
+    expect(cards[1].nextMilestone?.title).toBe('验收')
+    expect(cards[2]).toMatchObject({
       id: 'project-2',
       openTaskCount: 1,
-      urgencyKey: 'urg-near',
+      urgencyKey: 'focus-strong',
     })
+    expect(cards[3].urgencyKey).toBe('focus-medium')
+    expect(cards[4].urgencyKey).toBe('focus-calm')
+    expect(cards[5].urgencyKey).toBe('focus-neutral')
   })
 
   it('builds dashboard header copy from one model selector', () => {
     const header = buildDashboardHeaderModel(
       new Date('2026-04-12T10:00:00+08:00'),
-      { text: '先完成最关键的一步', src: '测试语录' },
-      '今天也往前推一点',
     )
 
     expect(header).toEqual({
       dateText: '4月12日',
-      motivation: '今天也往前推一点',
-      quoteSource: '测试语录',
-      quoteText: '先完成最关键的一步',
       weekdayText: '2026 · 星期日',
     })
   })
@@ -309,7 +339,7 @@ describe('store selectors', () => {
     )
 
     expect(items[0]).toMatchObject({
-      assigneeName: '张三',
+      assigneeNames: ['张三'],
       dateText: '逾期 2026/4/11',
       estimatedHoursText: '3h',
       isDone: false,

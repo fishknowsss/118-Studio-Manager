@@ -6,10 +6,10 @@ import { ContextMenu, type ContextMenuItem } from '../../components/ui/ContextMe
 import { TaskDialog } from '../tasks/TaskDialog'
 import { deleteTaskWithLog, updateTaskQuickField } from '../../legacy/actions'
 import { useLegacyStoreSnapshot } from '../../legacy/useLegacyStore'
-import { formatDate, initials, today, STATUS_LABELS } from '../../legacy/utils'
+import { formatDate, today, STATUS_LABELS } from '../../legacy/utils'
 import type { TaskStatus } from '../../legacy/store'
 
-type TaskRow = LegacyTask & { people: LegacyPerson[]; project?: LegacyProject | null }
+type TaskRow = LegacyTask & { people?: LegacyPerson[]; project?: LegacyProject | null }
 type CtxState = { x: number; y: number; task: TaskRow }
 
 function StatusIcon({ status }: { status: string | undefined }) {
@@ -90,6 +90,18 @@ export function TaskPoolPanel({
       ]
     : []
 
+  const formatAssigneeText = (people: LegacyPerson[]) => {
+    if (people.length === 0) return '未分配'
+
+    const visibleNames = people
+      .slice(0, 2)
+      .map((person) => person.name || '未命名')
+      .join('、')
+
+    if (people.length <= 2) return visibleNames
+    return `${visibleNames} +${people.length - 2}`
+  }
+
   return (
     <div className="panel">
       <div
@@ -106,8 +118,7 @@ export function TaskPoolPanel({
           tasks.map((task) => {
             const isOverdue = task.endDate && task.endDate < today() && task.status !== 'done'
             const isDropTarget = Boolean(draggingPersonId) && dragOverTaskId === task.id
-            const visiblePeople = task.people.slice(0, 3)
-            const extraPeople = Math.max(0, task.people.length - 3)
+            const assignees = task.people ?? []
             return (
               <div
                 key={task.id}
@@ -121,36 +132,29 @@ export function TaskPoolPanel({
                 onDrop={(event) => onDropToTask(event, task.id)}
               >
                 <StatusIcon status={task.status} />
-                <span className="task-title-text">{task.title}</span>
+                <div className="task-row-body">
+                  <span className="task-title-text">{task.title}</span>
 
-                <div className="task-pool-meta">
-                  {/* 负责人 —— 最重要 */}
-                  <div className="task-pool-assignees">
-                    {task.people.length === 0 ? (
-                      <span className="task-pool-unassigned">未分配</span>
-                    ) : (
-                      <>
-                        {visiblePeople.map((p) => (
-                          <span key={p.id} className="task-pool-avatar" title={p.name || ''}>
-                            {initials(p.name || '')}
-                          </span>
-                        ))}
-                        {extraPeople > 0 ? (
-                          <span className="task-pool-avatar task-pool-avatar-more">+{extraPeople}</span>
-                        ) : null}
-                      </>
-                    )}
+                  <div className="task-row-meta">
+                    <span className={`task-meta-chip ${assignees.length === 0 ? 'is-muted' : ''}`}>
+                      <span className="task-meta-label">负责人</span>
+                      <span className="task-meta-value">{formatAssigneeText(assignees)}</span>
+                    </span>
+
+                    {task.project ? (
+                      <span className="task-meta-chip">
+                        <span className="task-meta-label">项目</span>
+                        <span className="task-meta-value">{task.project.name}</span>
+                      </span>
+                    ) : null}
+
+                    {task.endDate ? (
+                      <span className={`task-meta-chip ${isOverdue ? 'is-overdue' : ''}`}>
+                        <span className="task-meta-label">截止</span>
+                        <span className="task-meta-value">{formatDate(task.endDate || null)}</span>
+                      </span>
+                    ) : null}
                   </div>
-
-                  {/* 所属项目 */}
-                  {task.project ? (
-                    <span className="task-proj-tag">{task.project.name}</span>
-                  ) : null}
-
-                  {/* 逾期日期 */}
-                  {isOverdue ? (
-                    <span className="date-chip overdue">{formatDate(task.endDate || null)}</span>
-                  ) : null}
                 </div>
               </div>
             )

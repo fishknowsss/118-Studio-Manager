@@ -195,11 +195,13 @@ describe('current app regressions', () => {
   it('keeps planner drag feedback state-driven instead of mutating DOM styles in handlers', () => {
     const plannerSource = readFileSync(join(process.cwd(), 'src/features/planner/PlannerProvider.tsx'), 'utf8')
     const assignedListSource = readFileSync(join(process.cwd(), 'src/features/planner/PlannerAssignedList.tsx'), 'utf8')
+    const backlogListSource = readFileSync(join(process.cwd(), 'src/features/planner/PlannerBacklogList.tsx'), 'utf8')
 
     expect(plannerSource).not.toMatch(/currentTarget\.style/)
-    expect(plannerSource).toMatch(/PlannerAssignedList/)
-    expect(plannerSource).toMatch(/PlannerBacklogList/)
     expect(assignedListSource).toMatch(/PlannerDropZone/)
+    expect(assignedListSource).not.toMatch(/currentTarget\.style/)
+    expect(backlogListSource).not.toMatch(/currentTarget\.style/)
+    expect(backlogListSource).toMatch(/draggable/)
   })
 
   it('uses one shared selector for calendar and planner event aggregation', () => {
@@ -253,6 +255,14 @@ describe('current app regressions', () => {
     expect(workflowSource).toMatch(/node-version:\s*24/)
     expect(workflowSource).not.toMatch(/actions\/upload-pages-artifact@v4/)
     expect(localPagesArtifactSource).toMatch(/actions\/upload-artifact@v6/)
+  })
+
+  it('redirects the GitHub Pages root entry to vc', () => {
+    const workflowSource = readFileSync(join(process.cwd(), '.github/workflows/deploy.yml'), 'utf8')
+
+    expect(workflowSource).toMatch(/url=\/118-Studio-Manager\/vc\//)
+    expect(workflowSource).toMatch(/Redirecting to <a href="\/118-Studio-Manager\/vc\/">/)
+    expect(workflowSource).not.toMatch(/url=\/118-Studio-Manager\/v1\//)
   })
 
   it('keeps dashboard skill tags clipped inside compact person cards', () => {

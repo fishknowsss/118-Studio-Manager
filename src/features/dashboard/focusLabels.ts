@@ -1,7 +1,9 @@
 export const URGENCY_TEXT: Record<string, string> = {
-  'urg-overdue': '逾期',
-  'urg-today': '今日截止',
-  'urg-soon': '3天内',
-  'urg-near': '7天内',
+  'focus-overdue': '逾期',
+  'focus-critical': '最近截止',
+  'focus-strong': '较近截止',
+  'focus-medium': '中段排期',
+  'focus-calm': '较远截止',
+  'focus-neutral': '远期',
   '': '未迫近',
 }
