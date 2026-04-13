@@ -16,6 +16,7 @@ import {
   type LegacyTask,
   type TaskPriority,
   type TaskStatus,
+  getTaskAssigneeIds,
 } from '../legacy/store'
 import { PRIORITY_LABELS, STATUS_LABELS, today } from '../legacy/utils'
 import { useLegacyStoreSnapshot } from '../legacy/useLegacyStore'
@@ -74,27 +75,29 @@ export function Tasks() {
       }))
     }
 
+    const currentTask = tasks.find((t) => t.id === contextMenu.taskId)
+    const currentIds = currentTask ? getTaskAssigneeIds(currentTask) : []
     return [
       {
-        key: 'unassigned',
-        label: '取消分配',
+        key: '__clear',
+        label: '清除全部负责人',
         onSelect: () => {
-          void updateTaskQuickField(contextMenu.taskId, { assigneeId: null }).then((updated) => {
-            if (updated) toast('已更新', 'success')
-          })
+          void updateTaskQuickField(contextMenu.taskId, { assigneeIds: [] }).then((u) => { if (u) toast('已更新', 'success') })
         },
       },
-      ...activePeople.map((person) => ({
-        key: person.id,
-        label: person.name || '未命名人员',
-        onSelect: () => {
-          void updateTaskQuickField(contextMenu.taskId, { assigneeId: person.id }).then((updated) => {
-            if (updated) toast('已更新', 'success')
-          })
-        },
-      })),
+      ...activePeople.map((person) => {
+        const assigned = currentIds.includes(person.id)
+        return {
+          key: person.id,
+          label: `${assigned ? '✓ ' : ''}${person.name || '未命名人员'}`,
+          onSelect: () => {
+            const next = assigned ? currentIds.filter((id) => id !== person.id) : [...currentIds, person.id]
+            void updateTaskQuickField(contextMenu.taskId, { assigneeIds: next }).then((u) => { if (u) toast('已更新', 'success') })
+          },
+        }
+      }),
     ]
-  }, [activePeople, contextMenu, toast])
+  }, [activePeople, contextMenu, tasks, toast])
 
   const handleDeleteTask = async (task: LegacyTask) => {
     const ok = await confirm('删除任务', `确认删除「${task.title}」？此操作不可撤销。`)

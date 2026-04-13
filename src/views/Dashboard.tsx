@@ -4,6 +4,7 @@ import { DashboardMiniCalendar } from '../features/dashboard/DashboardMiniCalend
 import { FocusPrimaryCard } from '../features/dashboard/FocusPrimaryCard'
 import { FocusSecondaryCards } from '../features/dashboard/FocusSecondaryCards'
 import { PeopleAssignmentPanel } from '../features/dashboard/PeopleAssignmentPanel'
+import { PersonDetailPanel } from '../features/dashboard/PersonDetailPanel'
 import { ProjectDetailPanel } from '../features/dashboard/ProjectDetailPanel'
 import { TaskPoolPanel } from '../features/dashboard/TaskPoolPanel'
 import { ExpandPanel } from '../components/ui/ExpandPanel'
@@ -21,7 +22,7 @@ import {
   getTaskPool,
   getTopProjects,
 } from '../legacy/selectors'
-import { type LegacyProject } from '../legacy/store'
+import { type LegacyProject, getTaskAssigneeIds } from '../legacy/store'
 import { useLegacyStoreSnapshot } from '../legacy/useLegacyStore'
 import { formatLocalDateKey } from '../legacy/utils'
 import { Tasks } from './Tasks'
@@ -34,12 +35,17 @@ type ExpandedPanel =
   | ({ type: 'people' }   & Origin)
   | ({ type: 'calendar' } & Origin)
   | ({ type: 'project'; projectId: string } & Origin)
+  | ({ type: 'person'; personId: string } & Origin)
   | null
 
-function getPanelTitle(panel: NonNullable<ExpandedPanel>, projects: LegacyProject[]): string {
+function getPanelTitle(panel: NonNullable<ExpandedPanel>, projects: LegacyProject[], people: { id: string; name?: string }[]): string {
   if (panel.type === 'tasks') return '全部任务'
   if (panel.type === 'people') return '团队成员'
   if (panel.type === 'calendar') return '项目日历'
+  if (panel.type === 'person') {
+    const person = people.find((p) => p.id === panel.personId)
+    return person?.name || '成员详情'
+  }
   const proj = projects.find((p) => p.id === panel.projectId)
   return proj?.name || '项目详情'
 }
@@ -73,7 +79,7 @@ export function Dashboard() {
   const activePersonCards = useMemo(() => buildPersonCardModels(activePeople, tasks), [activePeople, tasks])
   const poolRows = useMemo(() => taskPool.map((task) => ({
     ...task,
-    person: task.assigneeId ? entityMaps.peopleById[task.assigneeId] : null,
+    people: getTaskAssigneeIds(task).map((id) => entityMaps.peopleById[id]).filter(Boolean),
     project: task.projectId ? entityMaps.projectsById[task.projectId] : null,
   })), [entityMaps.peopleById, entityMaps.projectsById, taskPool])
   const eventMap = useMemo(() => buildProjectEventSummaryMap(projects), [projects])
@@ -196,6 +202,7 @@ export function Dashboard() {
           onDropToPerson={handleDropToPerson}
           onPersonDragEnd={clearDragState}
           onPersonDragStart={handlePersonDragStart}
+          onPersonClick={(personId, ox, oy) => setExpandedPanel({ type: 'person', personId, ox, oy })}
           people={activePersonCards}
         />
         <DashboardMiniCalendar
@@ -209,7 +216,7 @@ export function Dashboard() {
 
       {expandedPanel ? (
         <ExpandPanel
-          title={getPanelTitle(expandedPanel, projects)}
+          title={getPanelTitle(expandedPanel, projects, people)}
           originX={expandedPanel.ox}
           originY={expandedPanel.oy}
           onClose={closePanel}
@@ -219,6 +226,9 @@ export function Dashboard() {
           {expandedPanel.type === 'calendar' && <Calendar />}
           {expandedPanel.type === 'project' && (
             <ProjectDetailPanel projectId={expandedPanel.projectId} />
+          )}
+          {expandedPanel.type === 'person' && (
+            <PersonDetailPanel personId={expandedPanel.personId} />
           )}
         </ExpandPanel>
       ) : null}

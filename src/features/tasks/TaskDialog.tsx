@@ -8,8 +8,9 @@ import {
   type LegacyProject,
   type LegacyTask,
 } from '../../legacy/store'
-import { PRIORITY_LABELS, STATUS_LABELS } from '../../legacy/utils'
+import { PRIORITY_LABELS, STATUS_LABELS, initials } from '../../legacy/utils'
 import { saveTaskFromForm, type TaskFormInput } from '../../legacy/actions'
+import { getTaskAssigneeIds } from '../../legacy/store'
 
 export function TaskDialog({
   onClose,
@@ -29,7 +30,7 @@ export function TaskDialog({
     projectId: task?.projectId || null,
     status: task?.status || 'todo',
     priority: task?.priority || 'medium',
-    assigneeId: task?.assigneeId || null,
+    assigneeIds: task ? getTaskAssigneeIds(task) : [],
     scheduledDate: task?.scheduledDate || null,
     startDate: task?.startDate || null,
     endDate: task?.endDate || null,
@@ -38,10 +39,24 @@ export function TaskDialog({
   }))
 
   const activePeople = people.filter((person) => person.status === 'active')
-  const currentAssignee = task?.assigneeId ? people.find((person) => person.id === task.assigneeId) : null
-  const displayPeople = currentAssignee && currentAssignee.status !== 'active'
-    ? [...activePeople, currentAssignee]
+  // Also include inactive people already assigned (so they stay visible)
+  const assignedInactive = task
+    ? getTaskAssigneeIds(task)
+        .map((id) => people.find((p) => p.id === id))
+        .filter((p): p is LegacyPerson => !!p && p.status !== 'active')
+    : []
+  const displayPeople = assignedInactive.length > 0
+    ? [...activePeople, ...assignedInactive]
     : activePeople
+
+  const toggleAssignee = (personId: string) => {
+    setForm((cur) => ({
+      ...cur,
+      assigneeIds: cur.assigneeIds.includes(personId)
+        ? cur.assigneeIds.filter((id) => id !== personId)
+        : [...cur.assigneeIds, personId],
+    }))
+  }
 
   const save = async () => {
     if (!form.title?.trim()) {
@@ -97,16 +112,37 @@ export function TaskDialog({
             ))}
           </select>
         </div>
-        <div className="form-field">
-          <label className="form-label" htmlFor="task-assignee">负责人</label>
-          <select id="task-assignee" className="form-input" value={form.assigneeId || ''} onChange={(event) => setForm((current) => ({ ...current, assigneeId: event.target.value || null }))}>
-            <option value="">（未分配）</option>
-            {displayPeople.map((person) => (
-              <option key={person.id} value={person.id}>
-                {person.id === task?.assigneeId && person.status !== 'active' ? `${person.name}（已停用）` : person.name}
-              </option>
-            ))}
-          </select>
+        <div className="form-field span2">
+          <label className="form-label">
+            负责人
+            {form.assigneeIds.length > 0 ? <span className="form-label-count"> · {form.assigneeIds.length} 人</span> : null}
+          </label>
+          <div className="assignee-picker">
+            {displayPeople.map((person) => {
+              const selected = form.assigneeIds.includes(person.id)
+              const isInactive = person.status !== 'active'
+              return (
+                <button
+                  key={person.id}
+                  type="button"
+                  className={`assignee-chip${selected ? ' selected' : ''}${isInactive ? ' inactive' : ''}`}
+                  onClick={() => toggleAssignee(person.id)}
+                >
+                  <span className="assignee-chip-avatar">{initials(person.name || '')}</span>
+                  <span className="assignee-chip-name">
+                    {person.name}
+                    {isInactive ? <span className="assignee-chip-inactive-label">（已停用）</span> : null}
+                  </span>
+                  {selected ? (
+                    <svg className="assignee-chip-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" width="12" height="12">
+                      <polyline points="20 6 9 17 4 12" />
+                    </svg>
+                  ) : null}
+                </button>
+              )
+            })}
+            {displayPeople.length === 0 ? <span className="text-muted text-sm">暂无可用人员</span> : null}
+          </div>
         </div>
         <div className="form-field">
           <label className="form-label" htmlFor="task-scheduled">安排日期</label>

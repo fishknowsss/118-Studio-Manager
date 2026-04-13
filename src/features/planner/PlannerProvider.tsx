@@ -3,7 +3,7 @@
 import { createContext, useContext, useMemo, useState, type ReactNode } from 'react'
 import { ExpandPanel } from '../../components/ui/ExpandPanel'
 import { buildProjectEventSummaryMap, getActivePeople, getProjectEventsForDate } from '../../legacy/selectors'
-import { type LegacyProject } from '../../legacy/store'
+import { type LegacyProject, getTaskAssigneeIds } from '../../legacy/store'
 import { ddlLabel, formatDateFull, formatDate, shiftLocalDateKey, parseLocalDateKey, today, urgencyClass, STATUS_LABELS } from '../../legacy/utils'
 import { useLegacyStoreSnapshot } from '../../legacy/useLegacyStore'
 
@@ -77,7 +77,7 @@ function PlannerDrawer({
       .map((t) => ({
         ...t,
         project: t.projectId ? storeSnapshot.getProject(t.projectId) : null,
-        assignee: t.assigneeId ? storeSnapshot.getPerson(t.assigneeId) : null,
+        assignee: getTaskAssigneeIds(t).length > 0 ? storeSnapshot.getPerson(getTaskAssigneeIds(t)[0]) : null,
       })),
     [storeSnapshot, dateStr],
   )
@@ -89,7 +89,7 @@ function PlannerDrawer({
       .map((t) => ({
         ...t,
         project: t.projectId ? storeSnapshot.getProject(t.projectId) : null,
-        assignee: t.assigneeId ? storeSnapshot.getPerson(t.assigneeId) : null,
+        assignee: getTaskAssigneeIds(t).length > 0 ? storeSnapshot.getPerson(getTaskAssigneeIds(t)[0]) : null,
       })),
     [storeSnapshot, dateStr],
   )

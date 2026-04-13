@@ -11,6 +11,7 @@ export function PeopleAssignmentPanel({
   onDropToPerson,
   onPersonDragEnd,
   onPersonDragStart,
+  onPersonClick,
   people,
   slotCount = 15,
 }: {
@@ -22,6 +23,7 @@ export function PeopleAssignmentPanel({
   onDropToPerson: (event: DragEvent<HTMLDivElement>, personId: string) => void
   onPersonDragEnd: () => void
   onPersonDragStart: (event: DragEvent<HTMLDivElement>, personId: string) => void
+  onPersonClick: (personId: string, ox: number, oy: number) => void
   people: PersonCardModel[]
   slotCount?: number
 }) {
@@ -45,6 +47,7 @@ export function PeopleAssignmentPanel({
               onDragOver={onDragOverPerson}
               onDragStart={onPersonDragStart}
               onDrop={onDropToPerson}
+              onPersonClick={onPersonClick}
             />
           ))}
           {Array.from({ length: placeholders }, (_, index) => (

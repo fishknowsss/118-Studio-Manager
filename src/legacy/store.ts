@@ -40,12 +40,21 @@ export type LegacyTask = LegacyEntity & {
   projectId?: string | null
   status?: TaskStatus
   priority?: TaskPriority
+  /** @deprecated use assigneeIds */
   assigneeId?: string | null
+  assigneeIds?: string[]
   scheduledDate?: string | null
   startDate?: string | null
   endDate?: string | null
   estimatedHours?: number | null
   description?: string
+}
+
+/** 读取任务负责人列表，兼容旧字段 assigneeId */
+export function getTaskAssigneeIds(task: LegacyTask): string[] {
+  if (task.assigneeIds && task.assigneeIds.length > 0) return task.assigneeIds
+  if (task.assigneeId) return [task.assigneeId]
+  return []
 }
 
 export type LegacyPerson = LegacyEntity & {
@@ -87,12 +96,19 @@ export const store = {
   },
 
   async loadAll() {
-    ;[this.projects, this.tasks, this.people, this.logs] = await Promise.all([
+    const [projects, rawTasks, people, logs] = await Promise.all([
       db.getAll('projects') as Promise<LegacyProject[]>,
       db.getAll('tasks') as Promise<LegacyTask[]>,
       db.getAll('people') as Promise<LegacyPerson[]>,
       db.getAll('logs') as Promise<LegacyLog[]>,
     ])
+    // 迁移旧字段：assigneeId → assigneeIds
+    this.projects = projects
+    this.tasks = rawTasks.map((t) =>
+      t.assigneeIds ? t : { ...t, assigneeIds: t.assigneeId ? [t.assigneeId] : [] },
+    )
+    this.people = people
+    this.logs = logs
     emitStoreUpdated()
   },
 
@@ -146,7 +162,7 @@ export const store = {
   },
 
   tasksForPerson(personId: string) {
-    return this.tasks.filter(task => task.assigneeId === personId && task.status !== 'done')
+    return this.tasks.filter(task => getTaskAssigneeIds(task).includes(personId) && task.status !== 'done')
   },
 
   async savePerson(person: LegacyPerson) {
@@ -159,13 +175,17 @@ export const store = {
 
   async deletePerson(id: string) {
     const updatedTasks = this.tasks
-      .filter(item => item.assigneeId === id)
-      .map(t => ({ ...t, assigneeId: null as string | null }))
+      .filter(item => getTaskAssigneeIds(item).includes(id))
+      .map(t => ({ ...t, assigneeIds: getTaskAssigneeIds(t).filter(aid => aid !== id) }))
     await db.runTransaction(['people', 'tasks'], 'readwrite', (stores) => {
       stores.people.delete(id)
       for (const task of updatedTasks) stores.tasks.put(task)
     })
-    this.tasks = this.tasks.map(t => t.assigneeId === id ? { ...t, assigneeId: null } : t)
+    this.tasks = this.tasks.map(t =>
+      getTaskAssigneeIds(t).includes(id)
+        ? { ...t, assigneeIds: getTaskAssigneeIds(t).filter(aid => aid !== id) }
+        : t,
+    )
     this.people = this.people.filter(person => person.id !== id)
     emitStoreUpdated({ type: 'person', action: 'delete', id })
   },

@@ -11,7 +11,7 @@ import type {
   TaskPriority,
   TaskStatus,
 } from './store'
-import { store } from './store'
+import { store, getTaskAssigneeIds } from './store'
 import { buildBackupSummary } from './selectors'
 import { formatFileDate, normalizeImportedBackup, now, uid } from './utils'
 
@@ -29,7 +29,7 @@ export type TaskFormInput = {
   projectId: string | null
   status: TaskStatus | null
   priority: TaskPriority | null
-  assigneeId: string | null
+  assigneeIds: string[]
   scheduledDate: string | null
   startDate: string | null
   endDate: string | null
@@ -74,7 +74,7 @@ export function buildTaskRecord(
     projectId: form.projectId || null,
     status: form.status || 'todo',
     priority: form.priority || 'medium',
-    assigneeId: form.assigneeId || null,
+    assigneeIds: form.assigneeIds,
     scheduledDate: form.scheduledDate || null,
     startDate: form.startDate || null,
     endDate: form.endDate || null,
@@ -177,11 +177,9 @@ export async function assignTaskToPerson(taskId: string, personId: string) {
   const person = store.getPerson(personId)
   if (!task || !person) return null
 
-  const updated = {
-    ...task,
-    assigneeId: personId,
-    updatedAt: now(),
-  }
+  const currentIds = getTaskAssigneeIds(task)
+  const assigneeIds = currentIds.includes(personId) ? currentIds : [...currentIds, personId]
+  const updated = { ...task, assigneeIds, updatedAt: now() }
 
   await store.saveTask(updated)
   await store.addLog(`分配任务「${task.title}」给 ${person.name || ''}`)

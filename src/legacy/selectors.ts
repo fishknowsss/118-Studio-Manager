@@ -14,6 +14,7 @@ import {
 } from './utils'
 import type { BackupPayload } from './utils'
 import type { LegacyLog, LegacyMilestone, LegacyPerson, LegacyProject, LegacyTask } from './store'
+import { getTaskAssigneeIds } from './store'
 
 type EntityMaps = {
   openTaskCountByPersonId: Record<string, number>
@@ -127,7 +128,7 @@ export type ProjectCardModel = {
 }
 
 export type TaskListItemModel = {
-  assigneeName: string
+  assigneeNames: string[]
   dateText: string
   estimatedHoursText: string
   id: string
@@ -188,8 +189,10 @@ export function buildEntityMaps(
       tasksByProjectId[task.projectId] ||= []
       tasksByProjectId[task.projectId].push(task)
     }
-    if (task.assigneeId && task.status !== 'done') {
-      openTaskCountByPersonId[task.assigneeId] = (openTaskCountByPersonId[task.assigneeId] || 0) + 1
+    if (task.status !== 'done') {
+      for (const pid of getTaskAssigneeIds(task)) {
+        openTaskCountByPersonId[pid] = (openTaskCountByPersonId[pid] || 0) + 1
+      }
     }
   }
 
@@ -208,10 +211,13 @@ export function getTopProjects(projects: LegacyProject[], limit = 8) {
   return sortByUrgency(getActiveProjects(projects)).slice(0, limit)
 }
 
+const POOL_STATUS_ORDER: Record<string, number> = { blocked: 0, 'in-progress': 1, todo: 2, done: 3 }
+
 export function getTaskPool(tasks: LegacyTask[]) {
   return [...tasks]
-    .filter((task) => task.status !== 'done' && task.status !== 'blocked')
     .sort((a, b) => {
+      const statusGap = (POOL_STATUS_ORDER[a.status || 'todo'] ?? 2) - (POOL_STATUS_ORDER[b.status || 'todo'] ?? 2)
+      if (statusGap !== 0) return statusGap
       const priorityGap = (PRIORITY_ORDER[a.priority || 'medium'] ?? 2) - (PRIORITY_ORDER[b.priority || 'medium'] ?? 2)
       if (priorityGap !== 0) return priorityGap
       return (a.endDate || '9999').localeCompare(b.endDate || '9999')
@@ -438,7 +444,9 @@ export function buildTaskListItemModels(
     const statusKey = task.status || 'todo'
 
     return {
-      assigneeName: task.assigneeId ? entityMaps.peopleById[task.assigneeId]?.name || '未分配' : '未分配',
+      assigneeNames: getTaskAssigneeIds(task)
+        .map((id) => entityMaps.peopleById[id]?.name || '')
+        .filter(Boolean),
       dateText: task.endDate ? `${isOverdue ? '逾期 ' : ''}${formatSlashDate(task.endDate)}` : '',
       estimatedHoursText: task.estimatedHours ? `${task.estimatedHours}h` : '',
       id: task.id,
@@ -559,7 +567,7 @@ export function getFilteredTasks(tasks: LegacyTask[], filters: TaskFilters) {
       (!filters.search || (task.title || '').toLowerCase().includes(filters.search.toLowerCase())) &&
       (!filters.projFilter || task.projectId === filters.projFilter) &&
       (!filters.statusFilter || task.status === filters.statusFilter) &&
-      (!filters.assigneeFilter || task.assigneeId === filters.assigneeFilter),
+      (!filters.assigneeFilter || getTaskAssigneeIds(task).includes(filters.assigneeFilter)),
     )
     .sort((a, b) => {
       if (a.status === 'done' && b.status !== 'done') return 1
@@ -598,7 +606,7 @@ export function buildTaskExportRows(
   maps: Pick<EntityMaps, 'peopleById' | 'projectsById'>,
 ) {
   return tasks.map((task) => ({
-    assignee: task.assigneeId ? maps.peopleById[task.assigneeId]?.name || '' : '',
+    assignees: getTaskAssigneeIds(task).map((id) => maps.peopleById[id]?.name || '').filter(Boolean).join(', '),
     createdAt: task.createdAt,
     endDate: task.endDate,
     estimatedHours: task.estimatedHours,
@@ -638,9 +646,13 @@ export function formatRecentLogs(logs: LegacyLog[]) {
 }
 
 export function createAssignedTaskUpdate(task: LegacyTask, personId: string | null, scheduledDate: string | null) {
+  const currentIds = getTaskAssigneeIds(task)
+  const assigneeIds = personId
+    ? currentIds.includes(personId) ? currentIds : [...currentIds, personId]
+    : []
   return {
     ...task,
-    assigneeId: personId,
+    assigneeIds,
     scheduledDate,
     updatedAt: now(),
   }

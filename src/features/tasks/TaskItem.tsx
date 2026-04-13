@@ -29,7 +29,9 @@ export function TaskItem({
         <div className="task-sub">
           {model.projectName ? <span>{model.projectName}</span> : null}
           <span className="context-field" onContextMenu={(event) => onMenu(event, 'assignee')}>
-            {model.assigneeName === '未分配' ? <span className="text-muted">{model.assigneeName}</span> : model.assigneeName}
+            {model.assigneeNames.length === 0
+              ? <span className="text-muted">未分配</span>
+              : model.assigneeNames.join(' · ')}
           </span>
           {model.estimatedHoursText ? <span>{model.estimatedHoursText}</span> : null}
         </div>

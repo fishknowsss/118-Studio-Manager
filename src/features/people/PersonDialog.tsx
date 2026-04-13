@@ -43,6 +43,16 @@ export function PersonDialog({
     setSkillInput('')
   }
 
+  const moveSkill = (index: number, dir: -1 | 1) => {
+    setForm((current) => {
+      const next = [...current.skills]
+      const target = index + dir
+      if (target < 0 || target >= next.length) return current
+      ;[next[index], next[target]] = [next[target], next[index]]
+      return { ...current, skills: next }
+    })
+  }
+
   const save = async () => {
     if (!form.name?.trim()) {
       toast('请填写姓名', 'error')
@@ -93,15 +103,29 @@ export function PersonDialog({
         <div className="form-field span2">
           <label className="form-label">技能标签</label>
           <div className="skills-editor">
-            {form.skills.map((skill) => (
-              <span key={skill} className="skill-edit-tag">
+            {form.skills.map((skill, idx) => (
+              <span key={`${skill}-${idx}`} className="skill-edit-tag">
+                <button
+                  type="button"
+                  className="skill-order-btn"
+                  disabled={idx === 0}
+                  onClick={() => moveSkill(idx, -1)}
+                  title="上移"
+                >‹</button>
                 {skill}
+                <button
+                  type="button"
+                  className="skill-order-btn"
+                  disabled={idx === form.skills.length - 1}
+                  onClick={() => moveSkill(idx, 1)}
+                  title="下移"
+                >›</button>
                 <button
                   type="button"
                   className="skill-remove-button"
                   onClick={() => setForm((current) => ({
                     ...current,
-                    skills: current.skills.filter((item) => item !== skill),
+                    skills: current.skills.filter((_, i) => i !== idx),
                   }))}
                 >
                   ×
