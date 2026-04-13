@@ -1,6 +1,7 @@
 import { openDB } from './db'
 import { store, type LegacyPerson, type LegacyProject, type LegacyTask } from './store'
 import { shiftLocalDateKey } from './utils'
+import { restoreCloudSnapshotOnBoot } from '../features/sync/bootstrapSync'
 
 let hasBooted = false
 
@@ -66,7 +67,14 @@ export async function initializeAppData() {
   await store.loadAll()
 
   if (!store.projects.length && !store.tasks.length && !store.people.length) {
-    await seedDemoData()
+    try {
+      const restored = await restoreCloudSnapshotOnBoot()
+      if (!restored) {
+        await seedDemoData()
+      }
+    } catch {
+      await seedDemoData()
+    }
   }
 
   if (!window.location.hash) {

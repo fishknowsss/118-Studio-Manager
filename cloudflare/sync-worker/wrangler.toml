@@ -1,0 +1,10 @@
+name = "118studio-sync"
+main = "src/index.js"
+compatibility_date = "2026-04-13"
+
+[[kv_namespaces]]
+binding = "SYNC_DATA"
+id = "2558bc293f854095bc0269f386d99130"
+
+[vars]
+ALLOWED_ORIGIN = "https://118.fishknowsss.com"

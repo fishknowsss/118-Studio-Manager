@@ -68,6 +68,7 @@ jobs:
       - name: Build
         env:
           DEPLOY_BASE: ${{ steps.vars.outputs.deploy_base }}
+          VITE_SYNC_API_URL: ${{ vars.VITE_SYNC_API_URL }}
         run: npm run build
 
       - name: Assemble versioned site

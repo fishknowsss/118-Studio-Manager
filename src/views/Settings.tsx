@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react'
 import { useConfirm } from '../components/feedback/ConfirmProvider'
 import { useToast } from '../components/feedback/ToastProvider'
+import { useCloudSync } from '../features/sync/SyncProvider'
 import { clearAllData, exportBackupData, importBackupText } from '../legacy/actions'
 import { downloadFile, formatFileDate, toCSV } from '../legacy/utils'
 import {
@@ -22,6 +23,15 @@ export function Settings() {
   const { projects, tasks, people, logs } = store
   const { toast } = useToast()
   const { confirm } = useConfirm()
+  const {
+    state: cloudSyncState,
+    statusLabel,
+    lastSyncLabel,
+    latestSyncLabel,
+    latestBackupLabel,
+    manualSyncAndBackup,
+    restoreCloudToLocal,
+  } = useCloudSync()
   const [transferState, setTransferState] = useState<TransferState | null>(null)
   const entityMaps = useMemo(() => buildEntityMaps(projects, tasks, people), [people, projects, tasks])
   const needsBackup = useMemo(() => getNeedsBackup(logs, projects), [logs, projects])
@@ -87,6 +97,30 @@ export function Settings() {
     toast('数据已清空', 'error')
   }
 
+  const handleManualSyncAndBackup = async () => {
+    try {
+      await manualSyncAndBackup()
+      toast('已同步到云端，并覆盖最新备份', 'success')
+    } catch (error) {
+      toast(error instanceof Error ? error.message : '云端同步失败', 'error')
+    }
+  }
+
+  const handleRestoreCloud = async () => {
+    const ok = await confirm('云端优先，更新本地', '这会用当前云端版本覆盖本地 IndexedDB。建议先导出本地 JSON。', {
+      confirmLabel: '继续覆盖',
+      tone: 'primary',
+    })
+    if (!ok) return
+
+    try {
+      await restoreCloudToLocal()
+      toast('本地已更新到云端版本', 'success')
+    } catch (error) {
+      toast(error instanceof Error ? error.message : '云端恢复失败', 'error')
+    }
+  }
+
   return (
     <div className="view-settings fade-in">
       <div className="view-header">
@@ -102,73 +136,131 @@ export function Settings() {
             </div>
           ) : null}
 
-          <div className="settings-section">
-            <div className="settings-section-title">当前数据</div>
-            <div className="settings-summary-grid">
-              <div className="settings-summary-item"><span>项目</span><strong>{currentSummary.projectCount}</strong></div>
-              <div className="settings-summary-item"><span>任务</span><strong>{currentSummary.taskCount}</strong></div>
-              <div className="settings-summary-item"><span>人员</span><strong>{currentSummary.personCount}</strong></div>
-              <div className="settings-summary-item"><span>日志</span><strong>{currentSummary.logCount}</strong></div>
-            </div>
-            {transferState ? (
-              <div className="settings-transfer-note">
-                最近一次{transferState.action === 'export' ? '导出' : transferState.action === 'import' ? '导入' : '清空'}：
-                {transferState.summary.projectCount} 项目 · {transferState.summary.taskCount} 任务 · {transferState.summary.personCount} 人员 · {transferState.summary.logCount} 日志
+          <div className="settings-columns">
+            <div className="settings-column">
+              <div className="settings-section">
+                <div className="settings-section-title">云端同步</div>
+                <div className="settings-row">
+                  <div className="settings-row-info">
+                    <div className="settings-row-label">{statusLabel}</div>
+                    <div className="settings-row-desc">{lastSyncLabel}</div>
+                  </div>
+                  <span className={`badge ${cloudSyncState.phase === 'error' ? 'badge-blocked' : 'badge-active'}`}>
+                    {cloudSyncState.configured ? '已连接' : '未配置'}
+                  </span>
+                </div>
+                <div className="settings-meta-list">
+                  <div className="settings-meta-item">
+                    <span className="settings-meta-label">最近同步/备份</span>
+                    <strong className="settings-meta-value">{latestSyncLabel}</strong>
+                  </div>
+                  <div className="settings-meta-item">
+                    <span className="settings-meta-label">最新手动备份</span>
+                    <strong className="settings-meta-value">{latestBackupLabel}</strong>
+                  </div>
+                </div>
+                {cloudSyncState.message && cloudSyncState.phase === 'error' ? (
+                  <div className="settings-transfer-note">{cloudSyncState.message}</div>
+                ) : null}
               </div>
-            ) : null}
-          </div>
 
-          <div className="settings-section">
-            <div className="settings-section-title">数据导出</div>
-            <div className="settings-row">
-              <div className="settings-row-info">
-                <div className="settings-row-label">导出 JSON</div>
-                <div className="settings-row-desc">完整备份项目、任务、人员、日志和设置。</div>
+              <div className="settings-section">
+                <div className="settings-section-title">手动操作</div>
+                <div className="settings-row">
+                  <div className="settings-row-info">
+                    <div className="settings-row-label">手动同步并备份</div>
+                    <div className="settings-row-desc">立即上传当前本地数据，并覆盖云端最新一次手动备份。</div>
+                  </div>
+                  <button className="btn btn-primary" type="button" onClick={() => void handleManualSyncAndBackup()} disabled={!cloudSyncState.configured}>
+                    同步并备份
+                  </button>
+                </div>
               </div>
-              <button className="btn btn-primary" type="button" onClick={() => void handleExportJSON()}>导出 JSON</button>
-            </div>
-            <div className="settings-row">
-              <div className="settings-row-info">
-                <div className="settings-row-label">导出 CSV</div>
-                <div className="settings-row-desc">导出项目或任务列表，方便整理和分享。</div>
-              </div>
-              <div className="settings-inline-actions">
-                <button className="btn btn-secondary btn-sm" type="button" onClick={handleExportProjectsCSV}>项目</button>
-                <button className="btn btn-secondary btn-sm" type="button" onClick={handleExportTasksCSV}>任务</button>
-              </div>
-            </div>
-          </div>
 
-          <div className="settings-section">
-            <div className="settings-section-title">数据导入</div>
-            <div className="settings-row">
-              <div className="settings-row-info">
-                <div className="settings-row-label">从 JSON 恢复</div>
-                <div className="settings-row-desc">导入前会提示确认，导入后会显示恢复摘要。</div>
+              <div className="settings-section">
+                <div className="settings-section-title">云端恢复</div>
+                <div className="settings-row">
+                  <div className="settings-row-info">
+                    <div className="settings-row-label">云端优先，更新本地</div>
+                    <div className="settings-row-desc">拉取当前云端主数据，并覆盖本地数据。</div>
+                  </div>
+                  <button className="btn btn-secondary" type="button" onClick={() => void handleRestoreCloud()} disabled={!cloudSyncState.configured || !cloudSyncState.hasCloudData}>
+                    更新本地
+                  </button>
+                </div>
               </div>
-              <button className="btn btn-secondary" type="button" onClick={handleImportJSON}>导入备份</button>
-            </div>
-          </div>
 
-          <div className="settings-section">
-            <div className="settings-section-title">危险操作</div>
-            <div className="settings-row">
-              <div className="settings-row-info">
-                <div className="settings-row-label danger-text">清空所有数据</div>
-                <div className="settings-row-desc">删除全部项目、任务、人员和日志。建议先备份。</div>
+              <div className="settings-section">
+                <div className="settings-section-title">当前数据</div>
+                <div className="settings-summary-grid">
+                  <div className="settings-summary-item"><span>项目</span><strong>{currentSummary.projectCount}</strong></div>
+                  <div className="settings-summary-item"><span>任务</span><strong>{currentSummary.taskCount}</strong></div>
+                  <div className="settings-summary-item"><span>人员</span><strong>{currentSummary.personCount}</strong></div>
+                  <div className="settings-summary-item"><span>日志</span><strong>{currentSummary.logCount}</strong></div>
+                </div>
+                {transferState ? (
+                  <div className="settings-transfer-note">
+                    最近一次{transferState.action === 'export' ? '导出' : transferState.action === 'import' ? '导入' : '清空'}：
+                    {transferState.summary.projectCount} 项目 · {transferState.summary.taskCount} 任务 · {transferState.summary.personCount} 人员 · {transferState.summary.logCount} 日志
+                  </div>
+                ) : null}
               </div>
-              <button className="btn btn-danger" type="button" onClick={() => void handleClearAll()}>清空</button>
             </div>
-          </div>
 
-          <div className="settings-section">
-            <div className="settings-section-title">关于</div>
-            <div className="settings-row">
-              <div className="settings-row-info">
-                <div className="settings-row-label">118 Studio Manager VC</div>
-                <div className="settings-row-desc">本地优先，数据存于 IndexedDB。</div>
+            <div className="settings-column">
+              <div className="settings-section">
+                <div className="settings-section-title">数据导出</div>
+                <div className="settings-row">
+                  <div className="settings-row-info">
+                    <div className="settings-row-label">导出 JSON</div>
+                    <div className="settings-row-desc">完整备份项目、任务、人员、日志和设置。</div>
+                  </div>
+                  <button className="btn btn-primary" type="button" onClick={() => void handleExportJSON()}>导出 JSON</button>
+                </div>
+                <div className="settings-row">
+                  <div className="settings-row-info">
+                    <div className="settings-row-label">导出 CSV</div>
+                    <div className="settings-row-desc">导出项目或任务列表，方便整理和分享。</div>
+                  </div>
+                  <div className="settings-inline-actions">
+                    <button className="btn btn-secondary btn-sm" type="button" onClick={handleExportProjectsCSV}>项目</button>
+                    <button className="btn btn-secondary btn-sm" type="button" onClick={handleExportTasksCSV}>任务</button>
+                  </div>
+                </div>
               </div>
-              <span className="badge badge-active">v1.1</span>
+
+              <div className="settings-section">
+                <div className="settings-section-title">数据导入</div>
+                <div className="settings-row">
+                  <div className="settings-row-info">
+                    <div className="settings-row-label">从 JSON 恢复</div>
+                    <div className="settings-row-desc">导入前会提示确认，导入后会显示恢复摘要。</div>
+                  </div>
+                  <button className="btn btn-secondary" type="button" onClick={handleImportJSON}>导入备份</button>
+                </div>
+              </div>
+
+              <div className="settings-section">
+                <div className="settings-section-title">危险操作</div>
+                <div className="settings-row">
+                  <div className="settings-row-info">
+                    <div className="settings-row-label danger-text">清空所有数据</div>
+                    <div className="settings-row-desc">删除全部项目、任务、人员和日志。建议先备份。</div>
+                  </div>
+                  <button className="btn btn-danger" type="button" onClick={() => void handleClearAll()}>清空</button>
+                </div>
+              </div>
+
+              <div className="settings-section">
+                <div className="settings-section-title">关于</div>
+                <div className="settings-row">
+                  <div className="settings-row-info">
+                    <div className="settings-row-label">118 Studio Manager VC</div>
+                    <div className="settings-row-desc">本地优先，数据存于 IndexedDB，可选接入 Cloudflare Worker 云同步。</div>
+                  </div>
+                  <span className="badge badge-active">v1.1</span>
+                </div>
+              </div>
             </div>
           </div>
         </div>
