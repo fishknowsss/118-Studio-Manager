@@ -133,28 +133,29 @@ export function TaskPoolPanel({
               >
                 <StatusIcon status={task.status} />
                 <div className="task-row-body">
-                  <span className="task-title-text">{task.title}</span>
+                  <div className="task-row-main">
+                    <span className="task-title-text">{task.title}</span>
 
-                  <div className="task-row-meta">
-                    <span className={`task-meta-chip ${assignees.length === 0 ? 'is-muted' : ''}`}>
-                      <span className="task-meta-label">负责人</span>
-                      <span className="task-meta-value">{formatAssigneeText(assignees)}</span>
-                    </span>
-
-                    {task.project ? (
-                      <span className="task-meta-chip">
-                        <span className="task-meta-label">项目</span>
-                        <span className="task-meta-value">{task.project.name}</span>
+                    <div className="task-row-meta">
+                      <span className={`task-meta-chip ${assignees.length === 0 ? 'is-muted' : ''}`}>
+                        <span className="task-meta-label">负责人</span>
+                        <span className="task-meta-value">{formatAssigneeText(assignees)}</span>
                       </span>
-                    ) : null}
 
-                    {task.endDate ? (
-                      <span className={`task-meta-chip ${isOverdue ? 'is-overdue' : ''}`}>
-                        <span className="task-meta-label">截止</span>
-                        <span className="task-meta-value">{formatDate(task.endDate || null)}</span>
-                      </span>
-                    ) : null}
+                      {task.project ? (
+                        <span className="task-meta-chip">
+                          <span className="task-meta-label">项目</span>
+                          <span className="task-meta-value">{task.project.name}</span>
+                        </span>
+                      ) : null}
+                    </div>
                   </div>
+
+                  {task.endDate ? (
+                    <span className={`task-row-deadline ${isOverdue ? 'is-overdue' : ''}`} aria-label={`截止 ${formatDate(task.endDate || null)}`}>
+                      {formatDate(task.endDate || null)}
+                    </span>
+                  ) : null}
                 </div>
               </div>
             )

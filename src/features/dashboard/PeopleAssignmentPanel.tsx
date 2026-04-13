@@ -13,7 +13,7 @@ export function PeopleAssignmentPanel({
   onPersonDragStart,
   onPersonClick,
   people,
-  slotCount = 15,
+  slotCount = 16,
 }: {
   dragOverPersonId: string | null
   draggingTaskId: string | null

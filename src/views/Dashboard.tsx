@@ -28,12 +28,14 @@ import { formatLocalDateKey } from '../legacy/utils'
 import { Tasks } from './Tasks'
 import { People } from './People'
 import { Calendar } from './Calendar'
+import { Projects } from './Projects'
 
 type Origin = { ox: number; oy: number }
 type ExpandedPanel =
   | ({ type: 'tasks' }    & Origin)
   | ({ type: 'people' }   & Origin)
   | ({ type: 'calendar' } & Origin)
+  | ({ type: 'projects' } & Origin)
   | ({ type: 'project'; projectId: string } & Origin)
   | ({ type: 'person'; personId: string } & Origin)
   | null
@@ -42,6 +44,7 @@ function getPanelTitle(panel: NonNullable<ExpandedPanel>, projects: LegacyProjec
   if (panel.type === 'tasks') return '全部任务'
   if (panel.type === 'people') return '团队成员'
   if (panel.type === 'calendar') return '项目日历'
+  if (panel.type === 'projects') return '所有项目'
   if (panel.type === 'person') {
     const person = people.find((p) => p.id === panel.personId)
     return person?.name || '成员详情'
@@ -161,7 +164,13 @@ export function Dashboard() {
       <DashboardHeader model={headerModel} />
 
       <div className="today-focus">
-        <div className="focus-label">今日焦点</div>
+        <div
+          className="focus-section-header"
+          onClick={(e) => { const r = e.currentTarget.getBoundingClientRect(); setExpandedPanel({ type: 'projects', ox: r.left + r.width / 2, oy: r.top + r.height / 2 }) }}
+        >
+          <span className="focus-label">项目焦点</span>
+          <span className="panel-action">展开全部</span>
+        </div>
         <div className="focus-cards">
           {!focusProj ? (
             <div className="focus-empty">暂无活跃项目 — 新建一个开始吧</div>
@@ -226,6 +235,7 @@ export function Dashboard() {
           {expandedPanel.type === 'tasks' && <Tasks />}
           {expandedPanel.type === 'people' && <People />}
           {expandedPanel.type === 'calendar' && <Calendar />}
+          {expandedPanel.type === 'projects' && <Projects />}
           {expandedPanel.type === 'project' && (
             <ProjectDetailPanel projectId={expandedPanel.projectId} />
           )}

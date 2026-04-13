@@ -91,7 +91,7 @@ export default function App() {
                 </div>
 
                 <ul className="nav-list">
-                  <NavItem label="今日" active={view === 'dashboard'} onClick={() => window.location.hash = '#dashboard'}>
+                  <NavItem label="首页" active={view === 'dashboard'} onClick={() => window.location.hash = '#dashboard'}>
                     <rect x="3" y="3" width="7" height="7" rx="1" />
                     <rect x="14" y="3" width="7" height="7" rx="1" />
                     <rect x="3" y="14" width="7" height="7" rx="1" />

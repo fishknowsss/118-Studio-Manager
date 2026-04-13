@@ -3,7 +3,7 @@ import { useConfirm } from '../../components/feedback/ConfirmProvider'
 import { useToast } from '../../components/feedback/ToastProvider'
 import { PersonDialog } from '../people/PersonDialog'
 import { ContextMenu, type ContextMenuItem } from '../../components/ui/ContextMenu'
-import { deleteTaskWithLog, toggleTaskStatus, updateTaskQuickField } from '../../legacy/actions'
+import { toggleTaskStatus, updateTaskQuickField } from '../../legacy/actions'
 import { buildTaskListItemModels } from '../../legacy/selectors'
 import { useLegacyStoreSnapshot } from '../../legacy/useLegacyStore'
 import { initials, today, STATUS_LABELS, PRIORITY_LABELS } from '../../legacy/utils'
@@ -108,8 +108,11 @@ export function PersonDetailPanel({ personId }: { personId: string }) {
               onDelete={async () => {
                 const t = snap.tasks.find((tk) => tk.id === item.id)
                 if (!t) return
-                const ok = await confirm('删除任务', `「${t.title}」将被永久删除`)
-                if (ok) { void deleteTaskWithLog(t); toast('已删除', 'success') }
+                const ok = await confirm('解除分配', `将「${t.title}」从 ${person.name || '该成员'} 的任务中移除`)
+                if (ok) {
+                  const newIds = getTaskAssigneeIds(t).filter((id) => id !== personId)
+                  void updateTaskQuickField(t.id, { assigneeIds: newIds }).then(() => toast('已解除分配', 'success'))
+                }
               }}
               onMenu={(e, type) => setContextMenu({ taskId: item.id, type, x: e.clientX, y: e.clientY })}
             />
@@ -131,8 +134,11 @@ export function PersonDetailPanel({ personId }: { personId: string }) {
                 onDelete={async () => {
                   const t = snap.tasks.find((tk) => tk.id === item.id)
                   if (!t) return
-                  const ok = await confirm('删除任务', `「${t.title}」将被永久删除`)
-                  if (ok) { void deleteTaskWithLog(t); toast('已删除', 'success') }
+                  const ok = await confirm('解除分配', `将「${t.title}」从 ${person.name || '该成员'} 的任务中移除`)
+                  if (ok) {
+                    const newIds = getTaskAssigneeIds(t).filter((id) => id !== personId)
+                    void updateTaskQuickField(t.id, { assigneeIds: newIds }).then(() => toast('已解除分配', 'success'))
+                  }
                 }}
                 onMenu={(e, type) => setContextMenu({ taskId: item.id, type, x: e.clientX, y: e.clientY })}
               />

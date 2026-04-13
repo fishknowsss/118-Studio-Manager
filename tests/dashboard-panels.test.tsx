@@ -1,5 +1,7 @@
 // @vitest-environment jsdom
 
+import { readFileSync } from 'node:fs'
+import { join } from 'node:path'
 import type { ReactNode } from 'react'
 import { act } from 'react'
 import { createRoot } from 'react-dom/client'
@@ -31,7 +33,13 @@ function renderNode(node: ReactNode) {
 }
 
 describe('dashboard panels', () => {
-  it('renders people assignment as a 3x5 card grid with reserved slots', () => {
+  it('keeps the dashboard lower layout balanced between task pool and people panels', () => {
+    const styleSource = readFileSync(join(process.cwd(), 'css/style.css'), 'utf8')
+
+    expect(styleSource).toMatch(/\.dash-bottom\s*\{[\s\S]*grid-template-columns:\s*minmax\(0,\s*1fr\)\s+minmax\(0,\s*1fr\)\s+minmax\(280px,\s*0\.88fr\)/)
+  })
+
+  it('renders people assignment as a 4x4 card grid with reserved slots', () => {
     const people: LegacyPerson[] = [
       { id: 'person-1', name: '王浩然', gender: 'male', status: 'active', skills: ['Cinema 4D', '建模'] },
       { id: 'person-2', name: '佳宁', gender: 'female', status: 'active', skills: ['After Effects', '调色'] },
@@ -65,7 +73,7 @@ describe('dashboard panels', () => {
 
     expect(view.container.querySelector('.people-assignment-grid')).not.toBeNull()
     expect(cards).toHaveLength(2)
-    expect(placeholders).toHaveLength(13)
+    expect(placeholders).toHaveLength(14)
     expect(firstCard?.textContent).toContain('王浩然')
     expect(firstCard?.textContent).toContain('Cinema 4D')
     expect(firstCard?.textContent).toContain('2 任务')
@@ -159,7 +167,7 @@ describe('dashboard panels', () => {
     peopleView.cleanup()
   })
 
-  it('renders task row meta with readable assignee names instead of avatar circles', () => {
+  it('renders task row meta with readable assignee names and plain deadline text on the right', () => {
     const people: LegacyPerson[] = [
       { id: 'person-1', name: '王浩然', gender: 'male', status: 'active', skills: ['Cinema 4D'] },
       { id: 'person-2', name: '佳宁', gender: 'female', status: 'active', skills: ['After Effects'] },
@@ -198,6 +206,8 @@ describe('dashboard panels', () => {
     expect(view.container.textContent).toContain('+1')
     expect(view.container.textContent).toContain('项目')
     expect(view.container.textContent).toContain('品牌宣传片第三季')
+    expect(view.container.querySelector('.task-row-deadline')?.textContent).toBe('4/14')
+    expect(view.container.querySelector('.task-meta-chip.is-deadline')).toBeNull()
     expect(view.container.querySelector('.task-pool-avatar')).toBeNull()
 
     view.cleanup()
