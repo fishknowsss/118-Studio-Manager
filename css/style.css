@@ -1527,19 +1527,28 @@ svg { display: block; flex-shrink: 0; }
   border-bottom: 1px solid var(--c-border-light);
 }
 .settings-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: start;
   padding: 14px 20px;
-  gap: 16px;
+  gap: 18px;
+  min-height: 92px;
 }
 .settings-row + .settings-row { border-top: 1px solid var(--c-border-light); }
 .settings-row-info { flex: 1; }
-.settings-row-label { font-size: 14px; font-weight: 600; }
-.settings-row-desc { font-size: 12px; color: var(--c-text-3); margin-top: 2px; }
+.settings-row-action {
+  min-width: 132px;
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+}
+.settings-row-label { font-size: 14px; font-weight: 600; line-height: 1.45; }
+.settings-row-desc { font-size: 13px; color: var(--c-text-3); margin-top: 6px; line-height: 1.55; }
 .settings-inline-actions {
   display: flex;
   gap: 8px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
 }
 .settings-summary-grid {
   display: grid;
@@ -1566,30 +1575,32 @@ svg { display: block; flex-shrink: 0; }
 }
 .settings-transfer-note {
   padding: 12px 20px 16px;
-  font-size: 12px;
+  font-size: 13px;
   color: var(--c-text-2);
+  line-height: 1.6;
 }
 .settings-meta-list {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 10px;
+  display: flex;
+  flex-direction: column;
   padding: 0 20px 16px;
 }
 .settings-meta-item {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  padding: 12px 14px;
-  border-radius: var(--r-md);
-  background: var(--c-bg);
+  display: grid;
+  grid-template-columns: 88px minmax(0, 1fr);
+  gap: 12px;
+  align-items: start;
+  padding-top: 14px;
+  border-top: 1px solid var(--c-border-light);
 }
 .settings-meta-label {
   font-size: 12px;
   color: var(--c-text-3);
+  line-height: 1.5;
 }
 .settings-meta-value {
   font-size: 13px;
   line-height: 1.5;
+  font-weight: 600;
 }
 .settings-log-title {
   margin-bottom: 10px;
@@ -1613,8 +1624,20 @@ svg { display: block; flex-shrink: 0; }
   .settings-columns {
     grid-template-columns: 1fr;
   }
-  .settings-meta-list {
+  .settings-row {
     grid-template-columns: 1fr;
+    min-height: 0;
+  }
+  .settings-row-action {
+    min-width: 0;
+    justify-content: flex-start;
+  }
+  .settings-inline-actions {
+    justify-content: flex-start;
+  }
+  .settings-meta-item {
+    grid-template-columns: 1fr;
+    gap: 4px;
   }
 }
 

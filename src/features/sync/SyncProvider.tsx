@@ -230,7 +230,7 @@ export function CloudSyncProvider({ children }: { children: ReactNode }) {
 
   const value = useMemo<CloudSyncContextValue>(() => ({
     state,
-    statusLabel: state.phase === 'syncing' ? '正在自动同步' : '正在自动同步',
+    statusLabel: '停止编辑约 2 分钟后自动同步',
     lastSyncLabel: state.phase === 'disabled'
       ? '未配置云同步地址'
       : state.phase === 'error'

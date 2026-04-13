@@ -147,9 +147,11 @@ export function Settings() {
                     <div className="settings-row-label">{statusLabel}</div>
                     <div className="settings-row-desc">{lastSyncLabel}</div>
                   </div>
-                  <span className={`badge ${cloudSyncState.phase === 'error' ? 'badge-blocked' : 'badge-active'}`}>
-                    {cloudSyncState.configured ? '已连接' : '未配置'}
-                  </span>
+                  <div className="settings-row-action">
+                    <span className={`badge ${cloudSyncState.phase === 'error' ? 'badge-blocked' : 'badge-active'}`}>
+                      {cloudSyncState.configured ? '已连接' : '未配置'}
+                    </span>
+                  </div>
                 </div>
                 <div className="settings-meta-list">
                   <div className="settings-meta-item">
@@ -169,9 +171,11 @@ export function Settings() {
                     <div className="settings-row-label">手动同步并备份</div>
                     <div className="settings-row-desc">立即同步到云端，并下载一份当前 JSON 到本地。</div>
                   </div>
-                  <button className="btn btn-primary" type="button" onClick={() => void handleManualSyncAndBackup()} disabled={!cloudSyncState.configured}>
-                    同步并备份
-                  </button>
+                  <div className="settings-row-action">
+                    <button className="btn btn-primary" type="button" onClick={() => void handleManualSyncAndBackup()} disabled={!cloudSyncState.configured}>
+                      同步并备份
+                    </button>
+                  </div>
                 </div>
               </div>
 
@@ -182,9 +186,11 @@ export function Settings() {
                     <div className="settings-row-label">云端优先，更新本地</div>
                     <div className="settings-row-desc">拉取当前云端主数据，并覆盖本地数据。</div>
                   </div>
-                  <button className="btn btn-secondary" type="button" onClick={() => void handleRestoreCloud()} disabled={!cloudSyncState.configured || !cloudSyncState.hasCloudData}>
-                    更新本地
-                  </button>
+                  <div className="settings-row-action">
+                    <button className="btn btn-secondary" type="button" onClick={() => void handleRestoreCloud()} disabled={!cloudSyncState.configured || !cloudSyncState.hasCloudData}>
+                      更新本地
+                    </button>
+                  </div>
                 </div>
               </div>
 
@@ -213,16 +219,20 @@ export function Settings() {
                     <div className="settings-row-label">导出 JSON</div>
                     <div className="settings-row-desc">完整备份项目、任务、人员、日志和设置。</div>
                   </div>
-                  <button className="btn btn-primary" type="button" onClick={() => void handleExportJSON()}>导出 JSON</button>
+                  <div className="settings-row-action">
+                    <button className="btn btn-primary" type="button" onClick={() => void handleExportJSON()}>导出 JSON</button>
+                  </div>
                 </div>
                 <div className="settings-row">
                   <div className="settings-row-info">
                     <div className="settings-row-label">导出 CSV</div>
                     <div className="settings-row-desc">导出项目或任务列表，方便整理和分享。</div>
                   </div>
-                  <div className="settings-inline-actions">
-                    <button className="btn btn-secondary btn-sm" type="button" onClick={handleExportProjectsCSV}>项目</button>
-                    <button className="btn btn-secondary btn-sm" type="button" onClick={handleExportTasksCSV}>任务</button>
+                  <div className="settings-row-action">
+                    <div className="settings-inline-actions">
+                      <button className="btn btn-secondary btn-sm" type="button" onClick={handleExportProjectsCSV}>项目</button>
+                      <button className="btn btn-secondary btn-sm" type="button" onClick={handleExportTasksCSV}>任务</button>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -234,7 +244,9 @@ export function Settings() {
                     <div className="settings-row-label">从 JSON 恢复</div>
                     <div className="settings-row-desc">导入前会提示确认，导入后会显示恢复摘要。</div>
                   </div>
-                  <button className="btn btn-secondary" type="button" onClick={handleImportJSON}>导入备份</button>
+                  <div className="settings-row-action">
+                    <button className="btn btn-secondary" type="button" onClick={handleImportJSON}>导入备份</button>
+                  </div>
                 </div>
               </div>
 
@@ -245,7 +257,9 @@ export function Settings() {
                     <div className="settings-row-label danger-text">清空所有数据</div>
                     <div className="settings-row-desc">删除全部项目、任务、人员和日志。建议先备份。</div>
                   </div>
-                  <button className="btn btn-danger" type="button" onClick={() => void handleClearAll()}>清空</button>
+                  <div className="settings-row-action">
+                    <button className="btn btn-danger" type="button" onClick={() => void handleClearAll()}>清空</button>
+                  </div>
                 </div>
               </div>
 
@@ -256,7 +270,9 @@ export function Settings() {
                     <div className="settings-row-label">118 Studio Manager VC</div>
                     <div className="settings-row-desc">本地优先，数据存于 IndexedDB，可选接入 Cloudflare Worker 云同步。</div>
                   </div>
-                  <span className="badge badge-active">v1.1</span>
+                  <div className="settings-row-action">
+                    <span className="badge badge-active">v1.1</span>
+                  </div>
                 </div>
               </div>
             </div>
