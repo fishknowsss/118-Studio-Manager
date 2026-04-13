@@ -1,6 +1,10 @@
 import { useMemo, useState } from 'react'
 import { useConfirm } from '../components/feedback/ConfirmProvider'
 import { useToast } from '../components/feedback/ToastProvider'
+import {
+  readPersistedTransferState,
+  writePersistedTransferState,
+} from '../features/settings/settingsTransferState'
 import { useCloudSync } from '../features/sync/SyncProvider'
 import { clearAllData, exportBackupData, importBackupText } from '../legacy/actions'
 import { downloadFile, formatFileDate, toCSV } from '../legacy/utils'
@@ -31,7 +35,7 @@ export function Settings() {
     manualSync,
     restoreCloudToLocal,
   } = useCloudSync()
-  const [transferState, setTransferState] = useState<TransferState | null>(null)
+  const [transferState, setTransferState] = useState<TransferState | null>(() => readPersistedTransferState())
   const entityMaps = useMemo(() => buildEntityMaps(projects, tasks, people), [people, projects, tasks])
   const needsBackup = useMemo(() => getNeedsBackup(logs, projects), [logs, projects])
   const currentSummary = useMemo(() => buildBackupSummary({ projects, tasks, people, logs, settings: [] }), [logs, people, projects, tasks])
@@ -40,7 +44,9 @@ export function Settings() {
   const handleExportJSON = async () => {
     const result = await exportBackupData()
     downloadFile(JSON.stringify(result.data, null, 2), result.filename)
-    setTransferState({ action: 'export', summary: result.summary })
+    const nextState = { action: 'export' as const, summary: result.summary }
+    setTransferState(nextState)
+    writePersistedTransferState(nextState)
     toast('JSON 已导出', 'success')
   }
 
@@ -79,7 +85,9 @@ export function Settings() {
 
       try {
         const result = await importBackupText(await file.text())
-        setTransferState({ action: 'import', summary: result.summary })
+        const nextState = { action: 'import' as const, summary: result.summary }
+        setTransferState(nextState)
+        writePersistedTransferState(nextState)
         toast('数据已恢复', 'success')
       } catch {
         toast('文件格式错误', 'error')
@@ -92,7 +100,9 @@ export function Settings() {
     const ok = await confirm('清空数据', '将清除所有项目、任务、人员和日志，且无法撤销。')
     if (!ok) return
     const summary = await clearAllData()
-    setTransferState({ action: 'clear', summary })
+    const nextState = { action: 'clear' as const, summary }
+    setTransferState(nextState)
+    writePersistedTransferState(nextState)
     toast('数据已清空', 'error')
   }
 
@@ -101,7 +111,9 @@ export function Settings() {
       await manualSync()
       const result = await exportBackupData()
       downloadFile(JSON.stringify(result.data, null, 2), result.filename)
-      setTransferState({ action: 'export', summary: result.summary })
+      const nextState = { action: 'export' as const, summary: result.summary }
+      setTransferState(nextState)
+      writePersistedTransferState(nextState)
       toast('已同步到云端，并下载本地备份', 'success')
     } catch (error) {
       toast(error instanceof Error ? error.message : '云端同步失败', 'error')

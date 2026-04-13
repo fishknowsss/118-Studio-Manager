@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type ReactNode } from 'react'
+import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react'
 
 const VARIANTS = {
   default: { maxW: 860, vwFrac: 0.76, maxH: 720, vhFrac: 0.78 },
@@ -39,10 +39,10 @@ export function ExpandPanel({
   const overlayRef = useRef<HTMLDivElement>(null)
   const transformOrigin = calcOrigin(originX, originY, variant)
 
-  const triggerClose = () => {
+  const triggerClose = useCallback(() => {
     if (closing) return
     setClosing(true)
-  }
+  }, [closing])
 
   const handleAnimationEnd = (event: React.AnimationEvent<HTMLDivElement>) => {
     if (closing && event.target === overlayRef.current) {
@@ -56,7 +56,7 @@ export function ExpandPanel({
     }
     document.addEventListener('keydown', handler)
     return () => document.removeEventListener('keydown', handler)
-  }, [closing])
+  }, [triggerClose])
 
   return (
     <div

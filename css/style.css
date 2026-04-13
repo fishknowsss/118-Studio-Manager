@@ -1534,10 +1534,14 @@ svg { display: block; flex-shrink: 0; }
 .settings-row + .settings-row { border-top: 1px solid var(--c-border-light); }
 .settings-row-info { min-width: 0; }
 .settings-row-action {
-  min-width: 144px;
+  min-width: 120px;
   display: flex;
   justify-content: flex-end;
   align-items: center;
+}
+.settings-row-action > .btn:not(.btn-sm) {
+  min-width: 110px;
+  justify-content: center;
 }
 .settings-row-label { font-size: 14px; font-weight: 600; line-height: 1.45; }
 .settings-row-desc { font-size: 13px; color: var(--c-text-3); margin-top: 6px; line-height: 1.55; }
@@ -1546,6 +1550,10 @@ svg { display: block; flex-shrink: 0; }
   gap: 8px;
   flex-wrap: nowrap;
   justify-content: flex-end;
+}
+.settings-inline-actions .btn {
+  min-width: 52px;
+  justify-content: center;
 }
 .settings-summary-grid {
   display: grid;
@@ -1571,7 +1579,7 @@ svg { display: block; flex-shrink: 0; }
   line-height: 1;
 }
 .settings-transfer-note {
-  padding: 0 20px 16px;
+  padding: 10px 20px 16px;
   font-size: 13px;
   color: var(--c-text-2);
   line-height: 1.6;
