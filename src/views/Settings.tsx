@@ -151,16 +151,16 @@ export function Settings() {
                     {cloudSyncState.configured ? '已连接' : '未配置'}
                   </span>
                 </div>
-              </div>
-              <div className="settings-meta-list">
-                <div className="settings-meta-item">
-                  <span className="settings-meta-label">最近同步/备份</span>
-                  <strong className="settings-meta-value">{latestSyncLabel}</strong>
                 </div>
-              </div>
-              {cloudSyncState.message && cloudSyncState.phase === 'error' ? (
-                <div className="settings-transfer-note">{cloudSyncState.message}</div>
-              ) : null}
+                <div className="settings-meta-list">
+                  <div className="settings-meta-card">
+                    <span className="settings-meta-label">最近同步/备份</span>
+                    <strong className="settings-meta-value">{latestSyncLabel}</strong>
+                  </div>
+                </div>
+                {cloudSyncState.message && cloudSyncState.phase === 'error' ? (
+                  <div className="settings-transfer-note">{cloudSyncState.message}</div>
+                ) : null}
             </div>
 
             <div className="settings-section">
