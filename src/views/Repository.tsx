@@ -207,7 +207,7 @@ export function Repository() {
   const toggleProjectExpand = (projectId: string) => {
     setExpandedMap((current) => ({
       ...current,
-      [projectId]: !current[projectId],
+      [projectId]: !(current[projectId] ?? true),
     }))
   }
 
