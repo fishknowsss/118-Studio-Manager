@@ -1,188 +1,225 @@
-# 118 Studio Manager (vc)
+# 118 Studio Manager
 
-118 Studio 的本地优先项目协作工具，聚焦「项目 / 任务 / 人员 / 日历 / 备份同步」。
+A local-first project collaboration tool built for 118 Studio — designed around daily focus, not dashboards bloat.
 
-- 在线预览：https://118.fishknowsss.com/
-- 主开发分支：`vc`
-- 仓库地址：https://github.com/fishknowsss/118-Studio-Manager/tree/vc
+**Live demo:** [118.fishknowsss.com](https://118.fishknowsss.com/) &nbsp;·&nbsp; **Branch:** `vc`
 
-> 本 README 已按当前仓库代码与配置校准（2026-04-14）。
+---
 
-## 核心能力
+## Screenshots
 
-- 今日看板：焦点项目、任务池、人员负载、迷你日历
-- 项目管理：状态、优先级、DDL、里程碑、时间轴
-- 任务管理：筛选、搜索、快速状态/优先级/负责人更新
-- 人员管理：成员状态、技能、任务分配
-- 月历视图：按日期聚合 DDL 与里程碑，可打开当天排期面板
-- 数据管理：JSON/CSV 导出、JSON 导入、全量清空
-- 云同步（可选）：本地 IndexedDB 与 Cloudflare Worker/KV 同步
+| Dashboard | Projects |
+|---|---|
+| ![Dashboard](docs/screenshots/vc-dashboard.png) | ![Projects](docs/screenshots/vc-projects.png) |
 
-## 页面路由
+| Tasks | People |
+|---|---|
+| ![Tasks](docs/screenshots/vc-tasks.png) | ![People](docs/screenshots/vc-people.png) |
 
-当前使用 hash 路由：
+| Calendar | Settings |
+|---|---|
+| ![Calendar](docs/screenshots/vc-calendar.png) | ![Settings](docs/screenshots/vc-settings.png) |
 
-| 路由 | 页面 | 说明 |
-| --- | --- | --- |
-| `#dashboard` | 今日 | 焦点项目、任务池、人员与日历联动 |
-| `#projects` | 项目 | 卡片/时间轴视图，支持状态快捷操作 |
-| `#tasks` | 任务 | 任务筛选与右键快捷更新 |
-| `#people` | 人员 | 成员信息、启用停用、任务关联 |
-| `#calendar` | 日历 | 月历查看 DDL/里程碑并打开日程面板 |
-| `#settings` | 设置 | 备份导入导出、云同步、统计与日志 |
+<details>
+<summary>Dark mode</summary>
 
-## 界面截图
-
-![Dashboard](docs/screenshots/vc-dashboard.png)
-![Projects](docs/screenshots/vc-projects.png)
-![Tasks](docs/screenshots/vc-tasks.png)
-![People](docs/screenshots/vc-people.png)
-![Calendar](docs/screenshots/vc-calendar.png)
 ![Dashboard Dark](docs/screenshots/vc-dashboard-dark.png)
-![Settings](docs/screenshots/vc-settings.png)
 
-## 快速开始
+</details>
 
-### 环境要求
+---
 
-- Node.js：`24.14.1`（见 `package.json` 的 `engines` / `volta`）
-- npm：`11.11.0`
+## Features
 
-### 安装与运行
+- **Today Dashboard** — focus project stack, task pool, people workload, and mini calendar in one view
+- **Project Management** — status, priority, deadlines, milestones, and a visual timeline
+- **Task Management** — filter/search, right-click context menu for quick status/assignee/priority updates
+- **People Management** — member profiles, active/inactive toggle, task associations, skill tags
+- **Calendar View** — monthly grid with deadline and milestone markers; click any day to open its schedule panel
+- **Data Management** — JSON/CSV export, JSON import, full wipe with confirmation
+- **Cloud Sync (optional)** — two-way sync between local IndexedDB and a Cloudflare Worker/KV backend
+
+---
+
+## Tech Stack
+
+| Layer | Technology |
+|---|---|
+| UI | React 19 + TypeScript |
+| Build | Vite |
+| Local storage | IndexedDB (`studio118db`) |
+| Cloud sync | Cloudflare Worker + KV |
+| Deployment | GitHub Pages |
+| Testing | Vitest + jsdom |
+| Linting | ESLint |
+
+---
+
+## Getting Started
+
+**Requirements**
+
+- Node.js `24.14.1` (pinned via `volta` in `package.json`)
+- npm `11.11.0`
+
+**Install and run**
 
 ```bash
 npm install
 npm run dev
 ```
 
-默认开发地址：`http://127.0.0.1:5173/`
+Default dev server: `http://127.0.0.1:5173/`
 
-macOS 可用一键脚本：
+macOS one-click start:
 
 ```bash
 ./118-start.command
 ```
 
-### 常用命令
+**Common commands**
 
 ```bash
-npm run lint
-npm run test
-npm run build
-npm run preview
+npm run lint      # ESLint
+npm run test      # Vitest
+npm run build     # TypeScript check + Vite build
+npm run preview   # Preview the production build locally
 ```
 
-## 技术架构
+---
 
-当前是「React 视图层 + legacy 数据层」结构：
+## Architecture
 
-- 入口与应用壳：`src/main.tsx`、`src/App.tsx`
-- 页面层：`src/views/*`
-- 领域组件：`src/features/*`
-- 复用 UI 与反馈组件：`src/components/*`
-- 数据层与业务动作：`src/legacy/*`
+The app uses a **React view layer** on top of a **legacy data layer** — separating UI concerns from state management.
 
-关键点：
+```
+src/
+├── main.tsx / App.tsx     # Entry point and app shell
+├── views/                 # Page-level components (one per route)
+├── features/              # Domain feature components (dashboard, projects, tasks…)
+├── components/            # Shared UI and feedback primitives
+├── content/               # Static content (quotes, etc.)
+└── legacy/
+    ├── store.ts           # In-memory state, subscriptions
+    ├── actions.ts         # State mutations
+    ├── selectors.ts       # Derived state / computed models
+    ├── db.ts              # IndexedDB read/write
+    └── …
+```
 
-1. 状态来源是 `legacy/store`（内存态），通过 `useSyncExternalStore` 接入 React。
-2. 持久化存储使用 IndexedDB（数据库名：`studio118db`）。
-3. 选择器模型集中在 `legacy/selectors.ts`，减少页面内重复计算。
-4. 空库启动时优先尝试云端恢复，失败则写入演示数据。
+**Key design points:**
+- State lives in `legacy/store` (in-memory), connected to React via `useSyncExternalStore`
+- IndexedDB persists all data locally (no backend required for core functionality)
+- Selectors in `legacy/selectors.ts` centralize derived state calculations
+- On first launch with an empty database, the app attempts a cloud restore, then falls back to demo data
 
-## 本地数据、备份与恢复
+### Routes (hash router)
 
-IndexedDB object stores：
+| Hash | View | Description |
+|---|---|---|
+| `#dashboard` | Today | Focus projects, task pool, people panel, mini calendar |
+| `#projects` | Projects | Card and timeline view with quick status actions |
+| `#tasks` | Tasks | Searchable task list with context menu shortcuts |
+| `#people` | People | Member management and task associations |
+| `#calendar` | Calendar | Monthly deadline/milestone overview |
+| `#settings` | Settings | Import/export, cloud sync, logs |
 
-| Store | 用途 |
-| --- | --- |
-| `projects` | 项目主体、状态、DDL、里程碑 |
-| `tasks` | 任务、负责人、排期与状态 |
-| `people` | 人员与技能 |
-| `logs` | 操作日志（保留最近 50 条） |
-| `settings` | 本地设置 |
+---
 
-JSON 备份结构（schema v2）包含：
+## Cloud Sync
 
-- `projects`
-- `tasks`
-- `people`
-- `logs`
-- `settings`
-- `schemaVersion`
-- `exportedAt`
+Cloud sync is optional and requires a deployed Cloudflare Worker.
 
-## 云同步（可选）
+**Setup**
 
-前端通过环境变量连接同步服务：
+1. Create a KV Namespace in your Cloudflare account.
+2. Update `cloudflare/sync-worker/wrangler.toml` with your KV Namespace ID.
+3. Set `ALLOWED_ORIGIN` to your frontend domain.
+4. Deploy with Wrangler.
+5. Set the `VITE_SYNC_API_URL` environment variable to your Worker URL:
 
 ```bash
-VITE_SYNC_API_URL=https://sync.fishknowsss.com
+# .env (not committed — see .env.example)
+VITE_SYNC_API_URL=https://sync.example.com
 ```
 
-示例见 `.env.example`。
+**Sync behavior**
 
-同步行为：
+| Trigger | Action |
+|---|---|
+| Data change | Auto-upload ~2 minutes after last change |
+| Manual sync | Immediate upload + local JSON backup download |
+| Cloud restore | Overwrites local IndexedDB with cloud snapshot |
+| Boot (empty DB) | Automatically pulls latest cloud snapshot if available |
 
-1. 自动同步：本地变更后约 2 分钟触发一次自动上传。
-2. 手动同步并备份：立即上传当前数据，并下载一份本地 JSON。
-3. 云端优先恢复：用云端快照覆盖本地 IndexedDB。
-4. 启动恢复：本地空库且云端有数据时，启动阶段自动拉取。
+The Worker exposes three endpoints: `GET /meta`, `GET /data`, `PUT /data`. Only one snapshot (`sync:current`) is kept in KV at a time.
 
-Cloudflare Worker 参考：`cloudflare/sync-worker/README.md`。
+See [`cloudflare/sync-worker/`](cloudflare/sync-worker/) for full setup details.
 
-## 部署说明
+---
 
-GitHub Pages 工作流：`.github/workflows/deploy.yml`
+## Data Structure
 
-分支到路径映射：
+All data is persisted in IndexedDB under the database name `studio118db`.
 
-- `vc` -> 站点根路径 `/`（https://118.fishknowsss.com/）
-- `main` -> `/v1/`
-- `singleD` -> `/singleD/`
+| Store | Contents |
+|---|---|
+| `projects` | Project records: status, priority, deadline, milestones |
+| `tasks` | Tasks: assignees, schedule, status |
+| `people` | Members: skills, active state |
+| `logs` | Operation log (last 50 entries) |
+| `settings` | Local settings |
 
-构建基路径通过 `DEPLOY_BASE` 注入，Vite 配置在 `vite.config.ts`。
+JSON export format (schema v2):
 
-如需在 Pages 使用云同步，请在仓库 Actions Variables 中设置：
+```jsonc
+{
+  "schemaVersion": 2,
+  "exportedAt": "…",
+  "projects": […],
+  "tasks": […],
+  "people": […],
+  "logs": […],
+  "settings": {…}
+}
+```
 
-- `VITE_SYNC_API_URL`
+---
 
-## 测试与质量
+## Deployment
 
-- 单元与回归测试：`tests/*`（Vitest + jsdom）
-- 代码检查：ESLint
-- 构建：TypeScript build + Vite build
+Deployments are handled by GitHub Actions ([`.github/workflows/deploy.yml`](.github/workflows/deploy.yml)).
 
-建议提交前至少执行：
+| Branch | Deployed path | URL |
+|---|---|---|
+| `vc` | `/` (root) | https://118.fishknowsss.com/ |
+| `main` | `/v1/` | https://118.fishknowsss.com/v1/ |
+| `singleD` | `/singleD/` | https://118.fishknowsss.com/singleD/ |
+
+The build base path is injected via the `DEPLOY_BASE` environment variable (see `vite.config.ts`).
+
+To enable cloud sync on GitHub Pages, add `VITE_SYNC_API_URL` as a repository Actions Variable.
+
+---
+
+## Branch Strategy
+
+| Branch | Role | Status |
+|---|---|---|
+| `vc` | **Main development branch** | Active |
+| `main` | Legacy v1 | Archived, no active development |
+| `singleD` | Legacy single-page variant | Archived, no active development |
+
+All new development happens on `vc`.
+
+---
+
+## Testing
+
+Tests live in `tests/` and use Vitest + jsdom.
 
 ```bash
 npm run lint && npm run test && npm run build
 ```
 
-## 目录结构
-
-```text
-.
-├─ src/
-│  ├─ components/      # 通用 UI 与反馈组件
-│  ├─ content/         # 文案内容
-│  ├─ features/        # 业务域组件（dashboard/projects/tasks/...）
-│  ├─ legacy/          # 数据层、actions、selectors、db
-│  ├─ views/           # 页面入口
-│  ├─ App.tsx
-│  └─ main.tsx
-├─ tests/              # 回归与单元测试
-├─ cloudflare/
-│  └─ sync-worker/     # 云同步 Worker 示例
-├─ css/style.css       # 主样式
-└─ README.md
-```
-
-## 分支策略
-
-| 分支 | 角色 | 状态 |
-| --- | --- | --- |
-| `vc` | 主力版本 | 持续开发 |
-| `main` | 历史版本 | 保留，不作为主线 |
-| `singleD` | 历史版本 | 保留，不作为主线 |
-
-如无特殊说明，请直接基于 `vc` 开发。
+Run all three before submitting changes.

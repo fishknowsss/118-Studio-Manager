@@ -714,6 +714,7 @@ svg { display: block; flex-shrink: 0; }
 .dash-bottom > .panel,
 .dash-right {
   min-width: 0;
+  min-height: 0;
 }
 .dash-bottom > .panel {
   border-right: 1px solid var(--c-border);
@@ -722,6 +723,7 @@ svg { display: block; flex-shrink: 0; }
 .panel {
   display: flex;
   flex-direction: column;
+  min-height: 0;
   padding: 16px 20px;
   transition: box-shadow .18s, background .18s;
 }
@@ -747,7 +749,7 @@ svg { display: block; flex-shrink: 0; }
   cursor: pointer;
 }
 .panel-action:hover { text-decoration: underline; }
-.panel-body { flex: 1; overflow-y: auto; overflow-x: hidden; padding-top: 2px; }
+.panel-body { flex: 1; min-height: 0; overflow-y: auto; overflow-x: hidden; padding-top: 2px; }
 .panel-body::-webkit-scrollbar { width: 4px; }
 .panel-body::-webkit-scrollbar-track { background: transparent; }
 .panel-body::-webkit-scrollbar-thumb { background: var(--c-border); border-radius: 2px; }

@@ -1,4 +1,27 @@
+# Dependencies
 node_modules/
+
+# Build output
 dist/
+
+# OS
 .DS_Store
+**/.DS_Store
+
+# Environment variables (keep .env.example)
+.env
+.env.local
+.env.*.local
+
+# Editor
+.vscode/
+.idea/
+
+# Claude Code
 .claude/
+
+# Playwright MCP runtime (debug logs & snapshots)
+.playwright-mcp/
+
+# Logs
+*.log
