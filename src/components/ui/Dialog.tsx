@@ -17,11 +17,11 @@ export function Dialog({ open, title, onClose, children, footer, width = 'defaul
       if (event.key === 'Escape') onClose()
     }
 
-    document.addEventListener('keydown', onKeyDown)
+    document.addEventListener('keydown', onKeyDown, true)
     document.body.style.overflow = 'hidden'
 
     return () => {
-      document.removeEventListener('keydown', onKeyDown)
+      document.removeEventListener('keydown', onKeyDown, true)
       document.body.style.overflow = ''
     }
   }, [onClose, open])

@@ -55,8 +55,8 @@ export function ExpandPanel({
     const handler = (event: KeyboardEvent) => {
       if (event.key === 'Escape') triggerClose()
     }
-    document.addEventListener('keydown', handler)
-    return () => document.removeEventListener('keydown', handler)
+    document.addEventListener('keydown', handler, true)
+    return () => document.removeEventListener('keydown', handler, true)
   }, [triggerClose])
 
   return (

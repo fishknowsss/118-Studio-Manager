@@ -33,11 +33,11 @@ export function ContextMenu({
     }
 
     window.addEventListener('pointerdown', handlePointer)
-    window.addEventListener('keydown', handleEscape)
+    document.addEventListener('keydown', handleEscape, true)
 
     return () => {
       window.removeEventListener('pointerdown', handlePointer)
-      window.removeEventListener('keydown', handleEscape)
+      document.removeEventListener('keydown', handleEscape, true)
     }
   }, [onClose, open])
 

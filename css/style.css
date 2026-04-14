@@ -1365,9 +1365,10 @@ svg { display: block; flex-shrink: 0; }
   border-color: rgba(65, 102, 245, 0.5);
 }
 .repo-project-list {
-  display: flex;
-  flex-direction: column;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 12px;
+  align-items: start;
 }
 .repo-project-card {
   background: var(--c-surface);
