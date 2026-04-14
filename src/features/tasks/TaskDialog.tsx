@@ -13,11 +13,13 @@ import { saveTaskFromForm, type TaskFormInput } from '../../legacy/actions'
 import { getTaskAssigneeIds } from '../../legacy/store'
 
 export function TaskDialog({
+  initialProjectId,
   onClose,
   people,
   projects,
   task,
 }: {
+  initialProjectId?: string | null
   onClose: () => void
   people: LegacyPerson[]
   projects: LegacyProject[]
@@ -27,7 +29,7 @@ export function TaskDialog({
   const { toast } = useToast()
   const [form, setForm] = useState<TaskFormInput>(() => ({
     title: task?.title || '',
-    projectId: task?.projectId || null,
+    projectId: task?.projectId || initialProjectId || null,
     status: task?.status || 'todo',
     priority: task?.priority || 'medium',
     assigneeIds: task ? getTaskAssigneeIds(task) : [],

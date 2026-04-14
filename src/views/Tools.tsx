@@ -1,8 +1,4 @@
-import { useMemo } from 'react'
 import { useToast } from '../components/feedback/ToastProvider'
-import { useLegacyStoreSnapshot } from '../legacy/useLegacyStore'
-import { getTaskAssigneeIds } from '../legacy/store'
-import { formatLocalDateKey } from '../legacy/utils'
 
 type ToolLink = {
   title: string
@@ -59,39 +55,6 @@ const SCRIPT_SNIPPETS: ScriptSnippet[] = [
 
 export function Tools() {
   const { toast } = useToast()
-  const store = useLegacyStoreSnapshot()
-  const { projects, tasks, people } = store
-  const todayStr = useMemo(() => formatLocalDateKey(new Date()), [])
-
-  const stats = useMemo(() => {
-    const activeProjects = projects.filter((p) => p.status === 'active' || !p.status)
-    const doneTasks = tasks.filter((t) => t.status === 'done')
-    const todoTasks = tasks.filter((t) => t.status !== 'done')
-    const overdueTasks = todoTasks.filter((t) => t.endDate && t.endDate < todayStr)
-    const unassignedTasks = todoTasks.filter((t) => getTaskAssigneeIds(t).length === 0)
-
-    const loadMap: Record<string, number> = {}
-    for (const task of todoTasks) {
-      for (const personId of getTaskAssigneeIds(task)) {
-        loadMap[personId] = (loadMap[personId] || 0) + 1
-      }
-    }
-
-    const busiestPerson = people
-      .map((p) => ({ name: p.name || '未命名', count: loadMap[p.id] || 0 }))
-      .sort((a, b) => b.count - a.count)[0]
-
-    return {
-      totalProjects: projects.length,
-      activeProjects: activeProjects.length,
-      totalTasks: tasks.length,
-      doneTasks: doneTasks.length,
-      overdueTasks: overdueTasks.length,
-      unassignedTasks: unassignedTasks.length,
-      totalPeople: people.length,
-      busiestPerson,
-    }
-  }, [people, projects, tasks, todayStr])
 
   const copyScript = async (snippet: ScriptSnippet) => {
     try {
@@ -102,62 +65,16 @@ export function Tools() {
     }
   }
 
-  const exportData = () => {
-    const data = { projects, tasks, people, exportedAt: new Date().toISOString() }
-    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' })
-    const url = URL.createObjectURL(blob)
-    const a = document.createElement('a')
-    a.href = url
-    a.download = `118studio-data-${todayStr}.json`
-    a.click()
-    URL.revokeObjectURL(url)
-    toast('数据已导出', 'success')
-  }
-
   return (
     <div className="view-tools fade-in">
       <div className="view-header">
         <h1 className="view-title">工具</h1>
         <div className="view-actions">
-          <button className="btn btn-secondary" type="button" onClick={exportData}>
-            导出数据
-          </button>
+          <span className="text-muted text-sm">先放常用工具与脚本建议，后续可逐步扩展</span>
         </div>
       </div>
 
       <div className="view-body tools-view-body">
-        <section className="tools-section">
-          <h2 className="tools-section-title">数据概览</h2>
-          <div className="tools-stats-grid">
-            <div className="tools-stat-card">
-              <div className="tools-stat-value">{stats.activeProjects}<span className="tools-stat-total">/{stats.totalProjects}</span></div>
-              <div className="tools-stat-label">进行中项目</div>
-            </div>
-            <div className="tools-stat-card">
-              <div className="tools-stat-value">{stats.doneTasks}<span className="tools-stat-total">/{stats.totalTasks}</span></div>
-              <div className="tools-stat-label">已完成任务</div>
-            </div>
-            <div className={`tools-stat-card${stats.overdueTasks > 0 ? ' tools-stat-warn' : ''}`}>
-              <div className="tools-stat-value">{stats.overdueTasks}</div>
-              <div className="tools-stat-label">逾期任务</div>
-            </div>
-            <div className="tools-stat-card">
-              <div className="tools-stat-value">{stats.unassignedTasks}</div>
-              <div className="tools-stat-label">未分配任务</div>
-            </div>
-            <div className="tools-stat-card">
-              <div className="tools-stat-value">{stats.totalPeople}</div>
-              <div className="tools-stat-label">成员总数</div>
-            </div>
-            {stats.busiestPerson ? (
-              <div className="tools-stat-card">
-                <div className="tools-stat-value tools-stat-name">{stats.busiestPerson.name}</div>
-                <div className="tools-stat-label">负载最高成员（{stats.busiestPerson.count} 项）</div>
-              </div>
-            ) : null}
-          </div>
-        </section>
-
         <section className="tools-section">
           <h2 className="tools-section-title">常用 Web 工具</h2>
           <div className="tools-grid">
