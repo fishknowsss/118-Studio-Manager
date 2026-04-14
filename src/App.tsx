@@ -7,24 +7,30 @@ import { initializeAppData } from './legacy/bootstrap'
 import { daysUntil } from './legacy/utils'
 import { useLegacyStoreSnapshot } from './legacy/useLegacyStore'
 import { Dashboard } from './views/Dashboard'
-import { Calendar }  from './views/Calendar'
-import { Projects }  from './views/Projects'
-import { Tasks }     from './views/Tasks'
-import { People }    from './views/People'
+import { Repository } from './views/Repository'
+import { Graph } from './views/Graph'
+import { Tools } from './views/Tools'
 import { Settings }  from './views/Settings'
 
 const VIEWS: Record<string, React.ComponentType> = {
   dashboard: Dashboard,
-  calendar:  Calendar,
-  projects:  Projects,
-  tasks:     Tasks,
-  people:    People,
+  repository: Repository,
+  graph: Graph,
+  tools: Tools,
   settings:  Settings,
 }
 
+const LEGACY_VIEW_ALIASES: Record<string, string> = {
+  projects: 'repository',
+  tasks: 'repository',
+  people: 'graph',
+  calendar: 'dashboard',
+}
+
 function getHashView() {
-  const h = window.location.hash.slice(1)
-  return h in VIEWS ? h : 'dashboard'
+  const raw = window.location.hash.slice(1)
+  const normalized = LEGACY_VIEW_ALIASES[raw] || raw
+  return normalized in VIEWS ? normalized : 'dashboard'
 }
 
 export default function App() {
@@ -97,24 +103,28 @@ export default function App() {
                     <rect x="3" y="14" width="7" height="7" rx="1" />
                     <rect x="14" y="14" width="7" height="7" rx="1" />
                   </NavItem>
-                  <NavItem label="项目" active={view === 'projects'} badge={urgentCount} onClick={() => window.location.hash = '#projects'}>
+                  <NavItem label="仓库" active={view === 'repository'} badge={urgentCount} onClick={() => window.location.hash = '#repository'}>
                     <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z" />
                   </NavItem>
-                  <NavItem label="任务" active={view === 'tasks'} onClick={() => window.location.hash = '#tasks'}>
-                    <path d="M9 11l3 3L22 4" />
-                    <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11" />
+                  <NavItem label="图谱" active={view === 'graph'} onClick={() => window.location.hash = '#graph'}>
+                    <circle cx="5" cy="12" r="2" />
+                    <circle cx="12" cy="5" r="2" />
+                    <circle cx="19" cy="12" r="2" />
+                    <circle cx="12" cy="19" r="2" />
+                    <line x1="7" y1="12" x2="10" y2="6" />
+                    <line x1="14" y1="6" x2="17" y2="12" />
+                    <line x1="17" y1="12" x2="14" y2="18" />
+                    <line x1="10" y1="18" x2="7" y2="12" />
                   </NavItem>
-                  <NavItem label="人员" active={view === 'people'} onClick={() => window.location.hash = '#people'}>
-                    <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
-                    <circle cx="9" cy="7" r="4" />
-                    <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
-                    <path d="M16 3.13a4 4 0 0 1 0 7.75" />
-                  </NavItem>
-                  <NavItem label="日历" active={view === 'calendar'} onClick={() => window.location.hash = '#calendar'}>
-                    <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
-                    <line x1="16" y1="2" x2="16" y2="6" />
-                    <line x1="8" y1="2" x2="8" y2="6" />
-                    <line x1="3" y1="10" x2="21" y2="10" />
+                  <NavItem label="工具" active={view === 'tools'} onClick={() => window.location.hash = '#tools'}>
+                    <circle cx="7" cy="7" r="2" />
+                    <circle cx="17" cy="7" r="2" />
+                    <circle cx="7" cy="17" r="2" />
+                    <circle cx="17" cy="17" r="2" />
+                    <line x1="9" y1="7" x2="15" y2="7" />
+                    <line x1="7" y1="9" x2="7" y2="15" />
+                    <line x1="9" y1="17" x2="15" y2="17" />
+                    <line x1="17" y1="9" x2="17" y2="15" />
                   </NavItem>
                 </ul>
 
