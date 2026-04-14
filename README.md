@@ -1,221 +1,188 @@
-# 118 Studio Manager
+# 118 Studio Manager (vc)
 
-面向 118 Studio 的本地项目管理工具。当前仓库默认分支是 `vc`，也是唯一持续开发的版本。
+118 Studio 的本地优先项目协作工具，聚焦「项目 / 任务 / 人员 / 日历 / 备份同步」。
 
-## 当前版本
+- 在线预览：https://118.fishknowsss.com/
+- 主开发分支：`vc`
+- 仓库地址：https://github.com/fishknowsss/118-Studio-Manager/tree/vc
 
-- 默认分支：`vc`
-- 在线预览：[https://118.fishknowsss.com/](https://118.fishknowsss.com/)
-- 仓库地址：[https://github.com/fishknowsss/118-Studio-Manager/tree/vc](https://github.com/fishknowsss/118-Studio-Manager/tree/vc)
+> 本 README 已按当前仓库代码与配置校准（2026-04-14）。
 
-## 这个版本能做什么
+## 核心能力
 
-- 在今日页集中看最紧急项目、逾期任务、任务池和成员负载
-- 按状态、优先级、DDL 管理项目和里程碑
-- 按负责人、日期、状态管理任务
-- 管理人员状态、技能标签和任务分配
-- 在日历里查看 DDL、里程碑和当天排期
-- 导出 JSON / CSV、导入备份、清空数据，并查看基础统计和最近日志
+- 今日看板：焦点项目、任务池、人员负载、迷你日历
+- 项目管理：状态、优先级、DDL、里程碑、时间轴
+- 任务管理：筛选、搜索、快速状态/优先级/负责人更新
+- 人员管理：成员状态、技能、任务分配
+- 月历视图：按日期聚合 DDL 与里程碑，可打开当天排期面板
+- 数据管理：JSON/CSV 导出、JSON 导入、全量清空
+- 云同步（可选）：本地 IndexedDB 与 Cloudflare Worker/KV 同步
 
-## 页面一览
+## 页面路由
 
-| 路由 | 页面 | 当前用途 |
+当前使用 hash 路由：
+
+| 路由 | 页面 | 说明 |
 | --- | --- | --- |
-| `#dashboard` | 今日 | 焦点项目、逾期任务、任务池、人员概览 |
-| `#projects` | 项目 | 项目筛选、状态管理、里程碑编辑 |
-| `#tasks` | 任务 | 任务筛选、搜索、编辑、新建 |
-| `#people` | 人员 | 人员管理、技能标签、启用停用 |
-| `#calendar` | 日历 | 月历、DDL、里程碑、排期入口 |
-| `#settings` | 设置 | 备份、导入、导出、清库、数据统计 |
+| `#dashboard` | 今日 | 焦点项目、任务池、人员与日历联动 |
+| `#projects` | 项目 | 卡片/时间轴视图，支持状态快捷操作 |
+| `#tasks` | 任务 | 任务筛选与右键快捷更新 |
+| `#people` | 人员 | 成员信息、启用停用、任务关联 |
+| `#calendar` | 日历 | 月历查看 DDL/里程碑并打开日程面板 |
+| `#settings` | 设置 | 备份导入导出、云同步、统计与日志 |
 
 ## 界面截图
 
-以下截图来自 `vc` 分支本地运行页面，基于 `118studio-backup-2026-04-11.json` 导入后的状态拍摄。
+![Dashboard](docs/screenshots/vc-dashboard.png)
+![Projects](docs/screenshots/vc-projects.png)
+![Tasks](docs/screenshots/vc-tasks.png)
+![People](docs/screenshots/vc-people.png)
+![Calendar](docs/screenshots/vc-calendar.png)
+![Dashboard Dark](docs/screenshots/vc-dashboard-dark.png)
+![Settings](docs/screenshots/vc-settings.png)
 
-**今日**
+## 快速开始
 
-![VC Dashboard](docs/screenshots/vc-dashboard.png)
+### 环境要求
 
-**项目**
+- Node.js：`24.14.1`（见 `package.json` 的 `engines` / `volta`）
+- npm：`11.11.0`
 
-![VC Projects](docs/screenshots/vc-projects.png)
-
-**任务**
-
-![VC Tasks](docs/screenshots/vc-tasks.png)
-
-**人员**
-
-![VC People](docs/screenshots/vc-people.png)
-
-**日历**
-
-![VC Calendar](docs/screenshots/vc-calendar.png)
-
-**深色**
-
-![VC Dashboard Dark](docs/screenshots/vc-dashboard-dark.png)
-
-**设置**
-
-![VC Settings](docs/screenshots/vc-settings.png)
-
-## 适合怎么用
-
-这个版本更适合做工作室内部的轻量项目协作：
-
-- 用项目承接阶段、DDL 和里程碑
-- 用任务跟踪执行人、开始/截止时间和排期
-- 用人员页维护成员状态和技能
-- 用设置页定期导出 JSON 做备份
-
-它目前是本地优先方案，数据保存在浏览器本地，不依赖服务器。
-
-## 分支说明
-
-当前仓库已经把 `vc` 设为默认分支，后续开发以它为准。
-
-| 分支 | 角色 | 状态 |
-| --- | --- | --- |
-| `vc` | 主力版本 | 默认分支，持续开发 |
-| `main` | 历史版本 | 保留早期 Pages 版本，不再作为主线 |
-| `singleD` | 历史版本 | 保留单屏方案和 README 记录，不再作为主线 |
-
-如果只是继续开发 118 Studio Manager，请直接基于 `vc`。
-
-## 技术说明
-
-这个版本目前是“React 页面 + legacy 数据层”的结构。
-
-### 前端壳
-
-- React 负责应用入口、侧栏导航、视图切换和主题同步
-- 当前视图通过 hash 切换，不走正式路由
-- 主入口见 [App.tsx](/Users/fishknowsss/Documents/MMSS/118SM/118studio-vc/src/App.tsx)
-
-主要视图：
-
-- [Dashboard.tsx](/Users/fishknowsss/Documents/MMSS/118SM/118studio-vc/src/views/Dashboard.tsx)
-- [Projects.tsx](/Users/fishknowsss/Documents/MMSS/118SM/118studio-vc/src/views/Projects.tsx)
-- [Tasks.tsx](/Users/fishknowsss/Documents/MMSS/118SM/118studio-vc/src/views/Tasks.tsx)
-- [People.tsx](/Users/fishknowsss/Documents/MMSS/118SM/118studio-vc/src/views/People.tsx)
-- [Calendar.tsx](/Users/fishknowsss/Documents/MMSS/118SM/118studio-vc/src/views/Calendar.tsx)
-- [Settings.tsx](/Users/fishknowsss/Documents/MMSS/118SM/118studio-vc/src/views/Settings.tsx)
-
-### 数据与交互底层
-
-- `legacy` 模块负责启动初始化、IndexedDB 读写、store 和演示数据
-- 通用交互由 React 组件接管，包括弹窗、确认框、Toast 和日程侧栏
-- 相关文件：
-  - [bootstrap.ts](/Users/fishknowsss/Documents/MMSS/118SM/118studio-vc/src/legacy/bootstrap.ts)
-  - [db.ts](/Users/fishknowsss/Documents/MMSS/118SM/118studio-vc/src/legacy/db.ts)
-  - [store.ts](/Users/fishknowsss/Documents/MMSS/118SM/118studio-vc/src/legacy/store.ts)
-  - [Dialog.tsx](/Users/fishknowsss/Documents/MMSS/118SM/118studio-vc/src/components/ui/Dialog.tsx)
-  - [PlannerProvider.tsx](/Users/fishknowsss/Documents/MMSS/118SM/118studio-vc/src/features/planner/PlannerProvider.tsx)
-
-## 数据与备份
-
-本地数据库名：
-
-```text
-studio118db
-```
-
-当前核心 store：
-
-| store | 内容 |
-| --- | --- |
-| `projects` | 项目、优先级、DDL、描述、里程碑 |
-| `tasks` | 任务、负责人、日期、工时、状态 |
-| `people` | 成员、状态、技能、备注 |
-| `logs` | 操作日志 |
-| `settings` | 本地设置 |
-
-空库时会自动写入一组演示数据，方便直接查看页面状态和交互流程。
-
-JSON 备份当前会包含：
-
-- 项目
-- 任务
-- 人员
-- 操作日志
-- 本地设置
-
-## 本地开发
-
-安装依赖：
+### 安装与运行
 
 ```bash
 npm install
-```
-
-启动开发环境：
-
-```bash
 npm run dev
 ```
 
-默认地址：
+默认开发地址：`http://127.0.0.1:5173/`
 
-```text
-http://127.0.0.1:5173/
+macOS 可用一键脚本：
+
+```bash
+./118-start.command
 ```
 
-常用检查命令：
+### 常用命令
 
 ```bash
 npm run lint
 npm run test
 npm run build
+npm run preview
 ```
 
-当前回归测试见 [current-app-regressions.test.tsx](/Users/fishknowsss/Documents/MMSS/118SM/118studio-vc/tests/current-app-regressions.test.tsx)。
+## 技术架构
+
+当前是「React 视图层 + legacy 数据层」结构：
+
+- 入口与应用壳：`src/main.tsx`、`src/App.tsx`
+- 页面层：`src/views/*`
+- 领域组件：`src/features/*`
+- 复用 UI 与反馈组件：`src/components/*`
+- 数据层与业务动作：`src/legacy/*`
+
+关键点：
+
+1. 状态来源是 `legacy/store`（内存态），通过 `useSyncExternalStore` 接入 React。
+2. 持久化存储使用 IndexedDB（数据库名：`studio118db`）。
+3. 选择器模型集中在 `legacy/selectors.ts`，减少页面内重复计算。
+4. 空库启动时优先尝试云端恢复，失败则写入演示数据。
+
+## 本地数据、备份与恢复
+
+IndexedDB object stores：
+
+| Store | 用途 |
+| --- | --- |
+| `projects` | 项目主体、状态、DDL、里程碑 |
+| `tasks` | 任务、负责人、排期与状态 |
+| `people` | 人员与技能 |
+| `logs` | 操作日志（保留最近 50 条） |
+| `settings` | 本地设置 |
+
+JSON 备份结构（schema v2）包含：
+
+- `projects`
+- `tasks`
+- `people`
+- `logs`
+- `settings`
+- `schemaVersion`
+- `exportedAt`
+
+## 云同步（可选）
+
+前端通过环境变量连接同步服务：
+
+```bash
+VITE_SYNC_API_URL=https://sync.fishknowsss.com
+```
+
+示例见 `.env.example`。
+
+同步行为：
+
+1. 自动同步：本地变更后约 2 分钟触发一次自动上传。
+2. 手动同步并备份：立即上传当前数据，并下载一份本地 JSON。
+3. 云端优先恢复：用云端快照覆盖本地 IndexedDB。
+4. 启动恢复：本地空库且云端有数据时，启动阶段自动拉取。
+
+Cloudflare Worker 参考：`cloudflare/sync-worker/README.md`。
 
 ## 部署说明
 
-GitHub Pages 现在采用“`vc` 占根路径、其他分支保留子目录”的方式发布：
+GitHub Pages 工作流：`.github/workflows/deploy.yml`
 
-- `vc` -> `https://118.fishknowsss.com/`
-- `main` -> `/118-Studio-Manager/v1/`
-- `singleD` -> `/118-Studio-Manager/singleD/`
+分支到路径映射：
 
-`vc` 自定义域名构建 base 定义在 [vite.config.ts](/Users/fishknowsss/Documents/MMSS/118SM/118studio-vc/vite.config.ts)，部署流程在 [deploy.yml](/Users/fishknowsss/Documents/MMSS/118SM/118studio-vc/.github/workflows/deploy.yml)。
+- `vc` -> 站点根路径 `/`（https://118.fishknowsss.com/）
+- `main` -> `/v1/`
+- `singleD` -> `/singleD/`
 
-`vc` 部署会直接覆盖站点根目录，`v1` 和 `singleD` 继续作为独立版本路径保留。
+构建基路径通过 `DEPLOY_BASE` 注入，Vite 配置在 `vite.config.ts`。
 
-## 云同步
+如需在 Pages 使用云同步，请在仓库 Actions Variables 中设置：
 
-当前版本支持“本地 IndexedDB + Cloudflare Worker/KV”同步：
+- `VITE_SYNC_API_URL`
 
-- 自动同步：本地变更会合并后自动上传当前主数据
-- 手动同步并备份：立即上传，并下载一份本地 JSON 备份
-- 云端优先，更新本地：用当前云端主数据覆盖本地 IndexedDB
+## 测试与质量
 
-前端通过 `VITE_SYNC_API_URL` 连接同步接口，示例见 [.env.example](/Users/fishknowsss/Documents/MMSS/118SM/118studio-vc/.env.example)。
+- 单元与回归测试：`tests/*`（Vitest + jsdom）
+- 代码检查：ESLint
+- 构建：TypeScript build + Vite build
 
-GitHub Pages 线上构建需要在仓库 `Settings -> Secrets and variables -> Actions -> Variables` 中添加同名变量 `VITE_SYNC_API_URL`。
+建议提交前至少执行：
 
-Worker 示例代码见 [cloudflare/sync-worker/README.md](/Users/fishknowsss/Documents/MMSS/118SM/118studio-vc/cloudflare/sync-worker/README.md)。
+```bash
+npm run lint && npm run test && npm run build
+```
 
 ## 目录结构
 
 ```text
-src/
-  App.tsx
-  components/
-  content/
-  features/
-  legacy/
-  views/
-tests/
-  current-app-regressions.test.tsx
+.
+├─ src/
+│  ├─ components/      # 通用 UI 与反馈组件
+│  ├─ content/         # 文案内容
+│  ├─ features/        # 业务域组件（dashboard/projects/tasks/...）
+│  ├─ legacy/          # 数据层、actions、selectors、db
+│  ├─ views/           # 页面入口
+│  ├─ App.tsx
+│  └─ main.tsx
+├─ tests/              # 回归与单元测试
+├─ cloudflare/
+│  └─ sync-worker/     # 云同步 Worker 示例
+├─ css/style.css       # 主样式
+└─ README.md
 ```
 
-## 更新记录
+## 分支策略
 
-| 版本 | 日期 | 说明 |
+| 分支 | 角色 | 状态 |
 | --- | --- | --- |
-| vc-readme-5 | 2026-04-12 | README 改为产品说明 + 开发说明双段结构，并同步当前分支状态 |
-| vc-readme-4 | 2026-04-12 | 按 `118studio-backup-2026-04-11.json` 备份数据重做 7 张 README 页面截图 |
-| vc-readme-2 | 2026-04-12 | README 改成带真实截图的版本，并补充当前迁移状态说明 |
-| vc-readme-1 | 2026-04-12 | 首次补充 `vc` 分支专用 README |
+| `vc` | 主力版本 | 持续开发 |
+| `main` | 历史版本 | 保留，不作为主线 |
+| `singleD` | 历史版本 | 保留，不作为主线 |
+
+如无特殊说明，请直接基于 `vc` 开发。
