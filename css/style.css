@@ -632,7 +632,7 @@ svg { display: block; flex-shrink: 0; }
   cursor: pointer;
 }
 .panel-action:hover { text-decoration: underline; }
-.panel-body { flex: 1; overflow-y: auto; overflow-x: hidden; }
+.panel-body { flex: 1; overflow-y: auto; overflow-x: hidden; padding-top: 2px; }
 .panel-body::-webkit-scrollbar { width: 4px; }
 .panel-body::-webkit-scrollbar-track { background: transparent; }
 .panel-body::-webkit-scrollbar-thumb { background: var(--c-border); border-radius: 2px; }
