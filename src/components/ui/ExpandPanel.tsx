@@ -1,8 +1,9 @@
 import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react'
 
 const VARIANTS = {
-  default: { maxW: 860, vwFrac: 0.76, maxH: 720, vhFrac: 0.78 },
-  slim:    { maxW: 480, vwFrac: 0.46, maxH: 820, vhFrac: 0.88 },
+  default: { maxW: 860,  vwFrac: 0.76, maxH: 720,  vhFrac: 0.78 },
+  wide:    { maxW: 1080, vwFrac: 0.88, maxH: 860,  vhFrac: 0.90 },
+  slim:    { maxW: 480,  vwFrac: 0.46, maxH: 820,  vhFrac: 0.88 },
 } as const
 
 type Variant = keyof typeof VARIANTS
@@ -67,7 +68,7 @@ export function ExpandPanel({
       role="presentation"
     >
       <div
-        className={`expand-panel-box${variant === 'slim' ? ' slim' : ''}`}
+        className={`expand-panel-box${variant === 'slim' ? ' slim' : variant === 'wide' ? ' wide' : ''}`}
         style={{ transformOrigin }}
         role="dialog"
         aria-modal="true"

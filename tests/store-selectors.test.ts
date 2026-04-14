@@ -10,6 +10,7 @@ import {
   buildProjectCardModels,
   buildProjectEventSummaryMap,
   buildProjectTimelineModel,
+  buildQuickJumpSearchItems,
   buildTaskListItemModels,
   formatRecentLogs,
   getFilteredProjects,
@@ -438,6 +439,33 @@ describe('store selectors', () => {
       taskCount: 1,
     })
     expect(items[0].skills).toEqual(['剪辑', '动画'])
+  })
+
+  it('builds quick jump search results across project, task, and person', () => {
+    const items = buildQuickJumpSearchItems(
+      [
+        { id: 'project-1', name: '品牌宣传片', status: 'active', ddl: '2026-04-18' },
+      ],
+      [
+        { id: 'task-1', title: '宣传片音效混音', projectId: 'project-1', assigneeId: 'person-1' },
+      ],
+      [
+        { id: 'person-1', name: '陈佳宁', skills: ['视频剪辑', 'After Effects'] },
+      ],
+      '宣传片',
+      8,
+    )
+
+    expect(items[0]).toMatchObject({
+      id: 'task-1',
+      kind: 'task',
+      title: '宣传片音效混音',
+    })
+    expect(items.some((item) => item.id === 'project-1' && item.kind === 'project')).toBe(true)
+  })
+
+  it('returns empty quick jump results for blank query', () => {
+    expect(buildQuickJumpSearchItems([], [], [], '   ')).toEqual([])
   })
 
   it('summarizes backup payload counts for import and export feedback', () => {

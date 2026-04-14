@@ -9,11 +9,13 @@ import { ProjectDetailPanel } from '../features/dashboard/ProjectDetailPanel'
 import { TaskPoolPanel } from '../features/dashboard/TaskPoolPanel'
 import { ExpandPanel } from '../components/ui/ExpandPanel'
 import { usePlanner } from '../features/planner/PlannerProvider'
+import { TaskDialog } from '../features/tasks/TaskDialog'
 import { assignTaskToPerson } from '../legacy/actions'
 import {
   buildDashboardHeaderModel,
   buildDashboardFocusCards,
   buildDashboardMiniCalendarModel,
+  buildQuickJumpSearchItems,
   buildPersonCardModels,
   buildEntityMaps,
   buildProjectEventSummaryMap,
@@ -22,7 +24,7 @@ import {
   getTaskPool,
   getTopProjects,
 } from '../legacy/selectors'
-import { type LegacyProject, getTaskAssigneeIds } from '../legacy/store'
+import { type LegacyProject, type LegacyTask, getTaskAssigneeIds } from '../legacy/store'
 import { useLegacyStoreSnapshot } from '../legacy/useLegacyStore'
 import { formatLocalDateKey } from '../legacy/utils'
 import { Tasks } from './Tasks'
@@ -64,6 +66,8 @@ export function Dashboard() {
   const [dropOverPersonId, setDropOverPersonId] = useState<string | null>(null)
   const [dropOverTaskId, setDropOverTaskId] = useState<string | null>(null)
   const [expandedPanel, setExpandedPanel] = useState<ExpandedPanel>(null)
+  const [editingTask, setEditingTask] = useState<LegacyTask | null | undefined>(undefined)
+  const [searchQuery, setSearchQuery] = useState('')
   const [dateObj, setDateObj] = useState(() => new Date())
   const todayStr = useMemo(() => formatLocalDateKey(dateObj), [dateObj])
 
@@ -92,6 +96,10 @@ export function Dashboard() {
   const focusProj = topProjects[0] as LegacyProject | undefined
   const focusData = useMemo(() => getDashboardFocusData(focusProj, tasks, todayStr), [focusProj, tasks, todayStr])
   const primaryFocusTone = focusCards[0]?.urgencyKey || 'focus-neutral'
+  const searchResults = useMemo(
+    () => buildQuickJumpSearchItems(projects, tasks, people, searchQuery),
+    [people, projects, searchQuery, tasks],
+  )
 
   const clearDragState = () => {
     setDraggingPersonId(null)
@@ -157,11 +165,37 @@ export function Dashboard() {
     setDropOverTaskId(taskId)
   }
 
+  const handleSearchSelect = (item: (typeof searchResults)[number]) => {
+    const ox = window.innerWidth / 2
+    const oy = window.innerHeight / 2
+
+    if (item.kind === 'project') {
+      setExpandedPanel({ type: 'project', projectId: item.id, ox, oy })
+    } else if (item.kind === 'person') {
+      setExpandedPanel({ type: 'person', personId: item.id, ox, oy })
+    } else {
+      const selectedTask = store.getTask(item.id) || null
+      if (selectedTask) {
+        setEditingTask(selectedTask)
+      } else {
+        setExpandedPanel({ type: 'tasks', ox, oy })
+      }
+    }
+
+    setSearchQuery('')
+  }
+
   const closePanel = () => setExpandedPanel(null)
 
   return (
     <div className="dashboard fade-in">
-      <DashboardHeader model={headerModel} />
+      <DashboardHeader
+        model={headerModel}
+        searchQuery={searchQuery}
+        searchResults={searchResults}
+        onSearchQueryChange={setSearchQuery}
+        onSearchSelect={handleSearchSelect}
+      />
 
       <div className="today-focus">
         <div
@@ -231,6 +265,7 @@ export function Dashboard() {
           originX={expandedPanel.ox}
           originY={expandedPanel.oy}
           onClose={closePanel}
+          variant={expandedPanel.type === 'calendar' ? 'wide' : 'default'}
         >
           {expandedPanel.type === 'tasks' && <Tasks />}
           {expandedPanel.type === 'people' && <People />}
@@ -243,6 +278,15 @@ export function Dashboard() {
             <PersonDetailPanel personId={expandedPanel.personId} />
           )}
         </ExpandPanel>
+      ) : null}
+
+      {editingTask !== undefined ? (
+        <TaskDialog
+          task={editingTask}
+          people={people}
+          projects={projects}
+          onClose={() => setEditingTask(undefined)}
+        />
       ) : null}
     </div>
   )

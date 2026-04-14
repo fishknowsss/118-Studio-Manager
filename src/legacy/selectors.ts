@@ -173,6 +173,15 @@ export type ProjectDeadlineToneKey =
   | 'focus-neutral'
   | 'urg-done'
 
+export type QuickJumpSearchKind = 'project' | 'task' | 'person'
+
+export type QuickJumpSearchItem = {
+  id: string
+  kind: QuickJumpSearchKind
+  title: string
+  subtitle: string
+}
+
 const PRIORITY_ORDER: Record<string, number> = { urgent: 0, high: 1, medium: 2, low: 3 }
 const DASHBOARD_WEEKDAY_LABELS = ['星期日', '星期一', '星期二', '星期三', '星期四', '星期五', '星期六']
 const DASHBOARD_MONTH_LABELS = ['一月', '二月', '三月', '四月', '五月', '六月', '七月', '八月', '九月', '十月', '十一月', '十二月']
@@ -222,6 +231,31 @@ function getFocusToneByIndex(index: number): ProjectDeadlineToneKey {
   if (index === 2) return 'focus-medium'
   if (index === 3) return 'focus-calm'
   return 'focus-neutral'
+}
+
+function getMatchScore(text: string, query: string) {
+  const source = text.trim().toLowerCase()
+  if (!source) return null
+
+  const index = source.indexOf(query)
+  if (index < 0) return null
+  if (index === 0) return 0
+  if (index <= 8) return 1
+  return 2
+}
+
+function pickBestMatchScore(fields: string[], query: string) {
+  let best: number | null = null
+
+  for (const field of fields) {
+    const score = getMatchScore(field, query)
+    if (score === null) continue
+    if (best === null || score < best) {
+      best = score
+    }
+  }
+
+  return best
 }
 
 export function buildProjectDeadlineToneMap(
@@ -678,6 +712,96 @@ export function buildDashboardFocusCards(
       urgencyKey: toneMap[project.id] || 'focus-neutral',
     } satisfies DashboardFocusCard
   })
+}
+
+export function buildQuickJumpSearchItems(
+  projects: LegacyProject[],
+  tasks: LegacyTask[],
+  people: LegacyPerson[],
+  query: string,
+  limit = 8,
+) {
+  const normalizedQuery = query.trim().toLowerCase()
+  if (!normalizedQuery) return [] as QuickJumpSearchItem[]
+
+  type ScoredItem = QuickJumpSearchItem & { matchScore: number }
+  const kindOrder: Record<QuickJumpSearchKind, number> = { project: 0, task: 1, person: 2 }
+  const maps = buildEntityMaps(projects, tasks, people)
+  const items: ScoredItem[] = []
+
+  for (const project of projects) {
+    const matchScore = pickBestMatchScore([
+      project.name || '',
+      project.description || '',
+      ...(project.milestones || []).map((milestone) => milestone.title || ''),
+    ], normalizedQuery)
+    if (matchScore === null) continue
+
+    items.push({
+      id: project.id,
+      kind: 'project',
+      title: project.name || '未命名项目',
+      subtitle: `项目 · ${STATUS_LABELS[project.status || 'active'] || '进行中'}${project.ddl ? ` · DDL ${formatSlashDate(project.ddl)}` : ''}`,
+      matchScore,
+    })
+  }
+
+  for (const task of tasks) {
+    const assigneeNames = getTaskAssigneeIds(task)
+      .map((personId) => maps.peopleById[personId]?.name || '')
+      .filter(Boolean)
+    const projectName = task.projectId ? maps.projectsById[task.projectId]?.name || '未命名项目' : '未关联项目'
+    const matchScore = pickBestMatchScore([
+      task.title || '',
+      task.description || '',
+      projectName,
+      ...assigneeNames,
+    ], normalizedQuery)
+    if (matchScore === null) continue
+
+    items.push({
+      id: task.id,
+      kind: 'task',
+      title: task.title || '未命名任务',
+      subtitle: `任务 · ${projectName}${assigneeNames.length ? ` · ${assigneeNames.join('、')}` : ''}`,
+      matchScore,
+    })
+  }
+
+  for (const person of people) {
+    const skills = person.skills || []
+    const matchScore = pickBestMatchScore([
+      person.name || '',
+      person.notes || '',
+      ...skills,
+    ], normalizedQuery)
+    if (matchScore === null) continue
+
+    items.push({
+      id: person.id,
+      kind: 'person',
+      title: person.name || '未命名成员',
+      subtitle: `人员 · ${skills.length ? skills.slice(0, 2).join(' / ') : '无技能标签'}`,
+      matchScore,
+    })
+  }
+
+  return items
+    .sort((left, right) => {
+      if (left.matchScore !== right.matchScore) return left.matchScore - right.matchScore
+
+      const kindGap = (kindOrder[left.kind] ?? 99) - (kindOrder[right.kind] ?? 99)
+      if (kindGap !== 0) return kindGap
+
+      return left.title.localeCompare(right.title, 'zh-CN')
+    })
+    .slice(0, limit)
+    .map((item) => ({
+      id: item.id,
+      kind: item.kind,
+      title: item.title,
+      subtitle: item.subtitle,
+    }))
 }
 
 export function getOpenTaskCount(tasks: LegacyTask[]) {

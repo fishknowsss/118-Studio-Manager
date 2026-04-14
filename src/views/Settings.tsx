@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useMemo, useState, useSyncExternalStore } from 'react'
 import { useConfirm } from '../components/feedback/ConfirmProvider'
 import { useToast } from '../components/feedback/ToastProvider'
 import {
@@ -6,7 +6,15 @@ import {
   writePersistedTransferState,
 } from '../features/settings/settingsTransferState'
 import { useCloudSync } from '../features/sync/SyncProvider'
-import { clearAllData, exportBackupData, importBackupText } from '../legacy/actions'
+import {
+  clearAllData,
+  exportBackupData,
+  getUndoHistorySnapshot,
+  getUndoHistoryState,
+  importBackupText,
+  subscribeUndoHistory,
+  undoEditOperationById,
+} from '../legacy/actions'
 import { downloadFile, formatFileDate, toCSV } from '../legacy/utils'
 import {
   buildBackupSummary,
@@ -27,6 +35,7 @@ export function Settings() {
   const { projects, tasks, people, logs } = store
   const { toast } = useToast()
   const { confirm } = useConfirm()
+  useSyncExternalStore(subscribeUndoHistory, getUndoHistorySnapshot)
   const {
     state: cloudSyncState,
     statusLabel,
@@ -40,6 +49,13 @@ export function Settings() {
   const needsBackup = useMemo(() => getNeedsBackup(logs, projects), [logs, projects])
   const currentSummary = useMemo(() => buildBackupSummary({ projects, tasks, people, logs, settings: [] }), [logs, people, projects, tasks])
   const recentLogs = useMemo(() => formatRecentLogs(logs), [logs])
+  const undoState = getUndoHistoryState()
+
+  const formatUndoTime = (value: string) => {
+    const date = new Date(value)
+    if (Number.isNaN(date.getTime())) return '--'
+    return `${date.getMonth() + 1}/${date.getDate()} ${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`
+  }
 
   const handleExportJSON = async () => {
     const result = await exportBackupData()
@@ -133,6 +149,27 @@ export function Settings() {
     } catch (error) {
       toast(error instanceof Error ? error.message : '云端恢复失败', 'error')
     }
+  }
+
+  const handleUndoByItem = async (id: string, label: string) => {
+    const ok = await confirm('撤回操作', `将撤回「${label}」以及其后的变更，是否继续？`, {
+      confirmLabel: '继续撤回',
+      tone: 'primary',
+    })
+    if (!ok) return
+
+    const reverted = await undoEditOperationById(id)
+    if (!reverted) {
+      toast('该操作已不可撤回', 'info')
+      return
+    }
+
+    if (reverted.revertedCount > 1) {
+      toast(`已撤回：${reverted.label}（同时回退 ${reverted.revertedCount} 步）`, 'success')
+      return
+    }
+
+    toast(`已撤回：${reverted.label}`, 'success')
   }
 
   return (
@@ -289,8 +326,23 @@ export function Settings() {
 
         <div className="settings-log-panel">
           <div className="settings-section-title settings-log-title">最近操作</div>
+          {undoState.count > 0 ? (
+            <div className="settings-log-hint">可撤回最近 {undoState.count} 条编辑</div>
+          ) : null}
           <div className="log-list">
-            {recentLogs.length === 0 ? (
+            {undoState.items.length > 0 ? (
+              undoState.items.map((item) => (
+                <div key={item.id} className="log-item log-item-undo">
+                  <div className="log-item-main">
+                    <span className="log-time">{formatUndoTime(item.createdAt)}</span>
+                    <span className="log-text">{item.label}</span>
+                  </div>
+                  <button className="btn btn-secondary btn-xs log-undo-btn" type="button" onClick={() => void handleUndoByItem(item.id, item.label)}>
+                    撤回
+                  </button>
+                </div>
+              ))
+            ) : recentLogs.length === 0 ? (
               <div className="text-muted text-sm">先做一次导入或导出</div>
             ) : (
               recentLogs.map((log) => (

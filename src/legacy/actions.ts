@@ -1,4 +1,13 @@
 import { db } from './db'
+import {
+  discardUndoCheckpoint,
+  getUndoHistorySnapshot,
+  getUndoHistoryState,
+  pushUndoCheckpoint,
+  subscribeUndoHistory,
+  undoEditById,
+  undoLastEdit,
+} from './editUndo'
 import type {
   LegacyMilestone,
   LegacyPerson,
@@ -43,6 +52,17 @@ export type PersonFormInput = {
   status: PersonStatus | null
   skills: string[]
   notes: string | null
+}
+
+async function runWithUndo<T>(label: string, operation: () => Promise<T>) {
+  const checkpointId = await pushUndoCheckpoint(label)
+
+  try {
+    return await operation()
+  } catch (error) {
+    discardUndoCheckpoint(checkpointId)
+    throw error
+  }
 }
 
 export function buildProjectRecord(
@@ -103,73 +123,102 @@ export function buildPersonRecord(
 }
 
 export async function saveProjectFromForm(project: LegacyProject | null, form: ProjectFormInput) {
-  const saved = buildProjectRecord(project, form)
-  await store.saveProject(saved)
-  await store.addLog(`${project ? '编辑' : '创建'}项目「${saved.name}」`)
-  return saved
+  return await runWithUndo(
+    `${project ? '编辑' : '创建'}项目「${form.name?.trim() || '未命名项目'}」`,
+    async () => {
+      const saved = buildProjectRecord(project, form)
+      await store.saveProject(saved)
+      await store.addLog(`${project ? '编辑' : '创建'}项目「${saved.name}」`)
+      return saved
+    },
+  )
 }
 
 export async function saveTaskFromForm(task: LegacyTask | null, form: TaskFormInput) {
-  const saved = buildTaskRecord(task, form)
-  await store.saveTask(saved)
-  await store.addLog(`${task ? '编辑' : '创建'}任务「${saved.title}」`)
-  return saved
+  return await runWithUndo(
+    `${task ? '编辑' : '创建'}任务「${form.title?.trim() || '未命名任务'}」`,
+    async () => {
+      const saved = buildTaskRecord(task, form)
+      await store.saveTask(saved)
+      await store.addLog(`${task ? '编辑' : '创建'}任务「${saved.title}」`)
+      return saved
+    },
+  )
 }
 
 export async function savePersonFromForm(person: LegacyPerson | null, form: PersonFormInput) {
-  const saved = buildPersonRecord(person, form)
-  await store.savePerson(saved)
-  await store.addLog(`${person ? '编辑' : '新增'}人员「${saved.name}」`)
-  return saved
+  return await runWithUndo(
+    `${person ? '编辑' : '新增'}人员「${form.name?.trim() || '未命名人员'}」`,
+    async () => {
+      const saved = buildPersonRecord(person, form)
+      await store.savePerson(saved)
+      await store.addLog(`${person ? '编辑' : '新增'}人员「${saved.name}」`)
+      return saved
+    },
+  )
 }
 
 export async function deleteProjectWithLog(project: LegacyProject) {
-  await store.deleteProject(project.id)
-  await store.addLog(`删除项目「${project.name}」`)
+  await runWithUndo(`删除项目「${project.name || '未命名项目'}」`, async () => {
+    await store.deleteProject(project.id)
+    await store.addLog(`删除项目「${project.name}」`)
+  })
 }
 
 export async function deleteTaskWithLog(task: LegacyTask) {
-  await store.deleteTask(task.id)
-  await store.addLog(`删除任务「${task.title}」`)
+  await runWithUndo(`删除任务「${task.title || '未命名任务'}」`, async () => {
+    await store.deleteTask(task.id)
+    await store.addLog(`删除任务「${task.title}」`)
+  })
 }
 
 export async function deletePersonWithLog(person: LegacyPerson) {
-  await store.deletePerson(person.id)
-  await store.addLog(`删除人员「${person.name}」`)
+  await runWithUndo(`删除人员「${person.name || '未命名人员'}」`, async () => {
+    await store.deletePerson(person.id)
+    await store.addLog(`删除人员「${person.name}」`)
+  })
 }
 
 export async function toggleTaskStatus(task: LegacyTask) {
-  const nextStatus: TaskStatus = task.status === 'done' ? 'todo' : 'done'
-  const updated = { ...task, status: nextStatus, updatedAt: now() }
-  await store.saveTask(updated)
-  await store.addLog(`${nextStatus === 'done' ? '完成' : '重开'}任务「${task.title}」`)
-  return updated
+  return await runWithUndo(`切换任务状态「${task.title || '未命名任务'}」`, async () => {
+    const nextStatus: TaskStatus = task.status === 'done' ? 'todo' : 'done'
+    const updated = { ...task, status: nextStatus, updatedAt: now() }
+    await store.saveTask(updated)
+    await store.addLog(`${nextStatus === 'done' ? '完成' : '重开'}任务「${task.title}」`)
+    return updated
+  })
 }
 
 export async function togglePersonStatus(person: LegacyPerson) {
-  const nextStatus: PersonStatus = person.status === 'active' ? 'inactive' : 'active'
-  const updated = { ...person, status: nextStatus, updatedAt: now() }
-  await store.savePerson(updated)
-  await store.addLog(`${nextStatus === 'active' ? '启用' : '停用'}人员「${person.name}」`)
-  return updated
+  return await runWithUndo(`切换人员状态「${person.name || '未命名人员'}」`, async () => {
+    const nextStatus: PersonStatus = person.status === 'active' ? 'inactive' : 'active'
+    const updated = { ...person, status: nextStatus, updatedAt: now() }
+    await store.savePerson(updated)
+    await store.addLog(`${nextStatus === 'active' ? '启用' : '停用'}人员「${person.name}」`)
+    return updated
+  })
 }
 
 export async function updateProjectStatus(projectId: string, status: ProjectStatus) {
   const project = store.getProject(projectId)
   if (!project) return null
-  const updated = { ...project, status, updatedAt: now() }
-  await store.saveProject(updated)
-  await store.addLog(`更新项目状态「${project.name}」`)
-  return updated
+  return await runWithUndo(`更新项目状态「${project.name || '未命名项目'}」`, async () => {
+    const updated = { ...project, status, updatedAt: now() }
+    await store.saveProject(updated)
+    await store.addLog(`更新项目状态「${project.name}」`)
+    return updated
+  })
 }
 
 export async function updateTaskQuickField(taskId: string, patch: Partial<LegacyTask>) {
   const task = store.getTask(taskId)
   if (!task) return null
-  const updated = { ...task, ...patch, updatedAt: now() }
-  await store.saveTask(updated)
-  await store.addLog(`更新任务「${task.title}」`)
-  return updated
+  return await runWithUndo(`更新任务「${task.title || '未命名任务'}」`, async () => {
+    const updated = { ...task, ...patch, updatedAt: now() }
+    await store.saveTask(updated)
+    await store.addLog(`更新任务「${task.title}」`)
+    return updated
+  })
 }
 
 export async function assignTaskToPerson(taskId: string, personId: string) {
@@ -177,13 +226,15 @@ export async function assignTaskToPerson(taskId: string, personId: string) {
   const person = store.getPerson(personId)
   if (!task || !person) return null
 
-  const currentIds = getTaskAssigneeIds(task)
-  const assigneeIds = currentIds.includes(personId) ? currentIds : [...currentIds, personId]
-  const updated = { ...task, assigneeIds, updatedAt: now() }
+  return await runWithUndo(`分配任务「${task.title || '未命名任务'}」`, async () => {
+    const currentIds = getTaskAssigneeIds(task)
+    const assigneeIds = currentIds.includes(personId) ? currentIds : [...currentIds, personId]
+    const updated = { ...task, assigneeIds, updatedAt: now() }
 
-  await store.saveTask(updated)
-  await store.addLog(`分配任务「${task.title}」给 ${person.name || ''}`)
-  return updated
+    await store.saveTask(updated)
+    await store.addLog(`分配任务「${task.title}」给 ${person.name || ''}`)
+    return updated
+  })
 }
 
 export async function exportBackupData() {
@@ -196,19 +247,37 @@ export async function exportBackupData() {
 }
 
 export async function importBackupText(text: string) {
-  const parsed = normalizeImportedBackup(JSON.parse(text))
-  await db.importAll(parsed)
-  await store.loadAll()
-  return {
-    data: parsed,
-    summary: buildBackupSummary(parsed),
-  }
+  return await runWithUndo('导入备份', async () => {
+    const parsed = normalizeImportedBackup(JSON.parse(text))
+    await db.importAll(parsed)
+    await store.loadAll()
+    return {
+      data: parsed,
+      summary: buildBackupSummary(parsed),
+    }
+  })
 }
 
 export async function clearAllData() {
-  const current = await db.exportAll()
-  const summary = buildBackupSummary(current)
-  await db.clearAll()
-  await store.loadAll()
-  return summary
+  return await runWithUndo('清空所有数据', async () => {
+    const current = await db.exportAll()
+    const summary = buildBackupSummary(current)
+    await db.clearAll()
+    await store.loadAll()
+    return summary
+  })
+}
+
+export async function undoLastEditOperation() {
+  return await undoLastEdit()
+}
+
+export async function undoEditOperationById(id: string) {
+  return await undoEditById(id)
+}
+
+export {
+  getUndoHistorySnapshot,
+  getUndoHistoryState,
+  subscribeUndoHistory,
 }
