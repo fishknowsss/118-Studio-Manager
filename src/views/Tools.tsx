@@ -69,9 +69,6 @@ export function Tools() {
     <div className="view-tools fade-in">
       <div className="view-header">
         <h1 className="view-title">工具</h1>
-        <div className="view-actions">
-          <span className="text-muted text-sm">先放常用工具与脚本建议，后续可逐步扩展</span>
-        </div>
       </div>
 
       <div className="view-body tools-view-body">
