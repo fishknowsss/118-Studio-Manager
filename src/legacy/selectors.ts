@@ -846,11 +846,10 @@ export function getFilteredPeople(people: LegacyPerson[], search: string, status
 }
 
 export function getNeedsBackup(logs: LegacyLog[], projects: LegacyProject[], currentDate = new Date()) {
-  const sevenDaysAgo = new Date(currentDate)
-  sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7)
+  const seventyTwoHoursAgo = new Date(currentDate.getTime() - 72 * 60 * 60 * 1000)
 
   const recentExport = logs.find((log) =>
-    log.text.includes('JSON 已导出') && new Date(log.ts) > sevenDaysAgo,
+    log.text.includes('JSON 已导出') && new Date(log.ts) > seventyTwoHoursAgo,
   )
 
   return !recentExport && projects.length > 0

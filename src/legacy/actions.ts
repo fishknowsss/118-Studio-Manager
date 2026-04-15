@@ -239,6 +239,7 @@ export async function assignTaskToPerson(taskId: string, personId: string) {
 
 export async function exportBackupData() {
   const data = await db.exportAll()
+  await store.addLog('JSON 已导出')
   return {
     data,
     filename: `118studio-backup-${formatFileDate(new Date())}.json`,

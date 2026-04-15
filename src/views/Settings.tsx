@@ -183,7 +183,7 @@ export function Settings() {
           {needsBackup ? (
             <div className="backup-alert">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="16" height="16"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-              您已超过一周未备份，建议导出 JSON。
+              您已超过 72 小时未备份，建议导出 JSON。
             </div>
           ) : null}
 
