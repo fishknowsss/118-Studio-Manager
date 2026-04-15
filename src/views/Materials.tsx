@@ -16,8 +16,6 @@ import {
 } from '../features/materials/materialsState'
 import { useLegacyStoreSnapshot } from '../legacy/useLegacyStore'
 
-type Tab = 'briefs' | 'accounts'
-
 // ─── 复制到剪贴板 ─────────────────────────────────────
 async function copyToClipboard(text: string): Promise<boolean> {
   try {
@@ -226,8 +224,6 @@ export function Materials() {
   const { confirm } = useConfirm()
   const { toast } = useToast()
 
-  const [tab, setTab] = useState<Tab>('briefs')
-
   // 甲方要求
   const [briefs, setBriefs]             = useState<ClientBrief[]>(() => readBriefs())
   const [editingBrief, setEditingBrief] = useState<ClientBrief | null | undefined>(undefined)
@@ -320,74 +316,69 @@ export function Materials() {
 
   return (
     <div className="view-materials fade-in">
-      {/* ── 顶栏 ─────────────────────────────────────── */}
-      <div className="view-header">
-        <div className="materials-header-left">
-          <h1 className="view-title">资料</h1>
-          <div className="materials-tabs">
-            <button
-              className={`materials-tab${tab === 'briefs' ? ' active' : ''}`}
-              type="button"
-              onClick={() => setTab('briefs')}
+      {/* ── 统一顶栏：两列同行，确保对齐 ───────────────── */}
+      <div className="mat-topbar">
+        <div className="mat-col-head">
+          <div className="mat-col-identity">
+            <span className="mat-col-title">甲方要求</span>
+            {briefs.length > 0 && (
+              <span className="mat-col-count">{filteredBriefs.length}</span>
+            )}
+          </div>
+          <div className="mat-col-controls">
+            <select
+              className="filter-select"
+              value={briefProjectFilter}
+              onChange={(e) => setBriefProjectFilter(e.target.value)}
             >
-              甲方要求
-            </button>
+              <option value="">全部项目</option>
+              {projectOptions.map((p) => (
+                <option key={p.id} value={p.id}>{p.name}</option>
+              ))}
+            </select>
             <button
-              className={`materials-tab${tab === 'accounts' ? ' active' : ''}`}
+              className="btn btn-primary btn-sm"
               type="button"
-              onClick={() => setTab('accounts')}
+              onClick={() => setEditingBrief(null)}
             >
-              账号密码
+              新建要求
             </button>
           </div>
         </div>
 
-        <div className="view-actions">
-          {tab === 'briefs' ? (
-            <>
-              <select
-                className="filter-select"
-                value={briefProjectFilter}
-                onChange={(e) => setBriefProjectFilter(e.target.value)}
-              >
-                <option value="">全部项目</option>
-                {projectOptions.map((p) => (
-                  <option key={p.id} value={p.id}>{p.name}</option>
-                ))}
-              </select>
-              <button
-                className="btn btn-primary"
-                type="button"
-                onClick={() => setEditingBrief(null)}
-              >
-                新建要求
-              </button>
-            </>
-          ) : (
-            <>
-              <input
-                className="filter-input"
-                placeholder="搜索平台或账号…"
-                value={accSearch}
-                onChange={(e) => setAccSearch(e.target.value)}
-              />
-              <button
-                className="btn btn-primary"
-                type="button"
-                onClick={() => setEditingAccount(null)}
-              >
-                新建账号
-              </button>
-            </>
-          )}
+        <div className="mat-top-sep" />
+
+        <div className="mat-col-head">
+          <div className="mat-col-identity">
+            <span className="mat-col-title">账号密码</span>
+            {accounts.length > 0 && (
+              <span className="mat-col-count">{filteredAccounts.length}</span>
+            )}
+          </div>
+          <div className="mat-col-controls">
+            <input
+              className="filter-input"
+              placeholder="搜索平台或账号…"
+              value={accSearch}
+              onChange={(e) => setAccSearch(e.target.value)}
+            />
+            <button
+              className="btn btn-primary btn-sm"
+              type="button"
+              onClick={() => setEditingAccount(null)}
+            >
+              新建账号
+            </button>
+          </div>
         </div>
       </div>
 
-      {/* ── 内容区 ───────────────────────────────────── */}
-      <div className="view-body">
-        {tab === 'briefs' ? (
-          <>
-            {/* 甲方要求列表 */}
+      {/* ── 双栏主体 ─────────────────────────────────── */}
+      <div className="materials-split">
+
+        {/* ── 左：甲方要求 ──────────────────────────── */}
+        <div className="materials-pane">
+          <div className="materials-pane-body">
             {filteredBriefs.length === 0 ? (
               <div className="empty-state">
                 <div className="empty-icon">
@@ -412,7 +403,7 @@ export function Materials() {
                 </button>
               </div>
             ) : (
-              <div className="brief-list">
+              <div className="brief-list brief-list-pane">
                 {filteredBriefs.map((brief) => (
                   <BriefCard
                     key={brief.id}
@@ -423,20 +414,16 @@ export function Materials() {
                 ))}
               </div>
             )}
-          </>
-        ) : (
-          <>
-            {/* 账号密码安全提示 */}
-            <div className="acc-security-notice">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="14" height="14">
-                <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
-                <line x1="12" y1="9" x2="12" y2="13" />
-                <line x1="12" y1="17" x2="12.01" y2="17" />
-              </svg>
-              账号信息以明文形式存储在本地浏览器，请勿保存高敏感个人账号
-            </div>
+          </div>
+        </div>
 
-            {/* 分类筛选 */}
+        {/* ── 分隔线 ────────────────────────────────── */}
+        <div className="materials-divider" />
+
+        {/* ── 右：账号密码 ──────────────────────────── */}
+        <div className="materials-pane">
+          {/* 分类筛选 + 安全提示 */}
+          <div className="acc-subhead">
             <div className="acc-category-tabs">
               <button
                 className={`acc-cat-tab${accCategory === '' ? ' active' : ''}`}
@@ -456,8 +443,17 @@ export function Materials() {
                 </button>
               ))}
             </div>
+            <div className="acc-warn-inline">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="11" height="11">
+                <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
+                <line x1="12" y1="9" x2="12" y2="13" />
+                <line x1="12" y1="17" x2="12.01" y2="17" />
+              </svg>
+              明文存储，勿保存高敏感账号
+            </div>
+          </div>
 
-            {/* 账号列表 */}
+          <div className="materials-pane-body">
             {filteredAccounts.length === 0 ? (
               <div className="empty-state">
                 <div className="empty-icon">
@@ -479,7 +475,7 @@ export function Materials() {
                 </button>
               </div>
             ) : (
-              <div className="acc-list">
+              <div className="acc-list acc-list-pane">
                 {filteredAccounts.map((account) => (
                   <AccountCard
                     key={account.id}
@@ -490,8 +486,9 @@ export function Materials() {
                 ))}
               </div>
             )}
-          </>
-        )}
+          </div>
+        </div>
+
       </div>
 
       {/* ── 弹窗 ─────────────────────────────────────── */}
