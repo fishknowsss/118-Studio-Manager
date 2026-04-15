@@ -105,7 +105,7 @@ export function Graph() {
         return left.label.localeCompare(right.label)
       })
       .slice(0, 8)
-  }, [filteredGraph.nodes, searchKeyword])
+  }, [filteredGraph, searchKeyword])
 
   const searchMatchedNodeIds = useMemo(
     () => new Set(searchResults.map((node) => node.id)),

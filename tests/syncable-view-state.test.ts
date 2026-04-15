@@ -19,7 +19,6 @@ import {
   initializeMaterialsState,
   readBriefs,
   reloadMaterialsStateFromDB,
-  writeBriefs,
 } from '../src/features/materials/materialsState'
 import {
   __resetRepositoryLinksStateForTests,
