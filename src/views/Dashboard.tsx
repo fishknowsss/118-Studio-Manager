@@ -84,7 +84,18 @@ export function Dashboard() {
   const focusCards = useMemo(() => buildDashboardFocusCards(projects, tasks, todayStr), [projects, tasks, todayStr])
   const taskPool = useMemo(() => getTaskPool(tasks), [tasks])
   const activePeople = useMemo(() => getActivePeople(people), [people])
-  const activePersonCards = useMemo(() => buildPersonCardModels(activePeople, tasks), [activePeople, tasks])
+  const leaveDates = useMemo(
+    () => new Set(store.leaveRecords.map((r) => r.date)),
+    [store.leaveRecords],
+  )
+  const leavePersonIdsToday = useMemo(
+    () => new Set(store.leaveRecords.filter((r) => r.date === todayStr).map((r) => r.personId)),
+    [store.leaveRecords, todayStr],
+  )
+  const activePersonCards = useMemo(
+    () => buildPersonCardModels(activePeople, tasks, leavePersonIdsToday),
+    [activePeople, tasks, leavePersonIdsToday],
+  )
   const poolRows = useMemo(() => taskPool.map((task) => ({
     ...task,
     people: getTaskAssigneeIds(task).map((id) => entityMaps.peopleById[id]).filter(Boolean),
@@ -92,11 +103,6 @@ export function Dashboard() {
   })), [entityMaps.peopleById, entityMaps.projectsById, taskPool])
   const eventMap = useMemo(() => buildProjectEventSummaryMap(projects), [projects])
   const headerModel = useMemo(() => buildDashboardHeaderModel(dateObj), [dateObj])
-
-  const leaveDates = useMemo(
-    () => new Set(store.leaveRecords.map((r) => r.date)),
-    [store.leaveRecords],
-  )
   const calendarModel = useMemo(
     () => buildDashboardMiniCalendarModel(calDate, eventMap, todayStr, leaveDates),
     [calDate, eventMap, todayStr, leaveDates],
@@ -188,7 +194,6 @@ export function Dashboard() {
   }
 
   const handleOpenDate = (dateKey: string, ox: number, oy: number) => {
-    // 统一走 planner，请假信息在 planner 内展示
     openPlanner(dateKey, ox, oy)
   }
 
@@ -318,23 +323,37 @@ export function Dashboard() {
         />
       ) : null}
 
-      {leaveDialogDate ? (
-        <LeaveDialog
-          date={leaveDialogDate}
-          leaveRecords={store.leaveRecords.filter((r) => r.date === leaveDialogDate)}
-          peopleById={entityMaps.peopleById}
-          onClose={() => setLeaveDialogDate(null)}
-          onSave={(id, reason) => {
-            const record = store.leaveRecords.find((r) => r.id === id)
-            if (record) void store.saveLeaveRecord({ ...record, reason })
-          }}
-          onDelete={(id) => {
-            void store.deleteLeaveRecord(id)
-            const remaining = store.leaveRecords.filter((r) => r.date === leaveDialogDate && r.id !== id)
-            if (remaining.length === 0) setLeaveDialogDate(null)
-          }}
-        />
-      ) : null}
+      {leaveDialogDate ? (() => {
+        const dialogRecords = store.leaveRecords.filter((r) => r.date === leaveDialogDate)
+        const leavedPersonIds = new Set(dialogRecords.map((r) => r.personId))
+        const available = activePeople
+          .filter((p) => !leavedPersonIds.has(p.id))
+          .map((p) => ({ id: p.id, name: p.name || '未命名成员' }))
+        return (
+          <LeaveDialog
+            date={leaveDialogDate}
+            leaveRecords={dialogRecords}
+            peopleById={entityMaps.peopleById}
+            availablePeople={available}
+            onClose={() => setLeaveDialogDate(null)}
+            onSave={(id, reason) => {
+              const record = store.leaveRecords.find((r) => r.id === id)
+              if (record) void store.saveLeaveRecord({ ...record, reason })
+            }}
+            onDelete={(id) => {
+              void store.deleteLeaveRecord(id)
+            }}
+            onAdd={(personId) => {
+              const exists = store.leaveRecords.some(
+                (r) => r.personId === personId && r.date === leaveDialogDate,
+              )
+              if (!exists) {
+                void store.saveLeaveRecord({ id: crypto.randomUUID(), personId, date: leaveDialogDate, reason: '' })
+              }
+            }}
+          />
+        )
+      })() : null}
     </div>
   )
 }

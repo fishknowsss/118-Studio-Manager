@@ -14,6 +14,12 @@ export function Calendar() {
   const days = getCalendarDays(currentDate.getFullYear(), currentDate.getMonth())
   const eventMap = buildProjectEventSummaryMap(store.projects)
 
+  const leaveByDate = store.leaveRecords.reduce<Record<string, string[]>>((acc, r) => {
+    const name = store.people.find((p) => p.id === r.personId)?.name || '未知'
+    ;(acc[r.date] ??= []).push(name)
+    return acc
+  }, {})
+
   return (
     <div className="view-calendar fade-in">
       <div className="view-header">
@@ -55,7 +61,10 @@ export function Calendar() {
             const dateStr = dateToStr(date)
             const events = eventMap[dateStr] || { ddls: [], milestones: [] }
             const isToday = dateStr === today()
-            const moreCount = events.ddls.length + events.milestones.length - 4
+            const leaveNames = leaveByDate[dateStr]
+            const eventTotal = events.ddls.length + events.milestones.length
+            const eventSlots = leaveNames ? 3 : 4
+            const moreCount = eventTotal - eventSlots
 
             return (
               <button
@@ -65,13 +74,21 @@ export function Calendar() {
                 onClick={(e) => { const r = e.currentTarget.getBoundingClientRect(); openPlanner(dateStr, r.left + r.width / 2, r.top + r.height / 2) }}
               >
                 <div className="cal-day-num">{date.getDate()}</div>
-                {events.ddls.slice(0, 2).map((item) => (
+                {events.ddls.slice(0, eventSlots).map((item) => (
                   <div key={`ddl-${item.label}`} className={`cal-event ddl ${item.toneKey}`} title={item.label}>⬡ {item.label}</div>
                 ))}
-                {events.milestones.slice(0, 2).map((item) => (
+                {events.milestones.slice(0, Math.max(0, eventSlots - events.ddls.length)).map((item) => (
                   <div key={`ms-${item.label}`} className={`cal-event milestone ${item.toneKey}`} title={item.label}>◆ {item.label}</div>
                 ))}
                 {moreCount > 0 ? <div className="cal-event more">+{moreCount} 项</div> : null}
+                {leaveNames ? (
+                  <div
+                    className="cal-event cal-leave-chip"
+                    title={leaveNames.join('、') + ' 请假'}
+                  >
+                    假 {leaveNames.length > 1 ? `${leaveNames.length}人` : leaveNames[0]}
+                  </div>
+                ) : null}
               </button>
             )
           })}

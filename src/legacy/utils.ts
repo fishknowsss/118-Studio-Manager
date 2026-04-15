@@ -112,7 +112,7 @@ export function formatDateFull(dateStr: string | null | undefined) {
   if (!dateStr) return ''
   const dt = parseLocalDateKey(dateStr)
   if (!dt) return ''
-  return dt.toLocaleDateString('zh-CN', { month: 'long', day: 'numeric', weekday: 'short' })
+  return dt.toLocaleDateString('zh-CN', { year: 'numeric', month: 'long', day: 'numeric', weekday: 'short' })
 }
 
 export function weekdayLabel(dateStr: string) {

@@ -60,6 +60,7 @@ export function TaskPoolPanel({
   const snap = useLegacyStoreSnapshot()
   const [ctxMenu, setCtxMenu] = useState<CtxState | null>(null)
   const [editingTask, setEditingTask] = useState<LegacyTask | null | undefined>(undefined)
+  const [hideDone, setHideDone] = useState(false)
 
   const handleCtx = (e: MouseEvent<HTMLDivElement>, task: TaskRow) => {
     e.preventDefault()
@@ -94,12 +95,12 @@ export function TaskPoolPanel({
     if (people.length === 0) return '未分配'
 
     const visibleNames = people
-      .slice(0, 2)
+      .slice(0, 3)
       .map((person) => person.name || '未命名')
       .join('、')
 
-    if (people.length <= 2) return visibleNames
-    return `${visibleNames} +${people.length - 2}`
+    if (people.length <= 3) return visibleNames
+    return `${visibleNames} +${people.length - 3}`
   }
 
   return (
@@ -109,20 +110,38 @@ export function TaskPoolPanel({
         onClick={(e) => { const r = e.currentTarget.getBoundingClientRect(); onExpand(r.left + r.width / 2, r.top + r.height / 2) }}
       >
         <span className="panel-title">任务池</span>
+        <button
+          className={`pool-hide-done-btn ${hideDone ? 'is-active' : ''}`}
+          title={hideDone ? '显示已完成' : '隐藏已完成'}
+          onClick={(e) => { e.stopPropagation(); setHideDone((v) => !v) }}
+        >
+          {hideDone ? (
+            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94" />
+              <path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19" />
+              <line x1="1" y1="1" x2="23" y2="23" />
+            </svg>
+          ) : (
+            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+              <circle cx="12" cy="12" r="3" />
+            </svg>
+          )}
+        </button>
         <span className="panel-action">展开全部</span>
       </div>
-      <div className="panel-body">
+      <div className="panel-body task-pool-body">
         {tasks.length === 0 ? (
           <div className="empty-state"><div className="empty-text">暂无待处理任务</div></div>
         ) : (
-          tasks.map((task) => {
+          tasks.filter((t) => !hideDone || t.status !== 'done').map((task) => {
             const isOverdue = task.endDate && task.endDate < today() && task.status !== 'done'
             const isDropTarget = Boolean(draggingPersonId) && dragOverTaskId === task.id
             const assignees = task.people ?? []
             return (
               <div
                 key={task.id}
-                className={`task-row ${isDropTarget ? 'drop-target' : ''}`}
+                className={`task-row ${task.status === 'done' ? 'done-row' : ''} ${isDropTarget ? 'drop-target' : ''} ${task.priority ? `priority-${task.priority}` : ''}`}
                 draggable
                 onContextMenu={(e) => handleCtx(e, task)}
                 onDragEnd={onTaskDragEnd}
@@ -135,7 +154,9 @@ export function TaskPoolPanel({
                 <div className="task-row-body">
                   <div className="task-row-main">
                     <span className="task-title-text">{task.title}</span>
+                  </div>
 
+                  <div className="task-row-right">
                     <div className="task-row-meta">
                       <span className={`task-meta-chip ${assignees.length === 0 ? 'is-muted' : ''}`}>
                         <span className="task-meta-label">负责人</span>
@@ -149,13 +170,14 @@ export function TaskPoolPanel({
                         </span>
                       ) : null}
                     </div>
-                  </div>
 
-                  {task.endDate ? (
-                    <span className={`task-row-deadline ${isOverdue ? 'is-overdue' : ''}`} aria-label={`截止 ${formatDate(task.endDate || null)}`}>
-                      {formatDate(task.endDate || null)}
+                    <span
+                      className={`task-row-deadline ${task.endDate ? (isOverdue ? 'is-overdue' : '') : 'is-placeholder'}`}
+                      aria-label={task.endDate ? `截止 ${formatDate(task.endDate)}` : undefined}
+                    >
+                      {task.endDate ? formatDate(task.endDate) : '—'}
                     </span>
-                  ) : null}
+                  </div>
                 </div>
               </div>
             )

@@ -4,7 +4,7 @@ import { createContext, useContext, useMemo, useState, type ReactNode } from 're
 import { ExpandPanel } from '../../components/ui/ExpandPanel'
 import { buildProjectDeadlineToneMap, buildProjectEventSummaryMap, getActivePeople, getProjectEventsForDate, sortProjectsByDeadlineTone } from '../../legacy/selectors'
 import { type LegacyProject, getTaskAssigneeIds } from '../../legacy/store'
-import { ddlLabel, formatDateFull, formatDate, shiftLocalDateKey, parseLocalDateKey, today, STATUS_LABELS } from '../../legacy/utils'
+import { ddlLabel, formatDate, shiftLocalDateKey, parseLocalDateKey, today, weekdayLabel, STATUS_LABELS } from '../../legacy/utils'
 import { useLegacyStoreSnapshot } from '../../legacy/useLegacyStore'
 import { LeaveDialog } from '../dashboard/LeaveDialog'
 
@@ -67,7 +67,7 @@ function PlannerDrawer({
   const [leaveDialogOpen, setLeaveDialogOpen] = useState(false)
 
   const todayStr = today()
-  const dateLabel = formatDateFull(dateStr)
+  const dateLabel = `${formatDate(dateStr)} ${weekdayLabel(dateStr)}`
   const activePeople = getActivePeople(storeSnapshot.people)
   const eventMap = buildProjectEventSummaryMap(storeSnapshot.projects)
   const events = getProjectEventsForDate(eventMap, dateStr)
@@ -246,23 +246,36 @@ function PlannerDrawer({
                   {r.reason ? <span className="planner-leave-reason">{r.reason}</span> : null}
                 </div>
               ))}
-              {leaveDialogOpen ? (
-                <LeaveDialog
-                  date={dateStr}
-                  leaveRecords={leaveRecords}
-                  peopleById={peopleById}
-                  onClose={() => setLeaveDialogOpen(false)}
-                  onSave={(id, reason) => {
-                    const record = storeSnapshot.leaveRecords.find((r) => r.id === id)
-                    if (record) void storeSnapshot.saveLeaveRecord({ ...record, reason })
-                  }}
-                  onDelete={(id) => {
-                    void storeSnapshot.deleteLeaveRecord(id)
-                    const remaining = storeSnapshot.leaveRecords.filter((r) => r.date === dateStr && r.id !== id)
-                    if (remaining.length === 0) setLeaveDialogOpen(false)
-                  }}
-                />
-              ) : null}
+              {leaveDialogOpen ? (() => {
+                const leavedIds = new Set(leaveRecords.map((r) => r.personId))
+                const available = activePeople
+                  .filter((p) => !leavedIds.has(p.id))
+                  .map((p) => ({ id: p.id, name: p.name || '未命名成员' }))
+                return (
+                  <LeaveDialog
+                    date={dateStr}
+                    leaveRecords={leaveRecords}
+                    peopleById={peopleById}
+                    availablePeople={available}
+                    onClose={() => setLeaveDialogOpen(false)}
+                    onSave={(id, reason) => {
+                      const record = storeSnapshot.leaveRecords.find((r) => r.id === id)
+                      if (record) void storeSnapshot.saveLeaveRecord({ ...record, reason })
+                    }}
+                    onDelete={(id) => {
+                      void storeSnapshot.deleteLeaveRecord(id)
+                    }}
+                    onAdd={(personId) => {
+                      const exists = storeSnapshot.leaveRecords.some(
+                        (r) => r.personId === personId && r.date === dateStr,
+                      )
+                      if (!exists) {
+                        void storeSnapshot.saveLeaveRecord({ id: crypto.randomUUID(), personId, date: dateStr, reason: '' })
+                      }
+                    }}
+                  />
+                )
+              })() : null}
             </div>
           )
         })()}

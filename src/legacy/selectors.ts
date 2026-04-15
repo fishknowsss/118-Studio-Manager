@@ -157,6 +157,7 @@ export type PersonCardModel = {
   genderLabel: string
   id: string
   isInactive: boolean
+  isOnLeaveToday: boolean
   name: string
   notePreview: string
   skills: string[]
@@ -626,13 +627,27 @@ export function buildTaskListItemModels(
   })
 }
 
+function genderSortKey(gender: string | undefined): number {
+  if (gender === 'male') return 0
+  if (gender === 'female') return 1
+  return 2
+}
+
 export function buildPersonCardModels(
   people: LegacyPerson[],
   tasks: LegacyTask[],
+  leavePersonIdsToday: Set<string> = new Set(),
 ): PersonCardModel[] {
   const openTaskCountByPersonId = buildEntityMaps([], tasks, people).openTaskCountByPersonId
 
-  return people.map((person) => {
+  const sorted = [...people].sort((a, b) => {
+    const aLeave = leavePersonIdsToday.has(a.id) ? 1 : 0
+    const bLeave = leavePersonIdsToday.has(b.id) ? 1 : 0
+    if (aLeave !== bLeave) return aLeave - bLeave
+    return genderSortKey(a.gender) - genderSortKey(b.gender)
+  })
+
+  return sorted.map((person) => {
     const isInactive = person.status === 'inactive'
     const statusKey = isInactive ? 'cancelled' : 'active'
     const note = (person.notes || '').trim()
@@ -642,6 +657,7 @@ export function buildPersonCardModels(
       genderLabel: person.gender === 'male' ? '男' : person.gender === 'female' ? '女' : person.gender === 'other' ? '其他' : '',
       id: person.id,
       isInactive,
+      isOnLeaveToday: leavePersonIdsToday.has(person.id),
       name: person.name || '未命名成员',
       notePreview: note ? `备注: ${note.slice(0, 15)}${note.length > 15 ? '…' : ''}` : '',
       skills: person.skills || [],

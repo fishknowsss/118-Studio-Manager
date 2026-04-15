@@ -24,7 +24,7 @@ export function PersonAssignmentCard({
 
   return (
     <div
-      className={`person-assignment-card ${isDropTarget ? 'drop-target' : ''}`}
+      className={`person-assignment-card ${isDropTarget ? 'drop-target' : ''} ${model.isOnLeaveToday ? 'on-leave' : ''}`}
       draggable
       onDragEnd={onDragEnd}
       onDragLeave={onDragLeave}
@@ -34,7 +34,10 @@ export function PersonAssignmentCard({
       onClick={(e) => { const r = e.currentTarget.getBoundingClientRect(); onPersonClick(model.id, r.left + r.width / 2, r.top + r.height / 2) }}
     >
       <div className="person-assignment-main">
-        <div className="person-assignment-name">{model.name}</div>
+        <div className="person-assignment-name">
+          {model.name}
+          {model.isOnLeaveToday && <span className="person-leave-badge" title="今日请假">假</span>}
+        </div>
         <div className="person-assignment-count">{model.taskCount} 任务</div>
       </div>
 
