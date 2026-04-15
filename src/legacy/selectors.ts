@@ -92,6 +92,7 @@ export type DashboardMiniCalendarModel = {
 }
 
 export type DashboardFocusCard = {
+  daysLeft: number | null
   ddlLabel: string
   id: string
   name: string
@@ -690,12 +691,17 @@ export function getDashboardFocusData(
     else brief = `距离截止 ${days} 天，保持节奏推进。`
   }
 
+  const openTasks = projectTasks.filter((task) => task.status !== 'done')
+  const assigneeCount = new Set(openTasks.flatMap((task) => getTaskAssigneeIds(task))).size
+
   return {
+    assigneeCount,
     brief,
     nextMs,
     overdueCount: projectTasks.filter((task) => task.endDate && task.endDate < todayStr && task.status !== 'done').length,
-    remainingCount: projectTasks.filter((task) => task.status !== 'done').length,
+    remainingCount: openTasks.length,
     todayCount: projectTasks.filter((task) => task.scheduledDate === todayStr && task.status !== 'done').length,
+    topTasks: openTasks.slice(0, 3).map((task) => task.title || '未命名任务'),
     uc: urgencyClass(project.ddl, project.status || 'active'),
   }
 }
@@ -715,8 +721,10 @@ export function buildDashboardFocusCards(
       .filter((milestone) => !milestone.completed && milestone.date && milestone.date >= todayStr)
       .sort((left, right) => (left.date || '').localeCompare(right.date || ''))[0]
 
+    const statusKey = project.status || 'active'
     return {
-      ddlLabel: ddlLabel(project.ddl || null, project.status || 'active'),
+      daysLeft: (statusKey === 'active' || statusKey === 'paused') ? (daysUntil(project.ddl || null) ?? null) : null,
+      ddlLabel: ddlLabel(project.ddl || null, statusKey),
       id: project.id,
       name: project.name || '未命名项目',
       nextMilestone,

@@ -237,7 +237,7 @@ export function Dashboard() {
           <span className="focus-label">项目焦点</span>
           <span className="panel-action">展开全部</span>
         </div>
-        <div className="focus-cards">
+        <div className={`focus-cards${focusCards.length > 5 ? ' focus-cards--wide' : ''}`}>
           {!focusProj ? (
             <div className="focus-empty">暂无活跃项目 — 新建一个开始吧</div>
           ) : (
@@ -249,7 +249,7 @@ export function Dashboard() {
                 onExpandProject={(ox, oy) => setExpandedPanel({ type: 'project', projectId: focusProj.id, ox, oy })}
               />
               <FocusSecondaryCards
-                cards={focusCards.slice(1)}
+                cards={focusCards.slice(1, 7)}
                 onExpandProject={(id, ox, oy) => setExpandedPanel({ type: 'project', projectId: id, ox, oy })}
                 showSingleProjectEmpty={topProjects.length === 1}
               />
