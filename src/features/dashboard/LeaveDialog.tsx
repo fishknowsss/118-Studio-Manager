@@ -21,7 +21,7 @@ export function LeaveDialog({
   )
 
   const [parts] = useState(() => {
-    const [year, month, day] = date.split('-')
+    const [, month, day] = date.split('-')
     return `${parseInt(month, 10)}月${parseInt(day, 10)}日`
   })
 
