@@ -1,5 +1,6 @@
 import { db } from '../../legacy/db'
 import { store } from '../../legacy/store'
+import { reloadSyncableViewStateFromDB } from '../persistence/syncableViewState'
 import { fetchCloudSyncData, isCloudSyncConfigured } from './syncApi'
 import { hasBackupContent } from './syncShared'
 import { writePersistedCloudSyncState } from './syncClientState'
@@ -15,6 +16,7 @@ export async function restoreCloudSnapshotOnBoot() {
   }
 
   await db.importAll(current.data)
+  await reloadSyncableViewStateFromDB()
   await store.loadAll()
   writePersistedCloudSyncState({
     lastCompletedSyncAt: new Date().toISOString(),

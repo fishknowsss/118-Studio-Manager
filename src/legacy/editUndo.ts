@@ -1,6 +1,7 @@
 import { db } from './db'
 import { store } from './store'
 import type { BackupPayload } from './utils'
+import { reloadSyncableViewStateFromDB } from '../features/persistence/syncableViewState'
 
 type UndoEntry = {
   id: string
@@ -73,6 +74,7 @@ export async function undoLastEdit() {
   if (!entry) return null
 
   await db.importAll(entry.snapshot)
+  await reloadSyncableViewStateFromDB()
   await store.loadAll()
   undoStack.shift()
   emitUndoChanged()
@@ -93,6 +95,7 @@ export async function undoEditById(id: string) {
   if (!target) return null
 
   await db.importAll(target.snapshot)
+  await reloadSyncableViewStateFromDB()
   await store.loadAll()
   const revertedCount = index + 1
   undoStack.splice(0, revertedCount)

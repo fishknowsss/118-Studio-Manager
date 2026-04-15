@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useMemo, useState, useSyncExternalStore } from 'react'
 import { useConfirm } from '../components/feedback/ConfirmProvider'
 import { useToast } from '../components/feedback/ToastProvider'
 import { ClientBriefDialog } from '../features/materials/ClientBriefDialog'
@@ -6,8 +6,10 @@ import { AccountDialog } from '../features/materials/AccountDialog'
 import {
   readBriefs,
   writeBriefs,
+  subscribeBriefs,
   readAccounts,
   writeAccounts,
+  subscribeAccounts,
   ACCOUNT_CATEGORIES,
   ACCOUNT_CATEGORY_LABELS,
   type ClientBrief,
@@ -225,12 +227,12 @@ export function Materials() {
   const { toast } = useToast()
 
   // 甲方要求
-  const [briefs, setBriefs]             = useState<ClientBrief[]>(() => readBriefs())
+  const briefs = useSyncExternalStore(subscribeBriefs, readBriefs)
   const [editingBrief, setEditingBrief] = useState<ClientBrief | null | undefined>(undefined)
   const [briefProjectFilter, setBriefProjectFilter] = useState('')
 
   // 账号密码
-  const [accounts, setAccounts]             = useState<AccountCredential[]>(() => readAccounts())
+  const accounts = useSyncExternalStore(subscribeAccounts, readAccounts)
   const [editingAccount, setEditingAccount] = useState<AccountCredential | null | undefined>(undefined)
   const [accCategory, setAccCategory]       = useState<AccountCategory | ''>('')
   const [accSearch, setAccSearch]           = useState('')
@@ -266,14 +268,11 @@ export function Materials() {
 
   // ── 甲方要求操作 ────────────────────────────────────
   const saveBrief = (brief: ClientBrief) => {
-    setBriefs((prev) => {
-      const exists = prev.some((b) => b.id === brief.id)
-      const next = exists
-        ? prev.map((b) => (b.id === brief.id ? brief : b))
-        : [brief, ...prev]
-      writeBriefs(next)
-      return next
-    })
+    const exists = briefs.some((item) => item.id === brief.id)
+    const next = exists
+      ? briefs.map((item) => (item.id === brief.id ? brief : item))
+      : [brief, ...briefs]
+    writeBriefs(next)
     toast(editingBrief ? '已保存' : '甲方要求已创建', 'success')
     setEditingBrief(undefined)
   }
@@ -281,24 +280,17 @@ export function Materials() {
   const deleteBrief = async (brief: ClientBrief) => {
     const ok = await confirm('删除甲方要求', `确认删除「${brief.clientName}」的要求记录？`)
     if (!ok) return
-    setBriefs((prev) => {
-      const next = prev.filter((b) => b.id !== brief.id)
-      writeBriefs(next)
-      return next
-    })
+    writeBriefs(briefs.filter((item) => item.id !== brief.id))
     toast('已删除', 'error')
   }
 
   // ── 账号密码操作 ────────────────────────────────────
   const saveAccount = (account: AccountCredential) => {
-    setAccounts((prev) => {
-      const exists = prev.some((a) => a.id === account.id)
-      const next = exists
-        ? prev.map((a) => (a.id === account.id ? account : a))
-        : [account, ...prev]
-      writeAccounts(next)
-      return next
-    })
+    const exists = accounts.some((item) => item.id === account.id)
+    const next = exists
+      ? accounts.map((item) => (item.id === account.id ? account : item))
+      : [account, ...accounts]
+    writeAccounts(next)
     toast(editingAccount ? '已保存' : '账号已创建', 'success')
     setEditingAccount(undefined)
   }
@@ -306,11 +298,7 @@ export function Materials() {
   const deleteAccount = async (account: AccountCredential) => {
     const ok = await confirm('删除账号', `确认删除「${account.platform}」的账号记录？`)
     if (!ok) return
-    setAccounts((prev) => {
-      const next = prev.filter((a) => a.id !== account.id)
-      writeAccounts(next)
-      return next
-    })
+    writeAccounts(accounts.filter((item) => item.id !== account.id))
     toast('已删除', 'error')
   }
 

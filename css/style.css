@@ -1914,8 +1914,8 @@ svg { display: block; flex-shrink: 0; }
   left: auto;
 }
 .graph-canvas-reset-btn {
-  height: 34px;
-  width: 34px;
+  height: 36px;
+  width: 36px;
   border-radius: 999px;
   border: 1px solid var(--c-border-light);
   background: var(--c-surface);
@@ -1926,11 +1926,12 @@ svg { display: block; flex-shrink: 0; }
   cursor: pointer;
   box-shadow: 0 6px 16px rgba(15, 23, 42, 0.09);
   transition: color .14s, box-shadow .14s, border-color .14s;
+  transform: translate(-7px, 9px);
   flex-shrink: 0;
 }
 .graph-canvas-reset-btn svg {
-  width: 14px;
-  height: 14px;
+  width: 16px;
+  height: 16px;
 }
 .graph-canvas-reset-btn:hover {
   color: var(--c-text);

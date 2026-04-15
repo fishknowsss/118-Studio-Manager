@@ -28,6 +28,9 @@ import {
   readPersistedCloudSyncState,
   writePersistedCloudSyncState,
 } from './syncClientState'
+import { reloadSyncableViewStateFromDB } from '../persistence/syncableViewState'
+import { readAccounts, readBriefs } from '../materials/materialsState'
+import { readRepositoryLinks } from '../repository/repositoryLinksState'
 
 type SyncPhase = 'disabled' | 'checking' | 'ready' | 'syncing' | 'restoring' | 'error'
 
@@ -60,7 +63,10 @@ function hasLocalData() {
     store.projects.length > 0 ||
     store.tasks.length > 0 ||
     store.people.length > 0 ||
-    store.logs.length > 0
+    store.logs.length > 0 ||
+    readBriefs().length > 0 ||
+    readAccounts().length > 0 ||
+    readRepositoryLinks().length > 0
   )
 }
 
@@ -98,6 +104,7 @@ export function CloudSyncProvider({ children }: { children: ReactNode }) {
     suppressStoreEventsRef.current = true
     try {
       await db.importAll(current.data)
+      await reloadSyncableViewStateFromDB()
       await store.loadAll()
       pendingLocalChangesRef.current = false
       updatePersistedState({
@@ -195,6 +202,14 @@ export function CloudSyncProvider({ children }: { children: ReactNode }) {
     }
   }, [configured, updatePersistedState])
 
+  const scheduleAutoSync = useCallback(() => {
+    pendingLocalChangesRef.current = true
+    if (syncTimerRef.current) window.clearTimeout(syncTimerRef.current)
+    syncTimerRef.current = window.setTimeout(() => {
+      void pushLocalData('auto')
+    }, AUTO_SYNC_DEBOUNCE_MS)
+  }, [pushLocalData])
+
   useEffect(() => {
     if (!configured) return
 
@@ -202,12 +217,14 @@ export function CloudSyncProvider({ children }: { children: ReactNode }) {
 
     const unsubscribe = store.subscribe(() => {
       if (suppressStoreEventsRef.current) return
-      pendingLocalChangesRef.current = true
-      if (syncTimerRef.current) window.clearTimeout(syncTimerRef.current)
-      syncTimerRef.current = window.setTimeout(() => {
-        void pushLocalData('auto')
-      }, AUTO_SYNC_DEBOUNCE_MS)
+      scheduleAutoSync()
     })
+
+    const onSyncableDataUpdated = () => {
+      if (suppressStoreEventsRef.current) return
+      scheduleAutoSync()
+    }
+    document.addEventListener('syncableDataUpdated', onSyncableDataUpdated)
 
     const poll = window.setInterval(() => {
       void refreshRemoteMeta()
@@ -223,10 +240,11 @@ export function CloudSyncProvider({ children }: { children: ReactNode }) {
     return () => {
       unsubscribe()
       window.clearInterval(poll)
+      document.removeEventListener('syncableDataUpdated', onSyncableDataUpdated)
       document.removeEventListener('visibilitychange', onVisible)
       if (syncTimerRef.current) window.clearTimeout(syncTimerRef.current)
     }
-  }, [configured, pushLocalData, refreshRemoteMeta])
+  }, [configured, refreshRemoteMeta, scheduleAutoSync])
 
   const value = useMemo<CloudSyncContextValue>(() => ({
     state,

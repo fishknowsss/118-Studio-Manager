@@ -23,6 +23,7 @@ import type {
 import { store, getTaskAssigneeIds } from './store'
 import { buildBackupSummary } from './selectors'
 import { formatFileDate, normalizeImportedBackup, now, uid } from './utils'
+import { reloadSyncableViewStateFromDB } from '../features/persistence/syncableViewState'
 
 export type ProjectFormInput = {
   name: string | null
@@ -251,6 +252,7 @@ export async function importBackupText(text: string) {
   return await runWithUndo('导入备份', async () => {
     const parsed = normalizeImportedBackup(JSON.parse(text))
     await db.importAll(parsed)
+    await reloadSyncableViewStateFromDB()
     await store.loadAll()
     return {
       data: parsed,
@@ -264,6 +266,7 @@ export async function clearAllData() {
     const current = await db.exportAll()
     const summary = buildBackupSummary(current)
     await db.clearAll()
+    await reloadSyncableViewStateFromDB()
     await store.loadAll()
     return summary
   })

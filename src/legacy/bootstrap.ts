@@ -2,6 +2,7 @@ import { openDB } from './db'
 import { store, type LegacyPerson, type LegacyProject, type LegacyTask } from './store'
 import { shiftLocalDateKey } from './utils'
 import { restoreCloudSnapshotOnBoot } from '../features/sync/bootstrapSync'
+import { initializeSyncableViewState } from '../features/persistence/syncableViewState'
 
 let hasBooted = false
 
@@ -80,6 +81,8 @@ export async function initializeAppData() {
   if (!window.location.hash) {
     window.location.hash = '#dashboard'
   }
+
+  await initializeSyncableViewState()
 }
 
 export function disposeLegacyApp() {

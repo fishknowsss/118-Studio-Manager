@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useMemo, useState, useSyncExternalStore } from 'react'
 import { useConfirm } from '../components/feedback/ConfirmProvider'
 import { useToast } from '../components/feedback/ToastProvider'
 import { Dialog } from '../components/ui/Dialog'
@@ -20,6 +20,7 @@ import { useLegacyStoreSnapshot } from '../legacy/useLegacyStore'
 import {
   normalizeLinkUrl,
   readRepositoryLinks,
+  subscribeRepositoryLinks,
   type RepositoryLink,
   type RepositoryLinkTargetType,
   writeRepositoryLinks,
@@ -70,7 +71,7 @@ export function Repository() {
   const [linkTitle, setLinkTitle] = useState('')
   const [linkUrl, setLinkUrl] = useState('')
   const [linkNote, setLinkNote] = useState('')
-  const [links, setLinks] = useState<RepositoryLink[]>(() => readRepositoryLinks())
+  const links = useSyncExternalStore(subscribeRepositoryLinks, readRepositoryLinks)
 
   const todayStr = useMemo(() => formatLocalDateKey(new Date()), [])
 
@@ -116,7 +117,6 @@ export function Repository() {
   }, [people])
 
   const saveLinks = (nextLinks: RepositoryLink[]) => {
-    setLinks(nextLinks)
     writeRepositoryLinks(nextLinks)
   }
 

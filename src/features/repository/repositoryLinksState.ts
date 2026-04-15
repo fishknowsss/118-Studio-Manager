@@ -1,3 +1,5 @@
+import { createSyncableSettingsStore } from '../persistence/syncableSettings'
+
 export type RepositoryLinkTargetType = 'project' | 'task'
 
 export type RepositoryLink = {
@@ -12,6 +14,7 @@ export type RepositoryLink = {
 }
 
 const STORAGE_KEY = 'repository-links-v1'
+const SETTINGS_KEY = 'repository:links'
 
 function sanitizeLink(raw: Partial<RepositoryLink>): RepositoryLink | null {
   if (!raw || typeof raw !== 'object') return null
@@ -37,25 +40,40 @@ export function normalizeLinkUrl(value: string) {
   return `https://${trimmed}`
 }
 
+function sanitizeLinks(raw: unknown) {
+  if (!Array.isArray(raw)) return [] as RepositoryLink[]
+  return raw
+    .map((item) => sanitizeLink(item as Partial<RepositoryLink>))
+    .filter((item): item is RepositoryLink => Boolean(item && item.title && item.url))
+}
+
+const repositoryLinksStore = createSyncableSettingsStore<RepositoryLink[]>({
+  key: SETTINGS_KEY,
+  legacyKey: STORAGE_KEY,
+  emptyValue: [],
+  sanitize: sanitizeLinks,
+})
+
 export function readRepositoryLinks() {
-  if (typeof window === 'undefined') return [] as RepositoryLink[]
-
-  try {
-    const raw = window.localStorage.getItem(STORAGE_KEY)
-    if (!raw) return [] as RepositoryLink[]
-
-    const parsed = JSON.parse(raw) as unknown
-    if (!Array.isArray(parsed)) return [] as RepositoryLink[]
-
-    return parsed
-      .map((item) => sanitizeLink(item as Partial<RepositoryLink>))
-      .filter((item): item is RepositoryLink => Boolean(item && item.title && item.url))
-  } catch {
-    return [] as RepositoryLink[]
-  }
+  return repositoryLinksStore.read()
 }
 
 export function writeRepositoryLinks(links: RepositoryLink[]) {
-  if (typeof window === 'undefined') return
-  window.localStorage.setItem(STORAGE_KEY, JSON.stringify(links))
+  repositoryLinksStore.write(links)
+}
+
+export function subscribeRepositoryLinks(listener: () => void) {
+  return repositoryLinksStore.subscribe(listener)
+}
+
+export async function initializeRepositoryLinksState() {
+  await repositoryLinksStore.initialize()
+}
+
+export async function reloadRepositoryLinksStateFromDB() {
+  await repositoryLinksStore.reloadFromDB()
+}
+
+export function __resetRepositoryLinksStateForTests() {
+  repositoryLinksStore.resetForTests()
 }

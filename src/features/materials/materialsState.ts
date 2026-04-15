@@ -1,3 +1,5 @@
+import { createSyncableSettingsStore } from '../persistence/syncableSettings'
+
 // ─── 甲方要求 ─────────────────────────────────────────
 
 export type ClientBrief = {
@@ -51,6 +53,8 @@ export type AccountCredential = {
 
 const BRIEF_KEY = 'materials-briefs-v1'
 const ACCOUNT_KEY = 'materials-accounts-v1'
+const BRIEF_SETTINGS_KEY = 'materials:briefs'
+const ACCOUNT_SETTINGS_KEY = 'materials:accounts'
 
 // ─── ClientBrief helpers ──────────────────────────────
 
@@ -73,24 +77,30 @@ function sanitizeBrief(raw: Partial<ClientBrief>): ClientBrief | null {
   }
 }
 
+function sanitizeBriefs(raw: unknown) {
+  if (!Array.isArray(raw)) return [] as ClientBrief[]
+  return raw
+    .map((item) => sanitizeBrief(item as Partial<ClientBrief>))
+    .filter((item): item is ClientBrief => item !== null)
+}
+
+const briefsStore = createSyncableSettingsStore<ClientBrief[]>({
+  key: BRIEF_SETTINGS_KEY,
+  legacyKey: BRIEF_KEY,
+  emptyValue: [],
+  sanitize: sanitizeBriefs,
+})
+
 export function readBriefs(): ClientBrief[] {
-  if (typeof window === 'undefined') return []
-  try {
-    const raw = localStorage.getItem(BRIEF_KEY)
-    if (!raw) return []
-    const parsed = JSON.parse(raw) as unknown
-    if (!Array.isArray(parsed)) return []
-    return parsed
-      .map((item) => sanitizeBrief(item as Partial<ClientBrief>))
-      .filter((item): item is ClientBrief => item !== null)
-  } catch {
-    return []
-  }
+  return briefsStore.read()
 }
 
 export function writeBriefs(briefs: ClientBrief[]) {
-  if (typeof window === 'undefined') return
-  localStorage.setItem(BRIEF_KEY, JSON.stringify(briefs))
+  briefsStore.write(briefs)
+}
+
+export function subscribeBriefs(listener: () => void) {
+  return briefsStore.subscribe(listener)
 }
 
 // ─── AccountCredential helpers ────────────────────────
@@ -114,24 +124,49 @@ function sanitizeAccount(raw: Partial<AccountCredential>): AccountCredential | n
   }
 }
 
+function sanitizeAccounts(raw: unknown) {
+  if (!Array.isArray(raw)) return [] as AccountCredential[]
+  return raw
+    .map((item) => sanitizeAccount(item as Partial<AccountCredential>))
+    .filter((item): item is AccountCredential => item !== null)
+}
+
+const accountsStore = createSyncableSettingsStore<AccountCredential[]>({
+  key: ACCOUNT_SETTINGS_KEY,
+  legacyKey: ACCOUNT_KEY,
+  emptyValue: [],
+  sanitize: sanitizeAccounts,
+})
+
 export function readAccounts(): AccountCredential[] {
-  if (typeof window === 'undefined') return []
-  try {
-    const raw = localStorage.getItem(ACCOUNT_KEY)
-    if (!raw) return []
-    const parsed = JSON.parse(raw) as unknown
-    if (!Array.isArray(parsed)) return []
-    return parsed
-      .map((item) => sanitizeAccount(item as Partial<AccountCredential>))
-      .filter((item): item is AccountCredential => item !== null)
-  } catch {
-    return []
-  }
+  return accountsStore.read()
 }
 
 export function writeAccounts(accounts: AccountCredential[]) {
-  if (typeof window === 'undefined') return
-  localStorage.setItem(ACCOUNT_KEY, JSON.stringify(accounts))
+  accountsStore.write(accounts)
+}
+
+export function subscribeAccounts(listener: () => void) {
+  return accountsStore.subscribe(listener)
+}
+
+export async function initializeMaterialsState() {
+  await Promise.all([
+    briefsStore.initialize(),
+    accountsStore.initialize(),
+  ])
+}
+
+export async function reloadMaterialsStateFromDB() {
+  await Promise.all([
+    briefsStore.reloadFromDB(),
+    accountsStore.reloadFromDB(),
+  ])
+}
+
+export function __resetMaterialsStateForTests() {
+  briefsStore.resetForTests()
+  accountsStore.resetForTests()
 }
 
 export function normalizeMaterialUrl(value: string): string {
