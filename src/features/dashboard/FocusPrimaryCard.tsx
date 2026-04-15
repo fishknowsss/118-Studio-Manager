@@ -1,6 +1,6 @@
 import type { LegacyProject } from '../../legacy/store'
 import { getDashboardFocusData } from '../../legacy/selectors'
-import { ddlLabel, daysUntil, formatDate } from '../../legacy/utils'
+import { ddlLabel, daysUntil } from '../../legacy/utils'
 
 export function FocusPrimaryCard({
   focusData,
