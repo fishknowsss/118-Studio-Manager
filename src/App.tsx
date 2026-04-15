@@ -7,14 +7,14 @@ import { initializeAppData } from './legacy/bootstrap'
 import { daysUntil } from './legacy/utils'
 import { useLegacyStoreSnapshot } from './legacy/useLegacyStore'
 import { Dashboard } from './views/Dashboard'
-import { Repository } from './views/Repository'
+import { Materials } from './views/Materials'
 import { Graph } from './views/Graph'
 import { Tools } from './views/Tools'
 import { Settings } from './views/Settings'
 
 const VIEWS: Record<string, React.ComponentType> = {
   dashboard: Dashboard,
-  repository: Repository,
+  repository: Materials,
   graph: Graph,
   tools: Tools,
   settings: Settings,
@@ -103,7 +103,7 @@ export default function App() {
                     <rect x="3" y="14" width="7" height="7" rx="1" />
                     <rect x="14" y="14" width="7" height="7" rx="1" />
                   </NavItem>
-                  <NavItem label="仓库" active={view === 'repository'} badge={urgentCount} onClick={() => window.location.hash = '#repository'}>
+                  <NavItem label="资料" active={view === 'repository'} onClick={() => window.location.hash = '#repository'}>
                     <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z" />
                   </NavItem>
                   <NavItem label="图谱" active={view === 'graph'} onClick={() => window.location.hash = '#graph'}>
