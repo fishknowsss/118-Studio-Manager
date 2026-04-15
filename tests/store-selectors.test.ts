@@ -19,6 +19,7 @@ import {
   getTaskPool,
 } from '../src/legacy/selectors'
 import { buildTaskRecord } from '../src/legacy/actions'
+import { syncTaskStatusWithAssignees } from '../src/legacy/store'
 
 describe('store selectors', () => {
   it('builds fast lookup maps and open task counts', () => {
@@ -509,7 +510,7 @@ describe('store selectors', () => {
       projectId: null,
       status: null,
       priority: null,
-      assigneeId: null,
+      assigneeIds: [],
       scheduledDate: null,
       startDate: null,
       endDate: null,
@@ -525,5 +526,61 @@ describe('store selectors', () => {
       createdAt: '2026-04-12T10:00:00+08:00',
       updatedAt: '2026-04-12T10:00:00+08:00',
     })
+  })
+
+  it('auto switches task status when assignee count crosses zero', () => {
+    const assigned = syncTaskStatusWithAssignees(
+      { id: 'task-1', title: '任务 A', status: 'todo', assigneeIds: [] },
+      { id: 'task-1', title: '任务 A', status: 'todo', assigneeIds: ['person-1'] },
+    )
+    const unassigned = syncTaskStatusWithAssignees(
+      { id: 'task-1', title: '任务 A', status: 'in-progress', assigneeIds: ['person-1'] },
+      { id: 'task-1', title: '任务 A', status: 'in-progress', assigneeIds: [] },
+    )
+
+    expect(assigned.status).toBe('in-progress')
+    expect(unassigned.status).toBe('todo')
+  })
+
+  it('keeps explicit status edits when task form changes assignees', () => {
+    const task = buildTaskRecord({
+      id: 'task-1',
+      title: '已有任务',
+      status: 'todo',
+      priority: 'medium',
+      assigneeIds: [],
+      createdAt: '2026-04-12T10:00:00+08:00',
+      updatedAt: '2026-04-12T10:00:00+08:00',
+    }, {
+      title: '已有任务',
+      projectId: null,
+      status: 'blocked',
+      priority: 'medium',
+      assigneeIds: ['person-1'],
+      scheduledDate: null,
+      startDate: null,
+      endDate: null,
+      estimatedHours: null,
+      description: '',
+    }, '2026-04-12T12:00:00+08:00')
+
+    expect(task.status).toBe('blocked')
+  })
+
+  it('defaults new assigned tasks to in-progress when status is untouched', () => {
+    const task = buildTaskRecord(null, {
+      title: '  分配后启动  ',
+      projectId: null,
+      status: 'todo',
+      priority: 'medium',
+      assigneeIds: ['person-1'],
+      scheduledDate: null,
+      startDate: null,
+      endDate: null,
+      estimatedHours: null,
+      description: '',
+    }, '2026-04-12T10:00:00+08:00')
+
+    expect(task.status).toBe('in-progress')
   })
 })

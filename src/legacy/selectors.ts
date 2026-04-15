@@ -165,6 +165,7 @@ export type PersonCardModel = {
   statusKey: string
   statusLabel: string
   taskCount: number
+  topInProgressTaskLabel: string
 }
 
 export type ProjectDeadlineToneKey =
@@ -634,12 +635,47 @@ function genderSortKey(gender: string | undefined): number {
   return 2
 }
 
+function comparePersonHighlightTask(left: LegacyTask, right: LegacyTask) {
+  const leftPriority = PRIORITY_ORDER[left.priority || 'medium'] ?? PRIORITY_ORDER.medium
+  const rightPriority = PRIORITY_ORDER[right.priority || 'medium'] ?? PRIORITY_ORDER.medium
+  if (leftPriority !== rightPriority) return leftPriority - rightPriority
+
+  const leftDate = left.endDate || left.scheduledDate || left.startDate || '9999-12-31'
+  const rightDate = right.endDate || right.scheduledDate || right.startDate || '9999-12-31'
+  if (leftDate !== rightDate) return leftDate.localeCompare(rightDate)
+
+  const leftCreatedAt = left.createdAt || ''
+  const rightCreatedAt = right.createdAt || ''
+  if (leftCreatedAt !== rightCreatedAt) return leftCreatedAt.localeCompare(rightCreatedAt)
+
+  return (left.title || '').localeCompare(right.title || '', 'zh-CN')
+}
+
+function formatPersonHighlightTaskLabel(title: string | undefined) {
+  const source = (title || '').trim() || '未命名'
+  const chars = Array.from(source)
+  if (chars.length <= 5) return source
+  return `${chars.slice(0, 5).join('')}+${chars.length - 5}`
+}
+
 export function buildPersonCardModels(
   people: LegacyPerson[],
   tasks: LegacyTask[],
   leavePersonIdsToday: Set<string> = new Set(),
 ): PersonCardModel[] {
   const openTaskCountByPersonId = buildEntityMaps([], tasks, people).openTaskCountByPersonId
+  const highlightTaskByPersonId: Record<string, LegacyTask> = {}
+
+  for (const task of tasks) {
+    if (task.status !== 'in-progress') continue
+
+    for (const personId of getTaskAssigneeIds(task)) {
+      const current = highlightTaskByPersonId[personId]
+      if (!current || comparePersonHighlightTask(task, current) < 0) {
+        highlightTaskByPersonId[personId] = task
+      }
+    }
+  }
 
   const sorted = [...people].sort((a, b) => {
     const aLeave = leavePersonIdsToday.has(a.id) ? 1 : 0
@@ -652,6 +688,7 @@ export function buildPersonCardModels(
     const isInactive = person.status === 'inactive'
     const statusKey = isInactive ? 'cancelled' : 'active'
     const note = (person.notes || '').trim()
+    const highlightTask = highlightTaskByPersonId[person.id]
 
     return {
       avatarText: initials(person.name || ''),
@@ -665,6 +702,7 @@ export function buildPersonCardModels(
       statusKey,
       statusLabel: isInactive ? '已停用' : '在职',
       taskCount: openTaskCountByPersonId[person.id] || 0,
+      topInProgressTaskLabel: highlightTask ? formatPersonHighlightTaskLabel(highlightTask.title) : '暂无进行中',
     } satisfies PersonCardModel
   })
 }

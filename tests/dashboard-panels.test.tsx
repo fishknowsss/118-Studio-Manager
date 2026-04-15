@@ -45,8 +45,8 @@ describe('dashboard panels', () => {
       { id: 'person-2', name: '佳宁', gender: 'female', status: 'active', skills: ['After Effects', '调色'] },
     ]
     const tasks: LegacyTask[] = [
-      { id: 'task-1', assigneeId: 'person-1', status: 'todo' },
-      { id: 'task-2', assigneeId: 'person-1', status: 'in-progress' },
+      { id: 'task-1', title: '需求整理', assigneeId: 'person-1', status: 'todo' },
+      { id: 'task-2', title: '渲染输出终版确认', assigneeId: 'person-1', status: 'in-progress', priority: 'urgent' },
       { id: 'task-3', assigneeId: 'person-2', status: 'done' },
     ]
     const models = buildPersonCardModels(people, tasks)
@@ -57,10 +57,11 @@ describe('dashboard panels', () => {
         draggingTaskId={null}
         onDragLeavePerson={() => {}}
         onDragOverPerson={() => {}}
+        onExpand={() => {}}
         onDropToPerson={() => {}}
-        onNavigatePeople={() => {}}
         onPersonDragEnd={() => {}}
         onPersonDragStart={() => {}}
+        onPersonClick={() => {}}
       />,
     )
 
@@ -70,13 +71,15 @@ describe('dashboard panels', () => {
     const secondCard = cards[1] as HTMLElement | undefined
     const maleMark = view.container.querySelector('.person-assignment-gender-mark.male') as HTMLElement | null
     const femaleMark = view.container.querySelector('.person-assignment-gender-mark.female') as HTMLElement | null
+    const firstCardTaskLabel = firstCard?.querySelector('.person-assignment-count') as HTMLElement | null
+    const firstCardSkills = firstCard?.querySelectorAll('.person-assignment-skills:not(.person-assignment-skills-measure) .skill-tag')
 
     expect(view.container.querySelector('.people-assignment-grid')).not.toBeNull()
     expect(cards).toHaveLength(2)
     expect(placeholders).toHaveLength(14)
     expect(firstCard?.textContent).toContain('王浩然')
-    expect(firstCard?.textContent).toContain('Cinema 4D')
-    expect(firstCard?.textContent).toContain('2 任务')
+    expect(firstCardTaskLabel?.textContent).toBe('渲染输出终+3')
+    expect(firstCardSkills?.[0]?.textContent).toBe('Cinema 4D')
     expect(secondCard?.textContent).toContain('佳宁')
     expect(secondCard?.textContent).toContain('After Effects')
     expect(maleMark?.textContent).toBe('♂')
@@ -125,10 +128,11 @@ describe('dashboard panels', () => {
         draggingTaskId="task-1"
         onDragLeavePerson={onPersonDragLeave}
         onDragOverPerson={onPersonDragOver}
+        onExpand={() => {}}
         onDropToPerson={onDropToPerson}
-        onNavigatePeople={() => {}}
         onPersonDragEnd={onPersonDragEnd}
         onPersonDragStart={onPersonDragStart}
+        onPersonClick={() => {}}
       />,
     )
 
@@ -203,7 +207,7 @@ describe('dashboard panels', () => {
     expect(view.container.textContent).toContain('负责人')
     expect(view.container.textContent).toContain('王浩然')
     expect(view.container.textContent).toContain('佳宁')
-    expect(view.container.textContent).toContain('+1')
+    expect(view.container.textContent).toContain('思敏')
     expect(view.container.textContent).toContain('项目')
     expect(view.container.textContent).toContain('品牌宣传片第三季')
     expect(view.container.querySelector('.task-row-deadline')?.textContent).toBe('4/14')

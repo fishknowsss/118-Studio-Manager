@@ -1,6 +1,11 @@
 import type { DragEvent } from 'react'
 import type { PersonCardModel } from '../../legacy/selectors'
 
+function getSkillTagClassName(skill: string) {
+  const charCount = Array.from(skill.trim()).length
+  return charCount >= 7 ? 'skill-tag skill-tag-compact' : 'skill-tag'
+}
+
 export function PersonAssignmentCard({
   isDropTarget,
   model,
@@ -20,7 +25,9 @@ export function PersonAssignmentCard({
   onDrop: (event: DragEvent<HTMLDivElement>, personId: string) => void
   onPersonClick: (personId: string, ox: number, oy: number) => void
 }) {
-  const extraSkills = Math.max(0, model.skills.length - 1)
+  const visibleSkills = model.skills.slice(0, 2)
+  const hiddenSkillCount = Math.max(0, model.skills.length - visibleSkills.length)
+  const isTaskLabelEmpty = model.topInProgressTaskLabel === '暂无进行中'
 
   return (
     <div
@@ -38,15 +45,17 @@ export function PersonAssignmentCard({
           {model.name}
           {model.isOnLeaveToday && <span className="person-leave-badge" title="今日请假">假</span>}
         </div>
-        <div className="person-assignment-count">{model.taskCount} 任务</div>
+        <div className={`person-assignment-count ${isTaskLabelEmpty ? 'is-empty' : ''}`}>{model.topInProgressTaskLabel}</div>
       </div>
 
       <div className="person-assignment-skills">
         {model.skills.length > 0
           ? (
             <>
-              <span className="skill-tag">{model.skills[0]}</span>
-              {extraSkills > 0 ? <span className="skill-tag skill-tag-more">+{extraSkills}</span> : null}
+              <div className="person-assignment-skill-list">
+                {visibleSkills.map((skill, index) => <span key={`${skill}-${index}`} className={getSkillTagClassName(skill)}>{skill}</span>)}
+              </div>
+              {hiddenSkillCount > 0 ? <span className="person-assignment-skills-overflow">+{hiddenSkillCount}</span> : null}
             </>
           )
           : <span className="person-assignment-empty-skill">待补技能</span>}

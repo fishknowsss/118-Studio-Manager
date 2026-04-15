@@ -20,7 +20,7 @@ import type {
   TaskPriority,
   TaskStatus,
 } from './store'
-import { store, getTaskAssigneeIds } from './store'
+import { store, getTaskAssigneeIds, syncTaskStatusWithAssignees } from './store'
 import { buildBackupSummary } from './selectors'
 import { formatFileDate, normalizeImportedBackup, now, uid } from './utils'
 import { reloadSyncableViewStateFromDB } from '../features/persistence/syncableViewState'
@@ -89,7 +89,7 @@ export function buildTaskRecord(
   form: TaskFormInput,
   timestamp = now(),
 ): LegacyTask {
-  return {
+  const nextTask = {
     id: task?.id || uid(),
     title: form.title?.trim() || '',
     projectId: form.projectId || null,
@@ -104,6 +104,12 @@ export function buildTaskRecord(
     createdAt: task?.createdAt || timestamp,
     updatedAt: timestamp,
   }
+
+  const hasExplicitStatusChange = task
+    ? (form.status || 'todo') !== (task.status || 'todo')
+    : Boolean(form.status && form.status !== 'todo')
+
+  return syncTaskStatusWithAssignees(task, nextTask, hasExplicitStatusChange)
 }
 
 export function buildPersonRecord(
@@ -215,7 +221,9 @@ export async function updateTaskQuickField(taskId: string, patch: Partial<Legacy
   const task = store.getTask(taskId)
   if (!task) return null
   return await runWithUndo(`更新任务「${task.title || '未命名任务'}」`, async () => {
-    const updated = { ...task, ...patch, updatedAt: now() }
+    const nextTask = { ...task, ...patch, updatedAt: now() }
+    const hasExplicitStatusChange = Object.prototype.hasOwnProperty.call(patch, 'status')
+    const updated = syncTaskStatusWithAssignees(task, nextTask, hasExplicitStatusChange)
     await store.saveTask(updated)
     await store.addLog(`更新任务「${task.title}」`)
     return updated
@@ -230,7 +238,7 @@ export async function assignTaskToPerson(taskId: string, personId: string) {
   return await runWithUndo(`分配任务「${task.title || '未命名任务'}」`, async () => {
     const currentIds = getTaskAssigneeIds(task)
     const assigneeIds = currentIds.includes(personId) ? currentIds : [...currentIds, personId]
-    const updated = { ...task, assigneeIds, updatedAt: now() }
+    const updated = syncTaskStatusWithAssignees(task, { ...task, assigneeIds, updatedAt: now() })
 
     await store.saveTask(updated)
     await store.addLog(`分配任务「${task.title}」给 ${person.name || ''}`)

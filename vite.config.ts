@@ -1,4 +1,4 @@
-import { defineConfig } from 'vite'
+import { defineConfig } from 'vitest/config'
 import react from '@vitejs/plugin-react'
 
 export default defineConfig(({ command }) => ({
@@ -10,5 +10,8 @@ export default defineConfig(({ command }) => ({
     alias: {
       '@': '/src',
     },
+  },
+  test: {
+    setupFiles: ['./tests/setup.ts'],
   },
 }))

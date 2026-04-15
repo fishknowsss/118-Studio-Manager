@@ -1,4 +1,5 @@
 import { db } from './db'
+import { now } from './utils'
 
 export const PROJECT_STATUSES = ['active', 'paused', 'completed', 'cancelled'] as const
 export const PROJECT_PRIORITIES = ['urgent', 'high', 'medium', 'low'] as const
@@ -55,6 +56,27 @@ export function getTaskAssigneeIds(task: LegacyTask): string[] {
   if (task.assigneeIds && task.assigneeIds.length > 0) return task.assigneeIds
   if (task.assigneeId) return [task.assigneeId]
   return []
+}
+
+export function syncTaskStatusWithAssignees(
+  previousTask: LegacyTask | null,
+  nextTask: LegacyTask,
+  hasExplicitStatusChange = false,
+): LegacyTask {
+  if (hasExplicitStatusChange) return nextTask
+
+  const previousAssigneeCount = previousTask ? getTaskAssigneeIds(previousTask).length : 0
+  const nextAssigneeCount = getTaskAssigneeIds(nextTask).length
+
+  if (previousAssigneeCount === 0 && nextAssigneeCount > 0) {
+    return { ...nextTask, status: 'in-progress' }
+  }
+
+  if (previousAssigneeCount > 0 && nextAssigneeCount === 0) {
+    return { ...nextTask, status: 'todo' }
+  }
+
+  return nextTask
 }
 
 export type LegacyPerson = LegacyEntity & {
@@ -203,7 +225,11 @@ export const store = {
     const nextTasks = this.tasks.map(t => {
       const ids = getTaskAssigneeIds(t)
       if (!ids.includes(id)) return t
-      const updated = { ...t, assigneeIds: ids.filter(aid => aid !== id) }
+      const updated = syncTaskStatusWithAssignees(t, {
+        ...t,
+        assigneeIds: ids.filter(aid => aid !== id),
+        updatedAt: now(),
+      })
       updatedTasks.push(updated)
       return updated
     })
