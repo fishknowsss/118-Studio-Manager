@@ -1,6 +1,6 @@
 export type NodeKind = 'project' | 'task' | 'person'
 export type EdgeKind = 'project-task' | 'task-person'
-export type DisplayMode = 'all' | 'project-task' | 'task-person' | 'people-focus'
+export type DisplayMode = 'all' | 'project-task' | 'task-person'
 export type LayoutMode = 'force' | 'radial' | 'lanes'
 export type LocalDepth = 'all' | '1' | '2'
 
@@ -11,6 +11,7 @@ export type GraphNode = {
   label: string
   subtitle: string
   size: number
+  urgency: string
 }
 
 export type SimNode = GraphNode & {
@@ -40,7 +41,6 @@ export type Viewport = {
 
 export type GraphViewSnapshot = {
   viewport: Viewport
-  localDepth: LocalDepth
   searchText: string
 }
 

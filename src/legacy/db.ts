@@ -1,7 +1,7 @@
 import { buildBackupPayload, normalizeImportedBackup, type BackupPayload } from './utils'
 
 const DB_NAME = 'studio118db'
-const DB_VERSION = 1
+const DB_VERSION = 2
 
 let dbInstance: IDBDatabase | null = null
 
@@ -13,33 +13,35 @@ export async function openDB() {
 
     req.onupgradeneeded = (event) => {
       const db = (event.target as IDBOpenDBRequest).result
+      const tx = (event.target as IDBOpenDBRequest).transaction!
+      const oldVersion = event.oldVersion
 
-      if (!db.objectStoreNames.contains('projects')) {
-        const store = db.createObjectStore('projects', { keyPath: 'id' })
-        store.createIndex('status', 'status', { unique: false })
-        store.createIndex('ddl', 'ddl', { unique: false })
-      }
+      if (oldVersion < 1) {
+        const projectsStore = db.createObjectStore('projects', { keyPath: 'id' })
+        projectsStore.createIndex('status', 'status', { unique: false })
+        projectsStore.createIndex('ddl', 'ddl', { unique: false })
 
-      if (!db.objectStoreNames.contains('tasks')) {
-        const store = db.createObjectStore('tasks', { keyPath: 'id' })
-        store.createIndex('projectId', 'projectId', { unique: false })
-        store.createIndex('assigneeId', 'assigneeId', { unique: false })
-        store.createIndex('status', 'status', { unique: false })
-        store.createIndex('scheduledDate', 'scheduledDate', { unique: false })
-      }
+        // 新安装直接跳到 v2，不创建已废弃的 assigneeId 索引
+        const tasksStore = db.createObjectStore('tasks', { keyPath: 'id' })
+        tasksStore.createIndex('projectId', 'projectId', { unique: false })
+        tasksStore.createIndex('status', 'status', { unique: false })
+        tasksStore.createIndex('scheduledDate', 'scheduledDate', { unique: false })
 
-      if (!db.objectStoreNames.contains('people')) {
-        const store = db.createObjectStore('people', { keyPath: 'id' })
-        store.createIndex('status', 'status', { unique: false })
-      }
+        const peopleStore = db.createObjectStore('people', { keyPath: 'id' })
+        peopleStore.createIndex('status', 'status', { unique: false })
 
-      if (!db.objectStoreNames.contains('logs')) {
-        const store = db.createObjectStore('logs', { keyPath: 'id' })
-        store.createIndex('ts', 'ts', { unique: false })
-      }
+        const logsStore = db.createObjectStore('logs', { keyPath: 'id' })
+        logsStore.createIndex('ts', 'ts', { unique: false })
 
-      if (!db.objectStoreNames.contains('settings')) {
         db.createObjectStore('settings', { keyPath: 'key' })
+      }
+
+      if (oldVersion >= 1 && oldVersion < 2) {
+        // v1 → v2：移除已废弃的 assigneeId 索引（已迁移为 assigneeIds）
+        const tasksStore = tx.objectStore('tasks')
+        if (tasksStore.indexNames.contains('assigneeId')) {
+          tasksStore.deleteIndex('assigneeId')
+        }
       }
     }
 

@@ -75,7 +75,7 @@ export function buildRadialLayout(nodes: GraphNode[]) {
   return positioned
 }
 
-export function buildLaneLayout(nodes: GraphNode[]) {
+export function buildLaneLayout(nodes: GraphNode[], edges: GraphEdge[] = []) {
   const laneX: Record<NodeKind, number> = {
     project: 250,
     task: SCENE_WIDTH / 2,
@@ -87,6 +87,43 @@ export function buildLaneLayout(nodes: GraphNode[]) {
     task: nodes.filter((node) => node.kind === 'task'),
     person: nodes.filter((node) => node.kind === 'person'),
   }
+
+  // 建立连接映射
+  const taskToProjects = new Map<string, string[]>()
+  const personToTasks = new Map<string, string[]>()
+  for (const edge of edges) {
+    if (edge.kind === 'project-task') {
+      const list = taskToProjects.get(edge.target) || []
+      list.push(edge.source)
+      taskToProjects.set(edge.target, list)
+    }
+    if (edge.kind === 'task-person') {
+      const list = personToTasks.get(edge.target) || []
+      list.push(edge.source)
+      personToTasks.set(edge.target, list)
+    }
+  }
+
+  // 任务按所属项目在项目列中的位置排序，减少项目→任务连线交叉
+  const projectOrder = new Map(grouped.project.map((n, i) => [n.id, i]))
+  grouped.task.sort((a, b) => {
+    const minIdx = (id: string) => {
+      const ps = taskToProjects.get(id) || []
+      return ps.length ? Math.min(...ps.map((p) => projectOrder.get(p) ?? 9999)) : 9999
+    }
+    return minIdx(a.id) - minIdx(b.id)
+  })
+
+  // 人员按关联任务在任务列中的平均位置排序，减少任务→人员连线交叉
+  const taskOrder = new Map(grouped.task.map((n, i) => [n.id, i]))
+  grouped.person.sort((a, b) => {
+    const avgIdx = (id: string) => {
+      const ts = personToTasks.get(id) || []
+      if (!ts.length) return 9999
+      return ts.reduce((sum, t) => sum + (taskOrder.get(t) ?? 9999), 0) / ts.length
+    }
+    return avgIdx(a.id) - avgIdx(b.id)
+  })
 
   const positioned: Record<string, { x: number; y: number }> = {}
   ;(['project', 'task', 'person'] as NodeKind[]).forEach((kind) => {
@@ -175,37 +212,9 @@ export function applyDisplayModeFilter(graph: GraphData, displayMode: DisplayMod
     return { nodes, edges }
   }
 
-  if (displayMode === 'task-person') {
-    const nodes = graph.nodes.filter((node) => node.kind === 'task' || node.kind === 'person')
-    const nodeIds = new Set(nodes.map((node) => node.id))
-    const edges = graph.edges.filter((edge) => edge.kind === 'task-person' && nodeIds.has(edge.source) && nodeIds.has(edge.target))
-    return { nodes, edges }
-  }
-
-  const taskIdsWithPeople = new Set<string>()
-  for (const edge of graph.edges) {
-    if (edge.kind === 'task-person') {
-      taskIdsWithPeople.add(edge.source)
-    }
-  }
-
-  const nodes = graph.nodes.filter((node) => {
-    if (node.kind === 'person') return true
-    if (node.kind === 'task') return taskIdsWithPeople.has(node.id)
-
-    if (node.kind === 'project') {
-      return graph.edges.some((edge) => (
-        edge.kind === 'project-task'
-        && edge.source === node.id
-        && taskIdsWithPeople.has(edge.target)
-      ))
-    }
-
-    return false
-  })
-
+  const nodes = graph.nodes.filter((node) => node.kind === 'task' || node.kind === 'person')
   const nodeIds = new Set(nodes.map((node) => node.id))
-  const edges = graph.edges.filter((edge) => nodeIds.has(edge.source) && nodeIds.has(edge.target))
+  const edges = graph.edges.filter((edge) => edge.kind === 'task-person' && nodeIds.has(edge.source) && nodeIds.has(edge.target))
   return { nodes, edges }
 }
 
@@ -213,7 +222,7 @@ export function runForceSimulation(
   nodes: SimNode[],
   edges: GraphEdge[],
   pinnedNodeIds: Set<string>,
-) {
+): number {
   const repulsionStrength = 3300
   const springLength = 125
   const springStrength = 0.0082
@@ -284,6 +293,7 @@ export function runForceSimulation(
     }
   }
 
+  let energy = 0
   for (const node of nodes) {
     if (pinnedNodeIds.has(node.id)) continue
 
@@ -293,13 +303,25 @@ export function runForceSimulation(
 
     node.x = clamp(node.x + node.vx, 30, SCENE_WIDTH - 30)
     node.y = clamp(node.y + node.vy, 30, SCENE_HEIGHT - 30)
+    energy += node.vx * node.vx + node.vy * node.vy
   }
+  return energy
 }
 
 export function buildEdgePath(source: SimNode, target: SimNode, kind: EdgeKind) {
   const dx = target.x - source.x
   const dy = target.y - source.y
   const length = Math.max(0.001, Math.sqrt(dx * dx + dy * dy))
+
+  // Offset start/end points to begin/end at the node visual edge (not center)
+  // Project nodes are diamonds: half-diagonal ≈ size * 1.05
+  const sourceRadius = source.kind === 'project' ? source.size * 1.05 : source.size
+  const targetRadius = target.kind === 'project' ? target.size * 1.05 : target.size
+  const startX = source.x + (dx / length) * (sourceRadius + 2)
+  const startY = source.y + (dy / length) * (sourceRadius + 2)
+  const endX = target.x - (dx / length) * (targetRadius + 6)
+  const endY = target.y - (dy / length) * (targetRadius + 6)
+
   const normalX = -dy / length
   const normalY = dx / length
   const bend = kind === 'task-person' ? 14 : 9
@@ -307,7 +329,7 @@ export function buildEdgePath(source: SimNode, target: SimNode, kind: EdgeKind) 
   const controlX = (source.x + target.x) / 2 + normalX * bend
   const controlY = (source.y + target.y) / 2 + normalY * bend
 
-  return `M ${source.x} ${source.y} Q ${controlX} ${controlY} ${target.x} ${target.y}`
+  return `M ${startX} ${startY} Q ${controlX} ${controlY} ${endX} ${endY}`
 }
 
 export function toScenePoint(svg: SVGSVGElement | null, viewport: Viewport, clientX: number, clientY: number) {

@@ -234,8 +234,10 @@ export function normalizeImportedBackup(data: unknown): BackupPayload {
 }
 
 export function downloadFile(content: string, filename: string, mime = 'application/json') {
+  const url = URL.createObjectURL(new Blob([content], { type: mime }))
   const link = document.createElement('a')
-  link.href = URL.createObjectURL(new Blob([content], { type: mime }))
+  link.href = url
   link.download = filename
   link.click()
+  URL.revokeObjectURL(url)
 }

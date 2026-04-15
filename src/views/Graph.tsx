@@ -10,7 +10,6 @@ import {
   type DisplayMode,
   type GraphViewSnapshot,
   type LayoutMode,
-  type LocalDepth,
   type SimNode,
   type Viewport,
 } from '../features/graph/graphTypes'
@@ -23,7 +22,6 @@ import {
   buildRadialLayout,
   clamp,
   cloneNodeMap,
-  collectReachableNodeIds,
   ensureSimulationNodes,
   getKindLabel,
   runForceSimulation,
@@ -37,16 +35,17 @@ export function Graph() {
 
   const [displayMode, setDisplayMode] = useState<DisplayMode>('all')
   const [layoutMode, setLayoutMode] = useState<LayoutMode>('force')
-  const [localDepth, setLocalDepth] = useState<LocalDepth>('all')
   const [showLabels, setShowLabels] = useState(true)
+  const [hideDone, setHideDone] = useState(true)
   const [searchText, setSearchText] = useState('')
   const [hoveredNodeId, setHoveredNodeId] = useState<string | null>(null)
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null)
   const [viewport, setViewport] = useState<Viewport>({ x: 0, y: 0, scale: 1 })
   const [draggingCanvas, setDraggingCanvas] = useState(false)
   const [draggingNodeId, setDraggingNodeId] = useState<string | null>(null)
-  const [pinnedNodeMap, setPinnedNodeMap] = useState<Record<string, boolean>>({})
   const [renderNodeMap, setRenderNodeMap] = useState<Record<string, SimNode>>({})
+  const [simRevision, setSimRevision] = useState(0)
+  const [tooltipScreenPos, setTooltipScreenPos] = useState<{ x: number; y: number } | null>(null)
 
   const svgRef = useRef<SVGSVGElement | null>(null)
   const simNodesRef = useRef<Record<string, SimNode>>({})
@@ -56,6 +55,7 @@ export function Graph() {
   const viewportRef = useRef<Viewport>(viewport)
   const originalViewRef = useRef<GraphViewSnapshot | null>(null)
   const activeSelectedNodeIdRef = useRef<string | null>(null)
+  const simulationActiveRef = useRef(false)
 
   useEffect(() => {
     viewportRef.current = viewport
@@ -71,28 +71,27 @@ export function Graph() {
     [displayMode, graph],
   )
 
+  const filteredGraph = useMemo(() => {
+    if (!hideDone) return displayGraph
+    const nodes = displayGraph.nodes.filter((node) => !(node.kind === 'task' && node.urgency === 'urg-done'))
+    const nodeIds = new Set(nodes.map((node) => node.id))
+    const edges = displayGraph.edges.filter((edge) => nodeIds.has(edge.source) && nodeIds.has(edge.target))
+    return { nodes, edges }
+  }, [displayGraph, hideDone])
+
   const displayAdjacency = useMemo(
-    () => buildAdjacency(displayGraph.edges),
-    [displayGraph.edges],
+    () => buildAdjacency(filteredGraph.edges),
+    [filteredGraph.edges],
   )
-
-  const displayNodeIds = useMemo(
-    () => new Set(displayGraph.nodes.map((node) => node.id)),
-    [displayGraph.nodes],
-  )
-
-  const selectedSeedNodeId = selectedNodeId && displayNodeIds.has(selectedNodeId)
-    ? selectedNodeId
-    : null
 
   const searchKeyword = searchText.trim().toLowerCase()
 
   const searchResults = useMemo(() => {
-    if (!searchKeyword) return [] as typeof displayGraph.nodes
+    if (!searchKeyword) return [] as typeof filteredGraph.nodes
 
     const kindOrder: Record<string, number> = { project: 0, task: 1, person: 2 }
 
-    return displayGraph.nodes
+    return filteredGraph.nodes
       .filter((node) => node.label.toLowerCase().includes(searchKeyword))
       .sort((left, right) => {
         const leftStarts = left.label.toLowerCase().startsWith(searchKeyword) ? 0 : 1
@@ -106,7 +105,7 @@ export function Graph() {
         return left.label.localeCompare(right.label)
       })
       .slice(0, 8)
-  }, [displayGraph.nodes, searchKeyword])
+  }, [filteredGraph.nodes, searchKeyword])
 
   const searchMatchedNodeIds = useMemo(
     () => new Set(searchResults.map((node) => node.id)),
@@ -114,15 +113,7 @@ export function Graph() {
   )
 
   const scopedGraph = useMemo(() => {
-    let allowedNodeIds = new Set(displayGraph.nodes.map((node) => node.id))
-
-    if (selectedSeedNodeId && localDepth !== 'all') {
-      const depthLimit = localDepth === '1' ? 1 : 2
-      const localNodeIds = collectReachableNodeIds(selectedSeedNodeId, depthLimit, displayAdjacency)
-      allowedNodeIds = new Set(
-        [...allowedNodeIds].filter((nodeId) => localNodeIds.has(nodeId)),
-      )
-    }
+    let allowedNodeIds = new Set(filteredGraph.nodes.map((node) => node.id))
 
     if (searchKeyword) {
       if (searchMatchedNodeIds.size === 0) {
@@ -144,24 +135,16 @@ export function Graph() {
       }
     }
 
-    const nodes = displayGraph.nodes.filter((node) => allowedNodeIds.has(node.id))
+    const nodes = filteredGraph.nodes.filter((node) => allowedNodeIds.has(node.id))
     const nodeIds = new Set(nodes.map((node) => node.id))
-    const edges = displayGraph.edges.filter((edge) => nodeIds.has(edge.source) && nodeIds.has(edge.target))
+    const edges = filteredGraph.edges.filter((edge) => nodeIds.has(edge.source) && nodeIds.has(edge.target))
     return { nodes, edges }
-  }, [displayAdjacency, displayGraph, localDepth, searchKeyword, searchMatchedNodeIds, selectedSeedNodeId])
+  }, [displayAdjacency, filteredGraph, searchKeyword, searchMatchedNodeIds])
 
   const scopedNodeIds = useMemo(
     () => new Set(scopedGraph.nodes.map((node) => node.id)),
     [scopedGraph.nodes],
   )
-
-  const pinnedNodeIds = useMemo(() => {
-    const set = new Set<string>()
-    for (const [nodeId, pinned] of Object.entries(pinnedNodeMap)) {
-      if (pinned && scopedNodeIds.has(nodeId)) set.add(nodeId)
-    }
-    return set
-  }, [pinnedNodeMap, scopedNodeIds])
 
   const activeSelectedNodeId = selectedNodeId && scopedNodeIds.has(selectedNodeId)
     ? selectedNodeId
@@ -182,18 +165,9 @@ export function Graph() {
     if (layoutMode === 'radial' || layoutMode === 'lanes') {
       const positions = layoutMode === 'radial'
         ? buildRadialLayout(scopedGraph.nodes)
-        : buildLaneLayout(scopedGraph.nodes)
+        : buildLaneLayout(scopedGraph.nodes, scopedGraph.edges)
 
       for (const node of Object.values(nextNodes)) {
-        const previousNode = previous[node.id]
-        if (pinnedNodeIds.has(node.id) && previousNode) {
-          node.x = previousNode.x
-          node.y = previousNode.y
-          node.vx = 0
-          node.vy = 0
-          continue
-        }
-
         const position = positions[node.id]
         if (!position) continue
         node.x = position.x
@@ -210,19 +184,27 @@ export function Graph() {
     simNodesRef.current = nextNodes
     setRenderNodeMap(cloneNodeMap(nextNodes))
 
+    const SETTLE_THRESHOLD = 0.25
+    const emptyPins = new Set<string>()
     let raf = 0
     const run = () => {
-      runForceSimulation(Object.values(simNodesRef.current), scopedGraph.edges, pinnedNodeIds)
+      const energy = runForceSimulation(Object.values(simNodesRef.current), scopedGraph.edges, emptyPins)
       setRenderNodeMap(cloneNodeMap(simNodesRef.current))
-      raf = window.requestAnimationFrame(run)
+      // 仍在拖拽 或 能量未收敛 时继续运行
+      if (energy > SETTLE_THRESHOLD || nodeDragRef.current) {
+        raf = window.requestAnimationFrame(run)
+      } else {
+        simulationActiveRef.current = false
+      }
     }
 
+    simulationActiveRef.current = true
     raf = window.requestAnimationFrame(run)
 
     return () => {
       window.cancelAnimationFrame(raf)
     }
-  }, [layoutMode, pinnedNodeIds, scopedGraph.edges, scopedGraph.nodes])
+  }, [layoutMode, scopedGraph.edges, scopedGraph.nodes, simRevision])
 
   const activeNodes = useMemo(() => {
     return scopedGraph.nodes.map((node) => {
@@ -296,7 +278,7 @@ export function Graph() {
 
   const rememberOriginalView = () => {
     if (originalViewRef.current) return
-    originalViewRef.current = { viewport: { ...viewportRef.current }, localDepth, searchText }
+    originalViewRef.current = { viewport: { ...viewportRef.current }, searchText }
   }
 
   const clearNodeDetail = () => {
@@ -308,7 +290,6 @@ export function Graph() {
   const restoreOriginalView = () => {
     const snapshot = originalViewRef.current
     if (!snapshot) { clearNodeDetail(); return }
-    setLocalDepth(snapshot.localDepth)
     setSearchText(snapshot.searchText)
     setViewport(snapshot.viewport)
     clearNodeDetail()
@@ -326,14 +307,6 @@ export function Graph() {
     activeSelectedNodeIdRef.current = nodeId
     setSelectedNodeId(nodeId)
     if (options?.center ?? true) centerNodeInViewport(nodeId)
-  }
-
-  const togglePinNode = (nodeId: string) => {
-    setPinnedNodeMap((current) => {
-      const next = { ...current }
-      if (next[nodeId]) { delete next[nodeId] } else { next[nodeId] = true }
-      return next
-    })
   }
 
   const handleWheel: WheelEventHandler<SVGSVGElement> = (event) => {
@@ -359,10 +332,13 @@ export function Graph() {
     if (event.button !== 0) return
     if ((event.target as Element).closest('.graph-node-group')) return
     setDraggingCanvas(true)
+    setHoveredNodeId(null)
     canvasDragOriginRef.current = { x: event.clientX, y: event.clientY }
   }
 
   const handleMouseMove: MouseEventHandler<SVGSVGElement> = (event) => {
+    setTooltipScreenPos({ x: event.clientX, y: event.clientY })
+
     const draggingNode = nodeDragRef.current
 
     if (draggingNode) {
@@ -387,15 +363,14 @@ export function Graph() {
   }
 
   const handleMouseUp = () => {
-    const draggedNode = nodeDragRef.current
-    if (draggedNode && nodeDragMovedRef.current) {
-      setPinnedNodeMap((current) => ({ ...current, [draggedNode]: true }))
-    }
+    const wasNodeDrag = nodeDragMovedRef.current
     nodeDragRef.current = null
     nodeDragMovedRef.current = false
     setDraggingNodeId(null)
     setDraggingCanvas(false)
     canvasDragOriginRef.current = null
+    // 拖拽节点后重启仿真，让其他节点响应新位置
+    if (wasNodeDrag) setSimRevision(r => r + 1)
   }
 
   const handleNodeMouseDown = (nodeId: string): MouseEventHandler<SVGGElement> => (event) => {
@@ -407,6 +382,10 @@ export function Graph() {
     nodeDragMovedRef.current = false
     setDraggingNodeId(nodeId)
     setSelectedNodeId(nodeId)
+    // 拖拽时若仿真已收敛，重启它以便其他节点响应
+    if (!simulationActiveRef.current) {
+      simulationActiveRef.current = true
+    }
   }
 
   const copyNodeName = async (node: SimNode) => {
@@ -427,7 +406,6 @@ export function Graph() {
 
       const snapshot = originalViewRef.current
       if (snapshot) {
-        setLocalDepth(snapshot.localDepth)
         setSearchText(snapshot.searchText)
         setViewport(snapshot.viewport)
         activeSelectedNodeIdRef.current = null
@@ -445,8 +423,6 @@ export function Graph() {
     document.addEventListener('keydown', handleEscape, true)
     return () => document.removeEventListener('keydown', handleEscape, true)
   }, [])
-
-  const selectedNodePinned = Boolean(selectedNode && pinnedNodeIds.has(selectedNode.id))
 
   return (
     <div className="view-graph fade-in">
@@ -466,33 +442,6 @@ export function Graph() {
                 }
               }}
             />
-            <select className="filter-select" value={displayMode} onChange={(event) => setDisplayMode(event.target.value as DisplayMode)}>
-              <option value="all">全量关系</option>
-              <option value="project-task">项目 - 任务</option>
-              <option value="task-person">任务 - 人员</option>
-              <option value="people-focus">人员中心</option>
-            </select>
-            <select className="filter-select" value={localDepth} onChange={(event) => setLocalDepth(event.target.value as LocalDepth)}>
-              <option value="all">全局图谱</option>
-              <option value="1">局部 1 跳</option>
-              <option value="2">局部 2 跳</option>
-            </select>
-            <select className="filter-select" value={layoutMode} onChange={(event) => setLayoutMode(event.target.value as LayoutMode)}>
-              <option value="force">动态力导</option>
-              <option value="radial">同心分层</option>
-              <option value="lanes">分组泳道</option>
-            </select>
-            <button className="btn btn-secondary btn-sm" type="button" onClick={() => setShowLabels((current) => !current)}>
-              {showLabels ? '隐藏标签' : '显示标签'}
-            </button>
-            <button className="btn btn-secondary btn-sm" type="button" onClick={() => setViewport({ x: 0, y: 0, scale: 1 })}>
-              重置视角
-            </button>
-            {pinnedNodeIds.size > 0 ? (
-              <button className="btn btn-secondary btn-sm" type="button" onClick={() => setPinnedNodeMap({})}>
-                解除固定
-              </button>
-            ) : null}
           </div>
         </div>
       </div>
@@ -502,20 +451,88 @@ export function Graph() {
           <div className="graph-hint-bar">
             <span className="graph-pill">节点 {scopedGraph.nodes.length}</span>
             <span className="graph-pill">连线 {scopedGraph.edges.length}</span>
-            <span className="graph-pill">固定 {pinnedNodeIds.size}</span>
-            <span className="graph-hint-text">滚轮缩放 · 拖拽平移 · 拖拽节点自动固定 · 双击节点切换固定</span>
-            <span className="graph-kind-legend">形状：◇ 项目 · ○ 任务 · ⬡ 人员</span>
+            <span className="graph-kind-legend">◇ 项目 · ○ 任务 · ⬡ 人员</span>
           </div>
 
-          {selectedNode ? (
-            <button className="graph-stage-quick-back" type="button" onClick={quickBackFromDetail}>
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
-                <path d="M15 18l-6-6 6-6" />
+          {/* 右上角：返回原视图（有选中节点时）+ 重置视角 */}
+          <div className="graph-canvas-topright">
+            {selectedNode ? (
+              <button className="graph-stage-quick-back" type="button" onClick={quickBackFromDetail}>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
+                  <path d="M15 18l-6-6 6-6" />
+                </svg>
+                <span>返回原视图</span>
+                <span className="graph-stage-quick-back-kbd">Esc</span>
+              </button>
+            ) : null}
+            <button className="graph-canvas-reset-btn" type="button" onClick={() => setViewport({ x: 0, y: 0, scale: 1 })} title="重置视角">
+              <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M1.5 8L8 1.5 14.5 8" />
+                <path d="M3.5 6.5V14h3.5v-4h2v4H12.5V6.5" />
               </svg>
-              <span>返回原视图</span>
-              <span className="graph-stage-quick-back-kbd">Esc</span>
             </button>
-          ) : null}
+          </div>
+
+          {/* 主浮动工具栏（右侧居中） */}
+          <div className="graph-canvas-toolbar">
+            {/* 关系范围 */}
+            <button className={`graph-canvas-btn${displayMode === 'all' ? ' active' : ''}`} type="button" onClick={() => setDisplayMode('all')} title="全量关系">
+              <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round">
+                <polygon points="8,1.5 14.1,11.25 1.9,11.25"/>
+                <polygon points="8,14.5 1.9,4.75 14.1,4.75"/>
+              </svg>
+            </button>
+            <button className={`graph-canvas-btn${displayMode === 'project-task' ? ' active' : ''}`} type="button" onClick={() => setDisplayMode('project-task')} title="项目·任务">
+              <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M8 2L14 8L8 14L2 8z"/>
+              </svg>
+            </button>
+            <button className={`graph-canvas-btn${displayMode === 'task-person' ? ' active' : ''}`} type="button" onClick={() => setDisplayMode('task-person')} title="任务·人员">
+              <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round">
+                <circle cx="8" cy="5.5" r="2.5"/>
+                <path d="M2.5 14.5c0-3 2.5-5 5.5-5s5.5 2 5.5 5"/>
+              </svg>
+            </button>
+            <div className="graph-canvas-sep" />
+            <button className={`graph-canvas-btn${layoutMode === 'force' ? ' active' : ''}`} type="button" onClick={() => setLayoutMode('force')} title="动态力导">
+              <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
+                <circle cx="8" cy="3" r="1.5" />
+                <circle cx="2.5" cy="12.5" r="1.5" />
+                <circle cx="13.5" cy="12.5" r="1.5" />
+                <line x1="8" y1="4.5" x2="2.5" y2="11" />
+                <line x1="8" y1="4.5" x2="13.5" y2="11" />
+                <line x1="4" y1="12.5" x2="12" y2="12.5" />
+              </svg>
+            </button>
+            <button className={`graph-canvas-btn${layoutMode === 'radial' ? ' active' : ''}`} type="button" onClick={() => setLayoutMode('radial')} title="同心分层">
+              <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5">
+                <circle cx="8" cy="8" r="6.5" />
+                <circle cx="8" cy="8" r="3.5" />
+                <circle cx="8" cy="8" r="1.2" fill="currentColor" stroke="none" />
+              </svg>
+            </button>
+            <button className={`graph-canvas-btn${layoutMode === 'lanes' ? ' active' : ''}`} type="button" onClick={() => setLayoutMode('lanes')} title="分组泳道">
+              <svg viewBox="0 0 16 16" fill="currentColor">
+                <rect x="1.5" y="3" width="3.5" height="10" rx="1" />
+                <rect x="6.25" y="3" width="3.5" height="10" rx="1" />
+                <rect x="11" y="3" width="3.5" height="10" rx="1" />
+              </svg>
+            </button>
+            <div className="graph-canvas-sep" />
+            <button className={`graph-canvas-btn${showLabels ? ' active' : ''}`} type="button" onClick={() => setShowLabels((v) => !v)} title={showLabels ? '隐藏标签' : '显示标签'}>
+              <svg viewBox="0 0 16 16" fill="currentColor">
+                <path d="M2.5 3h11v2H9.5v8h-3V5H2.5V3z" />
+              </svg>
+            </button>
+          </div>
+
+          {/* 右下角已完成任务过滤 */}
+          <button className={`graph-canvas-hide-done${hideDone ? ' active' : ''}`} type="button" onClick={() => setHideDone((v) => !v)} title={hideDone ? '显示已完成任务' : '隐藏已完成任务'}>
+            <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M2 3h12l-4 5.5V13l-4-1.5V8.5L2 3z" />
+            </svg>
+            {hideDone ? '已过滤完成任务' : '显示全部任务'}
+          </button>
 
           <svg
             ref={svgRef}
@@ -526,7 +543,29 @@ export function Graph() {
             onMouseMove={handleMouseMove}
             onMouseUp={handleMouseUp}
             onMouseLeave={handleMouseUp}
+            onContextMenu={(event) => { event.preventDefault(); if (activeSelectedNodeId) quickBackFromDetail() }}
           >
+            <defs>
+              <pattern id="graph-dot-grid" x="0" y="0" width="28" height="28" patternUnits="userSpaceOnUse">
+                <circle cx="1" cy="1" r="1" fill="rgba(100,116,139,0.13)" />
+              </pattern>
+              <marker id="graph-arrow-pt" markerWidth="7" markerHeight="7" refX="5.5" refY="3.5" orient="auto">
+                <path d="M0,0.5 L0,6.5 L6,3.5 z" className="graph-arrow-fill project-task" />
+              </marker>
+              <marker id="graph-arrow-tp" markerWidth="7" markerHeight="7" refX="5.5" refY="3.5" orient="auto">
+                <path d="M0,0.5 L0,6.5 L6,3.5 z" className="graph-arrow-fill task-person" />
+              </marker>
+              <filter id="graph-glow" x="-60%" y="-60%" width="220%" height="220%">
+                <feGaussianBlur in="SourceAlpha" stdDeviation="6" result="blur" />
+                <feFlood floodOpacity="0.28" result="color" />
+                <feComposite in="color" in2="blur" operator="in" result="shadow" />
+                <feMerge><feMergeNode in="shadow" /><feMergeNode in="SourceGraphic" /></feMerge>
+              </filter>
+            </defs>
+
+            {/* 固定点阵背景，不随视口平移缩放 */}
+            <rect width={SCENE_WIDTH} height={SCENE_HEIGHT} fill="url(#graph-dot-grid)" />
+
             <g transform={`translate(${viewport.x} ${viewport.y}) scale(${viewport.scale})`}>
               {scopedGraph.edges.map((edge) => {
                 const source = activeNodeMap[edge.source]
@@ -542,6 +581,7 @@ export function Graph() {
                     key={edge.id}
                     className={`graph-edge ${edge.kind} ${isFocused ? 'focused' : ''} ${dimmed ? 'dimmed' : ''} ${matched ? 'matched' : ''}`}
                     d={buildEdgePath(source, target, edge.kind)}
+                    markerEnd={edge.kind === 'project-task' ? 'url(#graph-arrow-pt)' : 'url(#graph-arrow-tp)'}
                   />
                 )
               })}
@@ -550,41 +590,90 @@ export function Graph() {
                 const isFocused = focusedNodeId === node.id
                 const isRelated = Boolean(focusedNodeId && activeEdgeSet.get(focusedNodeId)?.has(node.id))
                 const isMatched = searchMatchedNodeIds.has(node.id)
-                const isPinned = pinnedNodeIds.has(node.id)
                 const isDragging = draggingNodeId === node.id
                 const dimmed = Boolean(focusedNodeId && !isFocused && !isRelated)
                 const showLabel = showLabels || isFocused || isRelated || isMatched
                 const projectHalf = node.size * 0.72
+                const truncatedLabel = node.label.length > 14 ? `${node.label.slice(0, 13)}…` : node.label
 
                 return (
                   <g
                     key={node.id}
-                    className={`graph-node-group ${node.kind} ${isFocused ? 'focused' : ''} ${isRelated ? 'related' : ''} ${isMatched ? 'matched' : ''} ${isPinned ? 'pinned' : ''} ${isDragging ? 'dragging' : ''} ${dimmed ? 'dimmed' : ''}`}
+                    className={`graph-node-group ${node.kind} ${isFocused ? 'focused' : ''} ${isRelated ? 'related' : ''} ${isMatched ? 'matched' : ''} ${isDragging ? 'dragging' : ''} ${dimmed ? 'dimmed' : ''}`}
+                    data-urgency={node.urgency}
                     transform={`translate(${node.x} ${node.y})`}
                     onMouseDown={handleNodeMouseDown(node.id)}
                     onMouseEnter={() => setHoveredNodeId(node.id)}
                     onMouseLeave={() => setHoveredNodeId((current) => (current === node.id ? null : current))}
                     onClick={(event) => { event.stopPropagation(); focusNode(node.id, { center: false }) }}
-                    onDoubleClick={(event) => { event.stopPropagation(); togglePinNode(node.id) }}
                   >
-                    <title>{node.label}</title>
+                    {/* 焦点光环（在节点形状之下渲染） */}
+                    {(isFocused || isRelated) ? (
+                      <circle
+                        className={`graph-focus-ring ${isFocused ? 'selected' : 'related'}`}
+                        r={node.size + (isFocused ? 10 : 6)}
+                      />
+                    ) : null}
+
+                    {/* 节点形状 */}
                     {node.kind === 'project' ? (
                       <rect
                         className="graph-node-core"
                         x={-projectHalf} y={-projectHalf}
                         width={projectHalf * 2} height={projectHalf * 2}
                         rx={2.6} transform="rotate(45)"
+                        filter={isFocused ? 'url(#graph-glow)' : undefined}
                       />
                     ) : null}
-                    {node.kind === 'task' ? <circle className="graph-node-core" r={node.size} /> : null}
-                    {node.kind === 'person' ? <polygon className="graph-node-core" points={buildHexagonPoints(node.size)} /> : null}
-                    {isPinned ? <circle className="graph-node-pin" cx={node.size - 2} cy={-node.size + 2} r={3.2} /> : null}
-                    {showLabel ? <text className="graph-node-label" x={node.size + 8} y={4}>{node.label}</text> : null}
+                    {node.kind === 'task' ? (
+                      <circle
+                        className="graph-node-core"
+                        r={node.size}
+                        filter={isFocused ? 'url(#graph-glow)' : undefined}
+                      />
+                    ) : null}
+                    {node.kind === 'person' ? (
+                      <polygon
+                        className="graph-node-core"
+                        points={buildHexagonPoints(node.size)}
+                        filter={isFocused ? 'url(#graph-glow)' : undefined}
+                      />
+                    ) : null}
+
+                    {/* 紧急度指示点 */}
+                    {node.urgency ? (
+                      <circle
+                        className="graph-node-urgency-dot"
+                        data-urgency={node.urgency}
+                        cx={node.size * 0.62}
+                        cy={-node.size * 0.62}
+                        r={3.2}
+                      />
+                    ) : null}
+
+                    {/* 标签 */}
+                    {showLabel ? (
+                      <text className="graph-node-label" x={node.size + 7} y={4}>{truncatedLabel}</text>
+                    ) : null}
                   </g>
                 )
               })}
             </g>
           </svg>
+          {/* 悬停 Tooltip */}
+          {(() => {
+            const tooltipNode = !draggingNodeId && !draggingCanvas && activeHoveredNodeId
+              ? activeNodeMap[activeHoveredNodeId] ?? null
+              : null
+            if (!tooltipNode || !tooltipScreenPos) return null
+            return (
+              <div className="graph-tooltip" style={{ left: tooltipScreenPos.x + 14, top: tooltipScreenPos.y - 56 }}>
+                <div className="graph-tooltip-kind">{getKindLabel(tooltipNode.kind)}</div>
+                <div className="graph-tooltip-label">{tooltipNode.label}</div>
+                {tooltipNode.subtitle ? <div className="graph-tooltip-subtitle">{tooltipNode.subtitle}</div> : null}
+              </div>
+            )
+          })()}
         </div>
 
         <aside className="graph-side-panel">
@@ -641,9 +730,6 @@ export function Graph() {
                 <div className="graph-detail-subtitle">关联 {relatedNodes.length} 个节点</div>
                 <div className="graph-detail-actions">
                   <button className="btn btn-secondary btn-sm" type="button" onClick={() => centerNodeInViewport(selectedNode.id)}>居中查看</button>
-                  <button className="btn btn-secondary btn-sm" type="button" onClick={() => togglePinNode(selectedNode.id)}>
-                    {selectedNodePinned ? '取消固定' : '固定节点'}
-                  </button>
                   <button className="btn btn-secondary btn-sm" type="button" onClick={() => void copyNodeName(selectedNode)}>复制名称</button>
                 </div>
               </div>

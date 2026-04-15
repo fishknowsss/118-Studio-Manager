@@ -1558,7 +1558,7 @@ svg { display: block; flex-shrink: 0; }
   align-items: center;
 }
 .graph-search-input {
-  width: min(240px, 36vw);
+  width: 280px;
 }
 .graph-stage-panel {
   position: relative;
@@ -1598,6 +1598,211 @@ svg { display: block; flex-shrink: 0; }
   color: var(--c-text-2);
   font-weight: 600;
 }
+
+/* 画布浮动工具栏 */
+.graph-canvas-toolbar {
+  position: absolute;
+  right: 14px;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding: 5px;
+  background: var(--c-surface);
+  border: 1px solid var(--c-border-light);
+  border-radius: 12px;
+  box-shadow: 0 4px 18px rgba(15, 23, 42, 0.10);
+}
+.graph-canvas-btn {
+  width: 34px;
+  height: 34px;
+  border-radius: 7px;
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--c-text-2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background .13s, color .13s, border-color .13s;
+}
+.graph-canvas-btn:hover {
+  background: var(--c-bg);
+  color: var(--c-text);
+  border-color: var(--c-border-light);
+}
+.graph-canvas-btn.active {
+  background: var(--c-primary);
+  color: #fff;
+  border-color: var(--c-primary);
+}
+.graph-canvas-btn.active:hover {
+  background: var(--c-primary-dark);
+  border-color: var(--c-primary-dark);
+}
+.graph-canvas-btn svg {
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+}
+.graph-canvas-sep {
+  height: 1px;
+  background: var(--c-border-light);
+  margin: 2px 1px;
+}
+
+/* 画布右上角操作行（返回 + 重置，紧贴画布顶部） */
+.graph-canvas-topright {
+  position: absolute;
+  top: 54px;
+  right: 14px;
+  z-index: 3;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+/* 在该容器内的 quick-back 按钮改为普通流元素 */
+.graph-canvas-topright .graph-stage-quick-back {
+  position: static;
+  top: auto;
+  left: auto;
+}
+.graph-canvas-reset-btn {
+  height: 34px;
+  width: 34px;
+  border-radius: 999px;
+  border: 1px solid var(--c-border-light);
+  background: rgba(255, 255, 255, 0.9);
+  color: var(--c-text-2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  box-shadow: 0 6px 16px rgba(15, 23, 42, 0.09);
+  transition: color .14s, box-shadow .14s, border-color .14s;
+  flex-shrink: 0;
+}
+.graph-canvas-reset-btn svg {
+  width: 14px;
+  height: 14px;
+}
+.graph-canvas-reset-btn:hover {
+  color: var(--c-text);
+  border-color: var(--c-border);
+  box-shadow: 0 10px 22px rgba(15, 23, 42, 0.14);
+}
+
+/* 右下角任务过滤按钮 */
+.graph-canvas-hide-done {
+  position: absolute;
+  z-index: 2;
+  bottom: 14px;
+  right: 14px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  height: 30px;
+  padding: 0 10px;
+  border-radius: 999px;
+  border: 1px solid var(--c-border-light);
+  background: var(--c-surface);
+  color: var(--c-text-3);
+  font-size: 11.5px;
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.08);
+  transition: background .13s, color .13s, border-color .13s, box-shadow .13s;
+}
+.graph-canvas-hide-done svg {
+  width: 12px;
+  height: 12px;
+  flex-shrink: 0;
+}
+.graph-canvas-hide-done.active {
+  background: var(--c-today-bg);
+  border-color: rgba(232, 132, 15, 0.4);
+  color: var(--c-today);
+}
+.graph-canvas-hide-done:hover:not(.active) {
+  background: var(--c-bg);
+  color: var(--c-text);
+  border-color: var(--c-border);
+}
+
+/* 侧栏过滤控制 */
+.graph-side-filters {
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--c-border-light);
+  margin-bottom: 4px;
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+.graph-depth-seg {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  border: 1px solid var(--c-border-light);
+  border-radius: var(--r-sm);
+  overflow: hidden;
+  background: var(--c-bg);
+}
+.graph-depth-btn {
+  padding: 6px 4px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--c-text-2);
+  background: transparent;
+  border: none;
+  border-right: 1px solid var(--c-border-light);
+  cursor: pointer;
+  transition: background .12s, color .12s;
+  text-align: center;
+}
+.graph-depth-btn:last-child {
+  border-right: none;
+}
+.graph-depth-btn.active {
+  background: var(--c-primary);
+  color: #fff;
+}
+.graph-depth-btn:hover:not(.active) {
+  background: var(--c-surface);
+  color: var(--c-text);
+}
+.graph-hide-done-btn {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 7px 10px;
+  border-radius: var(--r-sm);
+  border: 1px solid var(--c-border-light);
+  background: var(--c-bg);
+  color: var(--c-text-2);
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background .12s, color .12s, border-color .12s;
+  width: 100%;
+}
+.graph-hide-done-btn svg {
+  width: 13px;
+  height: 13px;
+  flex-shrink: 0;
+  opacity: .7;
+}
+.graph-hide-done-btn.active {
+  background: var(--c-today-bg);
+  border-color: rgba(232, 132, 15, 0.45);
+  color: var(--c-today);
+}
+.graph-hide-done-btn:hover:not(.active) {
+  background: var(--c-surface);
+  color: var(--c-text);
+  border-color: var(--c-border);
+}
+
 .graph-stage-quick-back {
   position: absolute;
   top: 54px;
@@ -1848,6 +2053,84 @@ svg { display: block; flex-shrink: 0; }
 .graph-related-meta {
   font-size: 10px;
   color: var(--c-text-3);
+}
+
+/* ── 图谱增强样式 ──────────────────────────────────────── */
+
+/* 箭头标记填色 */
+.graph-arrow-fill.project-task { fill: var(--c-near); opacity: .68; }
+.graph-arrow-fill.task-person  { fill: var(--c-teal); opacity: .68; }
+
+/* 焦点光环 */
+.graph-focus-ring {
+  fill: none;
+  stroke-width: 1.6;
+  opacity: .42;
+  stroke-dasharray: 4 3;
+  pointer-events: none;
+}
+.graph-node-group.project .graph-focus-ring { stroke: var(--c-near); }
+.graph-node-group.task    .graph-focus-ring { stroke: var(--c-today); }
+.graph-node-group.person  .graph-focus-ring { stroke: var(--c-teal); }
+.graph-focus-ring.selected {
+  opacity: .62;
+  animation: graph-ring-march 3s linear infinite;
+}
+@keyframes graph-ring-march {
+  from { stroke-dashoffset: 0; }
+  to   { stroke-dashoffset: -42; }
+}
+
+/* 紧急度小圆点：叠加在节点右上角，不覆盖种类底色 */
+.graph-node-urgency-dot {
+  pointer-events: none;
+  stroke: var(--c-surface);
+  stroke-width: 1.2px;
+}
+.graph-node-urgency-dot[data-urgency='urg-overdue'],
+.graph-node-urgency-dot[data-urgency='urg-blocked'] { fill: var(--c-overdue); }
+.graph-node-urgency-dot[data-urgency='urg-today']   { fill: var(--c-today); }
+.graph-node-urgency-dot[data-urgency='urg-soon']    { fill: var(--c-soon); }
+.graph-node-urgency-dot[data-urgency='urg-done']    { fill: var(--c-done); opacity: .7; }
+.graph-node-urgency-dot[data-urgency='urg-active']  { fill: var(--c-primary); }
+
+
+
+/* Tooltip */
+.graph-tooltip {
+  position: fixed;
+  z-index: 200;
+  background: var(--c-surface);
+  border: 1px solid var(--c-border);
+  border-radius: var(--r-md);
+  padding: 8px 11px;
+  box-shadow: var(--shadow-md);
+  pointer-events: none;
+  max-width: 210px;
+  animation: graph-tooltip-in .12s ease;
+}
+.graph-tooltip-kind {
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--c-text-3);
+  text-transform: uppercase;
+  letter-spacing: .05em;
+  margin-bottom: 3px;
+}
+.graph-tooltip-label {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--c-text);
+  word-break: break-all;
+  margin-bottom: 2px;
+}
+.graph-tooltip-subtitle {
+  font-size: 11px;
+  color: var(--c-text-2);
+}
+@keyframes graph-tooltip-in {
+  from { opacity: 0; transform: translateY(4px); }
+  to   { opacity: 1; transform: translateY(0); }
 }
 
 /* Tools */

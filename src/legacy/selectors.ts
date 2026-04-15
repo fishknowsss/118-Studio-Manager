@@ -263,37 +263,30 @@ export function buildProjectDeadlineToneMap(
   referenceDate: string,
 ) {
   const toneMap: Record<string, ProjectDeadlineToneKey> = {}
-  const openProjects = projects.filter((project) => project.status !== 'completed' && project.status !== 'cancelled')
-  const overdueProjects = openProjects
-    .filter((project) => {
-      const days = daysFromReference(project.ddl || null, referenceDate)
-      return days !== null && days < 0
-    })
-    .sort(compareProjectDeadline)
-  const upcomingProjects = openProjects
-    .filter((project) => {
-      const days = daysFromReference(project.ddl || null, referenceDate)
-      return days !== null && days >= 0
-    })
-    .sort(compareProjectDeadline)
-  const noDeadlineProjects = openProjects
-    .filter((project) => daysFromReference(project.ddl || null, referenceDate) === null)
-    .sort(compareProjectDeadline)
+  const overdue: LegacyProject[] = []
+  const upcoming: LegacyProject[] = []
+  const noDeadline: LegacyProject[] = []
 
-  overdueProjects.forEach((project) => {
+  for (const project of projects) {
+    if (project.status === 'completed' || project.status === 'cancelled') {
+      toneMap[project.id] = 'urg-done'
+      continue
+    }
+    const days = daysFromReference(project.ddl || null, referenceDate)
+    if (days === null) noDeadline.push(project)
+    else if (days < 0) overdue.push(project)
+    else upcoming.push(project)
+  }
+
+  overdue.sort(compareProjectDeadline).forEach((project) => {
     toneMap[project.id] = 'focus-overdue'
   })
-  upcomingProjects.forEach((project, index) => {
+  upcoming.sort(compareProjectDeadline).forEach((project, index) => {
     toneMap[project.id] = getFocusToneByIndex(index)
   })
-  noDeadlineProjects.forEach((project) => {
+  noDeadline.sort(compareProjectDeadline).forEach((project) => {
     toneMap[project.id] = 'focus-neutral'
   })
-  projects
-    .filter((project) => project.status === 'completed' || project.status === 'cancelled')
-    .forEach((project) => {
-      toneMap[project.id] = 'urg-done'
-    })
 
   return toneMap
 }

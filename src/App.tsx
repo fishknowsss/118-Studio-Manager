@@ -10,14 +10,14 @@ import { Dashboard } from './views/Dashboard'
 import { Repository } from './views/Repository'
 import { Graph } from './views/Graph'
 import { Tools } from './views/Tools'
-import { Settings }  from './views/Settings'
+import { Settings } from './views/Settings'
 
 const VIEWS: Record<string, React.ComponentType> = {
   dashboard: Dashboard,
   repository: Repository,
   graph: Graph,
   tools: Tools,
-  settings:  Settings,
+  settings: Settings,
 }
 
 const LEGACY_VIEW_ALIASES: Record<string, string> = {
