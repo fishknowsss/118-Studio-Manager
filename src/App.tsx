@@ -83,7 +83,7 @@ export default function App() {
             <div id="app" className="app-shell">
               <nav className="sidebar">
                 <div className="sidebar-brand">
-                  <span className="brand-num">118</span>
+                  <img src="/favicon.svg" className="brand-icon" alt="" />
                   <span className="brand-sub">Studio</span>
                 </div>
 

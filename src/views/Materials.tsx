@@ -304,7 +304,10 @@ export function Materials() {
 
   return (
     <div className="view-materials fade-in">
-      {/* ── 统一顶栏：两列同行，确保对齐 ───────────────── */}
+      <div className="view-header">
+        <h1 className="view-title">资料</h1>
+      </div>
+      {/* ── 分区子栏：甲方要求 / 账号密码 ───────────────── */}
       <div className="mat-topbar">
         <div className="mat-col-head">
           <div className="mat-col-identity">
