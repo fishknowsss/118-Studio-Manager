@@ -3,6 +3,7 @@ import { DashboardHeader } from '../features/dashboard/DashboardHeader'
 import { DashboardMiniCalendar } from '../features/dashboard/DashboardMiniCalendar'
 import { FocusPrimaryCard } from '../features/dashboard/FocusPrimaryCard'
 import { FocusSecondaryCards } from '../features/dashboard/FocusSecondaryCards'
+import { LeaveDialog } from '../features/dashboard/LeaveDialog'
 import { PeopleAssignmentPanel } from '../features/dashboard/PeopleAssignmentPanel'
 import { PersonDetailPanel } from '../features/dashboard/PersonDetailPanel'
 import { ProjectDetailPanel } from '../features/dashboard/ProjectDetailPanel'
@@ -31,7 +32,6 @@ import { Tasks } from './Tasks'
 import { People } from './People'
 import { Calendar } from './Calendar'
 import { Projects } from './Projects'
-
 type Origin = { ox: number; oy: number }
 type ExpandedPanel =
   | ({ type: 'tasks' }    & Origin)
@@ -69,6 +69,7 @@ export function Dashboard() {
   const [editingTask, setEditingTask] = useState<LegacyTask | null | undefined>(undefined)
   const [searchQuery, setSearchQuery] = useState('')
   const [dateObj, setDateObj] = useState(() => new Date())
+  const [leaveDialogDate, setLeaveDialogDate] = useState<string | null>(null)
   const todayStr = useMemo(() => formatLocalDateKey(dateObj), [dateObj])
 
   useEffect(() => {
@@ -91,7 +92,15 @@ export function Dashboard() {
   })), [entityMaps.peopleById, entityMaps.projectsById, taskPool])
   const eventMap = useMemo(() => buildProjectEventSummaryMap(projects), [projects])
   const headerModel = useMemo(() => buildDashboardHeaderModel(dateObj), [dateObj])
-  const calendarModel = useMemo(() => buildDashboardMiniCalendarModel(calDate, eventMap, todayStr), [calDate, eventMap, todayStr])
+
+  const leaveDates = useMemo(
+    () => new Set(store.leaveRecords.map((r) => r.date)),
+    [store.leaveRecords],
+  )
+  const calendarModel = useMemo(
+    () => buildDashboardMiniCalendarModel(calDate, eventMap, todayStr, leaveDates),
+    [calDate, eventMap, todayStr, leaveDates],
+  )
 
   const focusProj = topProjects[0] as LegacyProject | undefined
   const focusData = useMemo(() => getDashboardFocusData(focusProj, tasks, todayStr), [focusProj, tasks, todayStr])
@@ -163,6 +172,24 @@ export function Dashboard() {
     if (!personId) return
     event.preventDefault()
     setDropOverTaskId(taskId)
+  }
+
+  const handleDropPersonToDate = (personId: string, dateKey: string) => {
+    // 检查该人员当天是否已有请假记录，避免重复
+    const exists = store.leaveRecords.some(
+      (r) => r.personId === personId && r.date === dateKey,
+    )
+    if (!exists) {
+      void store.saveLeaveRecord({ id: crypto.randomUUID(), personId, date: dateKey, reason: '' })
+    }
+    // 拖入时打开请假弹窗
+    setLeaveDialogDate(dateKey)
+    clearDragState()
+  }
+
+  const handleOpenDate = (dateKey: string, ox: number, oy: number) => {
+    // 统一走 planner，请假信息在 planner 内展示
+    openPlanner(dateKey, ox, oy)
   }
 
   const handleSearchSelect = (item: (typeof searchResults)[number]) => {
@@ -251,10 +278,12 @@ export function Dashboard() {
           people={activePersonCards}
         />
         <DashboardMiniCalendar
+          draggingPersonId={draggingPersonId}
           model={calendarModel}
+          onDropPersonToDate={handleDropPersonToDate}
           onExpand={(ox, oy) => setExpandedPanel({ type: 'calendar', ox, oy })}
           onNextMonth={() => setCalDate((prev) => new Date(prev.getFullYear(), prev.getMonth() + 1, 1))}
-          onOpenDate={(dateKey, ox, oy) => openPlanner(dateKey, ox, oy)}
+          onOpenDate={handleOpenDate}
           onPrevMonth={() => setCalDate((prev) => new Date(prev.getFullYear(), prev.getMonth() - 1, 1))}
         />
       </div>
@@ -286,6 +315,24 @@ export function Dashboard() {
           people={people}
           projects={projects}
           onClose={() => setEditingTask(undefined)}
+        />
+      ) : null}
+
+      {leaveDialogDate ? (
+        <LeaveDialog
+          date={leaveDialogDate}
+          leaveRecords={store.leaveRecords.filter((r) => r.date === leaveDialogDate)}
+          peopleById={entityMaps.peopleById}
+          onClose={() => setLeaveDialogDate(null)}
+          onSave={(id, reason) => {
+            const record = store.leaveRecords.find((r) => r.id === id)
+            if (record) void store.saveLeaveRecord({ ...record, reason })
+          }}
+          onDelete={(id) => {
+            void store.deleteLeaveRecord(id)
+            const remaining = store.leaveRecords.filter((r) => r.date === leaveDialogDate && r.id !== id)
+            if (remaining.length === 0) setLeaveDialogDate(null)
+          }}
         />
       ) : null}
     </div>

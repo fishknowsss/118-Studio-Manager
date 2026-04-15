@@ -71,6 +71,13 @@ export type LegacyLog = {
   ts: string
 }
 
+export type LeaveRecord = {
+  id: string
+  personId: string
+  date: string   // 'YYYY-MM-DD'
+  reason?: string
+}
+
 const listeners: Set<() => void> = new Set()
 
 function emitStoreUpdated(detail: Record<string, unknown> = {}) {
@@ -84,6 +91,7 @@ export const store = {
   tasks: [] as LegacyTask[],
   people: [] as LegacyPerson[],
   logs: [] as LegacyLog[],
+  leaveRecords: [] as LeaveRecord[],
   version: 0,
 
   subscribe(listener: () => void) {
@@ -96,11 +104,12 @@ export const store = {
   },
 
   async loadAll() {
-    const [projects, rawTasks, people, logs] = await Promise.all([
+    const [projects, rawTasks, people, logs, leaveRecords] = await Promise.all([
       db.getAll('projects') as Promise<LegacyProject[]>,
       db.getAll('tasks') as Promise<LegacyTask[]>,
       db.getAll('people') as Promise<LegacyPerson[]>,
       db.getAll('logs') as Promise<LegacyLog[]>,
+      db.getAll('leaveRecords') as Promise<LeaveRecord[]>,
     ])
     // 迁移旧字段：assigneeId → assigneeIds
     this.projects = projects
@@ -109,6 +118,7 @@ export const store = {
     )
     this.people = people
     this.logs = logs
+    this.leaveRecords = leaveRecords
     emitStoreUpdated()
   },
 
@@ -225,5 +235,28 @@ export const store = {
     }
     this.logs = newLogs
     emitStoreUpdated()
+  },
+
+  async saveLeaveRecord(record: LeaveRecord) {
+    await db.put('leaveRecords', record)
+    const index = this.leaveRecords.findIndex((r) => r.id === record.id)
+    if (index >= 0) {
+      const next = [...this.leaveRecords]
+      next[index] = record
+      this.leaveRecords = next
+    } else {
+      this.leaveRecords = [...this.leaveRecords, record]
+    }
+    emitStoreUpdated({ type: 'leaveRecord', action: 'save', id: record.id })
+  },
+
+  async deleteLeaveRecord(id: string) {
+    await db.delete('leaveRecords', id)
+    this.leaveRecords = this.leaveRecords.filter((r) => r.id !== id)
+    emitStoreUpdated({ type: 'leaveRecord', action: 'delete', id })
+  },
+
+  leaveRecordsForDate(date: string) {
+    return this.leaveRecords.filter((r) => r.date === date)
   },
 }

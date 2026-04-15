@@ -1,7 +1,7 @@
 import { buildBackupPayload, normalizeImportedBackup, type BackupPayload } from './utils'
 
 const DB_NAME = 'studio118db'
-const DB_VERSION = 2
+const DB_VERSION = 3
 
 let dbInstance: IDBDatabase | null = null
 
@@ -42,6 +42,13 @@ export async function openDB() {
         if (tasksStore.indexNames.contains('assigneeId')) {
           tasksStore.deleteIndex('assigneeId')
         }
+      }
+
+      if (oldVersion < 3) {
+        // v2/v1/v0 → v3：新增 leaveRecords 存储
+        const leaveStore = db.createObjectStore('leaveRecords', { keyPath: 'id' })
+        leaveStore.createIndex('date', 'date', { unique: false })
+        leaveStore.createIndex('personId', 'personId', { unique: false })
       }
     }
 
@@ -91,7 +98,7 @@ export const db = {
     })
   },
   async clearAll() {
-    const names = ['projects', 'tasks', 'people', 'logs', 'settings']
+    const names = ['projects', 'tasks', 'people', 'logs', 'settings', 'leaveRecords']
     await this.runTransaction(names, 'readwrite', (stores) => {
       for (const name of names) stores[name].clear()
     })

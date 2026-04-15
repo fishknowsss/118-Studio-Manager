@@ -1,18 +1,46 @@
+import { useState, type DragEvent } from 'react'
 import type { DashboardMiniCalendarModel } from '../../legacy/selectors'
 
 export function DashboardMiniCalendar({
+  draggingPersonId,
   model,
+  onDropPersonToDate,
   onExpand,
   onNextMonth,
   onOpenDate,
   onPrevMonth,
 }: {
+  draggingPersonId: string | null
   model: DashboardMiniCalendarModel
+  onDropPersonToDate: (personId: string, dateKey: string) => void
   onExpand: (x: number, y: number) => void
   onNextMonth: () => void
   onOpenDate: (dateKey: string, ox: number, oy: number) => void
   onPrevMonth: () => void
 }) {
+  const [dragOverDate, setDragOverDate] = useState<string | null>(null)
+
+  const handleDragOver = (e: DragEvent<HTMLDivElement>, dateKey: string) => {
+    if (!draggingPersonId && !e.dataTransfer.types.includes('application/x-118studio-person-id')) return
+    e.preventDefault()
+    setDragOverDate(dateKey)
+  }
+
+  const handleDragLeave = (e: DragEvent<HTMLDivElement>) => {
+    // only clear if truly leaving the cell (not entering a child)
+    if (!e.currentTarget.contains(e.relatedTarget as Node)) {
+      setDragOverDate(null)
+    }
+  }
+
+  const handleDrop = (e: DragEvent<HTMLDivElement>, dateKey: string) => {
+    e.preventDefault()
+    setDragOverDate(null)
+    const personId = draggingPersonId || e.dataTransfer.getData('application/x-118studio-person-id')
+    if (!personId) return
+    onDropPersonToDate(personId, dateKey)
+  }
+
   return (
     <div className="dash-right">
       <div className="mini-cal-header">
@@ -45,11 +73,20 @@ export function DashboardMiniCalendar({
             day.markerKind === 'ddl' ? 'has-ddl' : '',
             day.markerKind === 'milestone' ? 'has-milestone' : '',
             day.markerTone || '',
+            draggingPersonId && dragOverDate === day.dateKey ? 'leave-drop-target' : '',
           ].filter(Boolean).join(' ')
 
           return (
-            <div key={day.dateKey} className={classes} onClick={(e) => { const r = e.currentTarget.getBoundingClientRect(); onOpenDate(day.dateKey, r.left + r.width / 2, r.top + r.height / 2) }}>
+            <div
+              key={day.dateKey}
+              className={classes}
+              onClick={(e) => { const r = e.currentTarget.getBoundingClientRect(); onOpenDate(day.dateKey, r.left + r.width / 2, r.top + r.height / 2) }}
+              onDragOver={(e) => handleDragOver(e, day.dateKey)}
+              onDragLeave={handleDragLeave}
+              onDrop={(e) => handleDrop(e, day.dateKey)}
+            >
               {day.dayOfMonth}
+              {day.hasLeave && <span className="mini-cal-leave-badge">假</span>}
             </div>
           )
         })}

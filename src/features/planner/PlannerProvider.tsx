@@ -6,6 +6,7 @@ import { buildProjectDeadlineToneMap, buildProjectEventSummaryMap, getActivePeop
 import { type LegacyProject, getTaskAssigneeIds } from '../../legacy/store'
 import { ddlLabel, formatDateFull, formatDate, shiftLocalDateKey, parseLocalDateKey, today, STATUS_LABELS } from '../../legacy/utils'
 import { useLegacyStoreSnapshot } from '../../legacy/useLegacyStore'
+import { LeaveDialog } from '../dashboard/LeaveDialog'
 
 type PlannerContextValue = {
   closePlanner: () => void
@@ -63,6 +64,7 @@ function PlannerDrawer({
   onClose: () => void
 }) {
   const storeSnapshot = useLegacyStoreSnapshot()
+  const [leaveDialogOpen, setLeaveDialogOpen] = useState(false)
 
   const todayStr = today()
   const dateLabel = formatDateFull(dateStr)
@@ -219,6 +221,51 @@ function PlannerDrawer({
             ))
           )}
         </div>
+
+        {/* 请假信息 */}
+        {(() => {
+          const leaveRecords = storeSnapshot.leaveRecords.filter((r) => r.date === dateStr)
+          if (leaveRecords.length === 0) return null
+          const peopleById = Object.fromEntries(storeSnapshot.people.map((p) => [p.id, p]))
+          return (
+            <div className="planner-section">
+              <div className="planner-section-title planner-leave-title">
+                <span className="planner-leave-badge-inline">假</span>
+                请假成员
+                <button
+                  className="planner-leave-edit-btn"
+                  onClick={() => setLeaveDialogOpen(true)}
+                  title="编辑请假记录"
+                >
+                  编辑
+                </button>
+              </div>
+              {leaveRecords.map((r) => (
+                <div key={r.id} className="planner-leave-row">
+                  <span className="planner-leave-name">{peopleById[r.personId]?.name ?? '未知成员'}</span>
+                  {r.reason ? <span className="planner-leave-reason">{r.reason}</span> : null}
+                </div>
+              ))}
+              {leaveDialogOpen ? (
+                <LeaveDialog
+                  date={dateStr}
+                  leaveRecords={leaveRecords}
+                  peopleById={peopleById}
+                  onClose={() => setLeaveDialogOpen(false)}
+                  onSave={(id, reason) => {
+                    const record = storeSnapshot.leaveRecords.find((r) => r.id === id)
+                    if (record) void storeSnapshot.saveLeaveRecord({ ...record, reason })
+                  }}
+                  onDelete={(id) => {
+                    void storeSnapshot.deleteLeaveRecord(id)
+                    const remaining = storeSnapshot.leaveRecords.filter((r) => r.date === dateStr && r.id !== id)
+                    if (remaining.length === 0) setLeaveDialogOpen(false)
+                  }}
+                />
+              ) : null}
+            </div>
+          )
+        })()}
       </div>
     </ExpandPanel>
   )

@@ -1121,6 +1121,134 @@ svg { display: block; flex-shrink: 0; }
 .mini-cal-day.has-milestone.focus-neutral::after { border-color: var(--c-text-3); }
 .mini-cal-day.has-milestone.urg-done::after { border-color: var(--c-done); }
 
+/* 请假标记 */
+.mini-cal-day {
+  overflow: visible;
+}
+.mini-cal-leave-badge {
+  position: absolute;
+  bottom: 2px;
+  left: 2px;
+  font-size: 8px;
+  font-weight: 700;
+  line-height: 1;
+  color: var(--c-rose, #f43f5e);
+  pointer-events: none;
+  z-index: 2;
+}
+
+/* 人员拖入日历格高亮 */
+.mini-cal-day.leave-drop-target {
+  background: rgba(244, 63, 94, .12);
+  box-shadow: 0 0 0 1.5px rgba(244, 63, 94, .5);
+  color: var(--c-rose, #f43f5e);
+  transform: scale(1.12);
+  z-index: 2;
+}
+
+/* 请假弹窗 */
+.leave-dialog-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, .35);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2000;
+  backdrop-filter: blur(2px);
+}
+.leave-dialog {
+  background: var(--c-surface-2, #fff);
+  border-radius: var(--r-lg, 12px);
+  box-shadow: 0 8px 40px rgba(0,0,0,.22);
+  min-width: 320px;
+  max-width: 420px;
+  width: 90%;
+  padding: 20px 22px 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.leave-dialog-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.leave-dialog-title {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--c-text-1);
+}
+.leave-dialog-close {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 14px;
+  color: var(--c-text-3);
+  padding: 2px 6px;
+  border-radius: var(--r-sm, 6px);
+  transition: background .12s;
+}
+.leave-dialog-close:hover {
+  background: var(--c-surface-3);
+  color: var(--c-text-1);
+}
+.leave-dialog-empty {
+  font-size: 13px;
+  color: var(--c-text-3);
+  text-align: center;
+  padding: 12px 0;
+}
+.leave-dialog-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.leave-dialog-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.leave-dialog-name {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--c-text-1);
+  min-width: 56px;
+  flex-shrink: 0;
+}
+.leave-dialog-reason {
+  flex: 1;
+  border: 1px solid var(--c-border, #e5e7eb);
+  border-radius: var(--r-sm, 6px);
+  padding: 5px 9px;
+  font-size: 12px;
+  color: var(--c-text-1);
+  background: var(--c-surface-1, #f9fafb);
+  outline: none;
+  transition: border-color .14s;
+}
+.leave-dialog-reason:focus {
+  border-color: var(--c-primary, #4166f5);
+}
+.leave-dialog-delete {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 12px;
+  color: var(--c-text-3);
+  padding: 3px 6px;
+  border-radius: var(--r-sm, 6px);
+  flex-shrink: 0;
+  transition: background .12s, color .12s;
+}
+.leave-dialog-delete:hover {
+  background: rgba(244, 63, 94, .1);
+  color: var(--c-rose, #f43f5e);
+}
+
 .cal-legend {
   margin-top: 10px;
   display: flex;
@@ -1545,6 +1673,7 @@ svg { display: block; flex-shrink: 0; }
   color: var(--c-text);
   display: -webkit-box;
   -webkit-line-clamp: 4;
+  line-clamp: 4;
   -webkit-box-orient: vertical;
   overflow: hidden;
 }
@@ -3443,6 +3572,56 @@ select.form-input { cursor: pointer; }
   text-transform: uppercase;
   letter-spacing: .07em;
   margin-bottom: 8px;
+}
+
+/* 请假区块标题 */
+.planner-leave-title {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+.planner-leave-badge-inline {
+  font-size: 10px;
+  font-weight: 800;
+  color: var(--c-rose, #f43f5e);
+  line-height: 1;
+}
+.planner-leave-edit-btn {
+  margin-left: auto;
+  background: none;
+  border: 1px solid var(--c-border, #e5e7eb);
+  border-radius: var(--r-sm, 6px);
+  font-size: 10px;
+  color: var(--c-text-3);
+  padding: 2px 7px;
+  cursor: pointer;
+  transition: background .12s, color .12s;
+  text-transform: none;
+  letter-spacing: 0;
+  font-weight: 500;
+}
+.planner-leave-edit-btn:hover {
+  background: var(--c-surface-3);
+  color: var(--c-text-1);
+}
+.planner-leave-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 10px;
+  border-radius: var(--r-md);
+  background: rgba(244, 63, 94, .06);
+  border: 1px solid rgba(244, 63, 94, .15);
+  margin-bottom: 4px;
+}
+.planner-leave-name {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--c-text-1);
+}
+.planner-leave-reason {
+  font-size: 12px;
+  color: var(--c-text-3);
 }
 .planner-task-row {
   display: flex;

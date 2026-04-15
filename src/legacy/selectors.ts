@@ -77,6 +77,7 @@ export type DashboardMiniCalendarDay = {
   dateKey: string
   dayOfMonth: number
   hasEvents: boolean
+  hasLeave: boolean
   hasUrgent: boolean
   isOtherMonth: boolean
   isToday: boolean
@@ -377,6 +378,7 @@ export function buildDashboardMiniCalendarModel(
   currentMonth: Date,
   eventMap: Record<string, ProjectEventSummary>,
   todayStr: string,
+  leaveDates: Set<string> = new Set(),
 ): DashboardMiniCalendarModel {
   const days = getCalendarDays(currentMonth.getFullYear(), currentMonth.getMonth()).map(({ date, otherMonth }) => {
     const dateKey = coerceToLocalDateKey(date) || shiftLocalDateKey(date, 0)
@@ -386,6 +388,7 @@ export function buildDashboardMiniCalendarModel(
       dateKey,
       dayOfMonth: date.getDate(),
       hasEvents: Boolean(eventSummary?.hasDdl || eventSummary?.hasMs),
+      hasLeave: leaveDates.has(dateKey),
       hasUrgent: Boolean(eventSummary?.urgent),
       isOtherMonth: otherMonth,
       isToday: dateKey === todayStr,
