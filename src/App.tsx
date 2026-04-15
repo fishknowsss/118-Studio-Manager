@@ -1,11 +1,9 @@
-import React, { useEffect, useMemo, useState } from 'react'
+import React, { useEffect, useState } from 'react'
 import { ConfirmProvider } from './components/feedback/ConfirmProvider'
 import { ToastProvider } from './components/feedback/ToastProvider'
 import { PlannerProvider } from './features/planner/PlannerProvider'
 import { CloudSyncProvider } from './features/sync/SyncProvider'
 import { initializeAppData } from './legacy/bootstrap'
-import { daysUntil } from './legacy/utils'
-import { useLegacyStoreSnapshot } from './legacy/useLegacyStore'
 import { Dashboard } from './views/Dashboard'
 import { Materials } from './views/Materials'
 import { Graph } from './views/Graph'
@@ -34,7 +32,6 @@ function getHashView() {
 }
 
 export default function App() {
-  const store = useLegacyStoreSnapshot()
   const [view, setView] = useState(getHashView)
   const [theme, setTheme] = useState(() => localStorage.getItem('theme') || 'light')
   const [ready, setReady] = useState(false)
@@ -63,12 +60,6 @@ export default function App() {
     window.addEventListener('hashchange', onHash)
     return () => window.removeEventListener('hashchange', onHash)
   }, [])
-
-  const urgentCount = useMemo(() => store.projects.filter(p => {
-    if (p.status === 'completed' || p.status === 'cancelled') return false
-    const days = daysUntil(p.ddl)
-    return days !== null && days <= 3
-  }).length, [store.projects])
 
   if (initError) {
     return (
