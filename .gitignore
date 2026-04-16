@@ -25,3 +25,23 @@ dist/
 
 # Logs
 *.log
+
+# TypeScript build cache
+*.tsbuildinfo
+tsconfig.*.tsbuildinfo
+
+# Vitest / test coverage
+coverage/
+.nyc_output/
+
+# Wrangler (Cloudflare Worker dev artifacts)
+cloudflare/sync-worker/.wrangler/
+wrangler.lock
+
+# macOS quarantine / system logs
+*.command.log
+
+# Temporary files
+*.tmp
+*.bak
+*.swp

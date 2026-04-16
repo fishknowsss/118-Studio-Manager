@@ -11,7 +11,17 @@ export type BackupPayload = {
   people: BackupRecord[]
   logs: BackupRecord[]
   settings: BackupRecord[]
+  leaveRecords: BackupRecord[]
 }
+
+/**
+ * 所有需要备份/同步的 IndexedDB 集合名（与 BackupPayload 的字段一一对应）。
+ * 新增 IndexedDB store 时，只需在此数组和 BackupPayload 类型中各加一行，
+ * clearAll / exportAll / importAll / buildBackupPayload / normalizeImportedBackup
+ * 都会自动包含。
+ */
+export const BACKUP_COLLECTION_NAMES = ['projects', 'tasks', 'people', 'logs', 'settings', 'leaveRecords'] as const
+export type BackupCollectionName = (typeof BACKUP_COLLECTION_NAMES)[number]
 
 export const BACKUP_SCHEMA_VERSION = 3
 
@@ -223,6 +233,7 @@ export function buildBackupPayload(data: Partial<BackupPayload>): BackupPayload 
     people: normalizeBackupCollection(data.people),
     logs: normalizeBackupCollection(data.logs),
     settings: normalizeBackupCollection(data.settings),
+    leaveRecords: normalizeBackupCollection(data.leaveRecords),
   }
 }
 
@@ -232,22 +243,22 @@ export function normalizeImportedBackup(data: unknown): BackupPayload {
   }
 
   const payload = data as Partial<BackupPayload>
-  const hasKnownCollection = ['projects', 'tasks', 'people', 'logs', 'settings'].some((key) =>
-    Array.isArray(payload[key as keyof BackupPayload]),
+  const hasKnownCollection = BACKUP_COLLECTION_NAMES.some((key) =>
+    Array.isArray(payload[key]),
   )
 
   if (!hasKnownCollection) {
     throw new Error('备份文件缺少可识别的数据表')
   }
 
+  const collections = Object.fromEntries(
+    BACKUP_COLLECTION_NAMES.map((name) => [name, payload[name]]),
+  ) as Partial<BackupPayload>
+
   return buildBackupPayload({
     schemaVersion: typeof payload.schemaVersion === 'number' ? payload.schemaVersion : BACKUP_SCHEMA_VERSION,
     exportedAt: typeof payload.exportedAt === 'string' ? payload.exportedAt : now(),
-    projects: payload.projects,
-    tasks: payload.tasks,
-    people: payload.people,
-    logs: payload.logs,
-    settings: payload.settings,
+    ...collections,
   })
 }
 

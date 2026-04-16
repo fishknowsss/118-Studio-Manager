@@ -1,4 +1,4 @@
-import { buildBackupPayload, normalizeImportedBackup, type BackupPayload } from './utils'
+import { buildBackupPayload, BACKUP_COLLECTION_NAMES, normalizeImportedBackup, type BackupPayload } from './utils'
 
 const DB_NAME = 'studio118db'
 const DB_VERSION = 3
@@ -98,37 +98,26 @@ export const db = {
     })
   },
   async clearAll() {
-    const names = ['projects', 'tasks', 'people', 'logs', 'settings', 'leaveRecords']
+    const names = [...BACKUP_COLLECTION_NAMES]
     await this.runTransaction(names, 'readwrite', (stores) => {
       for (const name of names) stores[name].clear()
     })
   },
   async exportAll() {
-    const [projects, tasks, people, logs, settings] = await Promise.all([
-      this.getAll('projects'),
-      this.getAll('tasks'),
-      this.getAll('people'),
-      this.getAll('logs'),
-      this.getAll('settings'),
-    ])
-    return buildBackupPayload({
-      projects: projects as BackupPayload['projects'],
-      tasks: tasks as BackupPayload['tasks'],
-      people: people as BackupPayload['people'],
-      logs: logs as BackupPayload['logs'],
-      settings: settings as BackupPayload['settings'],
-    })
+    const entries = await Promise.all(
+      BACKUP_COLLECTION_NAMES.map(async (name) => [name, await this.getAll(name)] as const),
+    )
+    const data = Object.fromEntries(entries) as Record<string, BackupPayload[keyof BackupPayload]>
+    return buildBackupPayload(data as Partial<BackupPayload>)
   },
   async importAll(data: unknown) {
     const backup = normalizeImportedBackup(data)
-    const names = ['projects', 'tasks', 'people', 'logs', 'settings']
+    const names = [...BACKUP_COLLECTION_NAMES]
     await this.runTransaction(names, 'readwrite', (stores) => {
       for (const name of names) stores[name].clear()
-      for (const project of backup.projects) stores.projects.put(project)
-      for (const task of backup.tasks) stores.tasks.put(task)
-      for (const person of backup.people) stores.people.put(person)
-      for (const log of backup.logs) stores.logs.put(log)
-      for (const setting of backup.settings) stores.settings.put(setting)
+      for (const name of names) {
+        for (const record of backup[name]) stores[name].put(record)
+      }
     })
   },
 }

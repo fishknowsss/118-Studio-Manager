@@ -1,8 +1,8 @@
 # 118 Studio Manager
 
-A local-first project collaboration tool built for 118 Studio — designed around daily focus, not dashboards bloat.
+A local-first studio management web app built for a digital media art studio — designed around daily focus, not dashboard bloat.
 
-**Live demo:** [118.fishknowsss.com](https://118.fishknowsss.com/) &nbsp;·&nbsp; **Branch:** `vc`
+All data lives in the browser's IndexedDB. Cloud sync is optional and self-hosted via Cloudflare Workers.
 
 ---
 
@@ -168,7 +168,10 @@ All data is persisted in IndexedDB under the database name `studio118db`.
 | `tasks` | Tasks: assignees, schedule, status |
 | `people` | Members: skills, active state |
 | `logs` | Operation log (last 50 entries) |
-| `settings` | Local settings |
+| `settings` | Syncable key-value settings |
+| `leaveRecords` | Member leave/absence records |
+
+All stores listed in `BACKUP_COLLECTION_NAMES` (`src/legacy/utils.ts`) are automatically included in cloud sync exports.
 
 JSON export format (schema v3):
 
@@ -180,7 +183,8 @@ JSON export format (schema v3):
   "tasks": […],
   "people": […],
   "logs": […],
-  "settings": {…}
+  "settings": […],
+  "leaveRecords": […]
 }
 ```
 
@@ -188,15 +192,14 @@ JSON export format (schema v3):
 
 ## Deployment
 
-Deployments are handled by GitHub Actions ([`.github/workflows/deploy.yml`](.github/workflows/deploy.yml)).
+The app is a static site built by Vite and can be deployed anywhere that serves static files (GitHub Pages, Cloudflare Pages, Vercel, self-hosted, etc.).
 
-| Branch | Deployed path | URL |
-|---|---|---|
-| `vc` | `/` (root) | https://118.fishknowsss.com/ |
-| `main` | `/v1/` | https://118.fishknowsss.com/v1/ |
-| `singleD` | `/singleD/` | https://118.fishknowsss.com/singleD/ |
+Deployments can be automated with GitHub Actions. The build base path is injected via the `DEPLOY_BASE` environment variable (see `vite.config.ts`), which allows serving from a subdirectory path if needed.
 
-The build base path is injected via the `DEPLOY_BASE` environment variable (see `vite.config.ts`).
+```bash
+# Example: build for a subdirectory
+DEPLOY_BASE=/studio/ npm run build
+```
 
 To enable cloud sync on GitHub Pages, add `VITE_SYNC_API_URL` as a repository Actions Variable.
 

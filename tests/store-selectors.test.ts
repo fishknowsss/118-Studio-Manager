@@ -438,6 +438,7 @@ describe('store selectors', () => {
       people: [{ id: 'person-1' }],
       logs: [{ id: 'log-1' }, { id: 'log-2' }, { id: 'log-3' }],
       settings: [{ key: 'theme', value: 'light' }],
+      leaveRecords: [{ id: 'leave-1' }],
     })
 
     expect(summary).toEqual({
@@ -446,6 +447,7 @@ describe('store selectors', () => {
       personCount: 1,
       logCount: 3,
       settingsCount: 1,
+      leaveRecordCount: 1,
     })
   })
 

@@ -38,6 +38,7 @@ describe('settings transfer state persistence', () => {
         personCount: 4,
         logCount: 8,
         settingsCount: 0,
+        leaveRecordCount: 0,
       },
     })
 
@@ -49,6 +50,7 @@ describe('settings transfer state persistence', () => {
         personCount: 4,
         logCount: 8,
         settingsCount: 0,
+        leaveRecordCount: 0,
       },
     })
   })
