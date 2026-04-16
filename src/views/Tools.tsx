@@ -83,7 +83,7 @@ const WEB_TOOLS: ToolLink[] = [
   },
   {
     title: 'SOJSON 在线工具箱',
-    desc: '中文综合在线工具集，颜色转换、时间戳、Base64、二维码等。',
+    desc: '中文综合在线工具集，含颜色转换、时间戳、Base64、二维码等常用功能。',
     url: 'https://www.sojson.com/',
   },
 ]
@@ -174,6 +174,7 @@ export function Tools() {
                 <div className="tool-card-title">{link.title}</div>
                 <div className="tool-card-desc">{link.desc}</div>
                 <div className="tool-card-footer">
+                  <span className="tool-card-action">前往</span>
                   <svg
                     className="tool-card-arrow"
                     viewBox="0 0 24 24"
@@ -195,13 +196,14 @@ export function Tools() {
         </section>
 
         <section className="tools-section">
-          <h2 className="tools-section-title">常见在线工具</h2>
+          <h2 className="tools-section-title">常用 Web 工具</h2>
           <div className="tools-grid">
             {WEB_TOOLS.map((tool) => (
               <a key={tool.title} className="tool-card" href={tool.url} target="_blank" rel="noreferrer">
                 <div className="tool-card-title">{tool.title}</div>
                 <div className="tool-card-desc">{tool.desc}</div>
                 <div className="tool-card-footer">
+                  <span className="tool-card-action">打开工具</span>
                   <svg
                     className="tool-card-arrow"
                     viewBox="0 0 24 24"
