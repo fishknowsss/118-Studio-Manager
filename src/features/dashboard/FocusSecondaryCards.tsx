@@ -1,5 +1,4 @@
 import type { DashboardFocusCard } from '../../legacy/selectors'
-import { URGENCY_TEXT } from './focusLabels'
 
 export function FocusSecondaryCards({
   cards,
@@ -21,8 +20,7 @@ export function FocusSecondaryCards({
           <div className="focus-card-ddl">{card.ddlLabel}</div>
           <div className="focus-card-name">{card.name}</div>
           <div className="focus-card-meta">
-            <span>{URGENCY_TEXT[card.urgencyKey] || '未迫近'}</span>
-            <span>{card.openTaskCount} 个任务</span>
+            {card.openTaskCount} 个未完成任务 · {card.assigneeCount > 0 ? `${card.assigneeCount} 人参与` : '暂无人员分配'}
           </div>
           {card.daysLeft !== null ? (
             <div className="focus-card-days">

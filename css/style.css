@@ -133,7 +133,7 @@
 }
 [data-theme='dark'] .focus-highlight-task-item,
 [data-theme='dark'] .focus-highlight-task-more {
-  color: rgba(148, 163, 184, 0.96);
+  color: rgba(203, 213, 225, 0.95);
 }
 
 
@@ -582,12 +582,12 @@ svg { display: block; flex-shrink: 0; }
   transition: transform .22s ease-out, box-shadow .22s ease;
 }
 .focus-highlight:hover { transform: translateY(-4px); box-shadow: var(--shadow-lg); }
-.focus-highlight.focus-overdue { background: var(--c-rose-bg); border-left-color: var(--c-rose); }
-.focus-highlight.focus-critical { background: var(--c-overdue-bg); border-left-color: var(--c-overdue); }
-.focus-highlight.focus-strong   { background: var(--c-today-bg); border-left-color: var(--c-today); }
-.focus-highlight.focus-medium   { background: var(--c-soon-bg); border-left-color: var(--c-soon); }
-.focus-highlight.focus-calm     { background: var(--c-near-bg); border-left-color: var(--c-near); }
-.focus-highlight.focus-neutral  { background: var(--c-bg); border-left-color: var(--c-border); }
+.focus-highlight.focus-overdue { background: var(--c-rose-bg); border-left-color: var(--c-rose);    --focus-accent: var(--c-rose); }
+.focus-highlight.focus-critical { background: var(--c-overdue-bg); border-left-color: var(--c-overdue); --focus-accent: var(--c-overdue); }
+.focus-highlight.focus-strong   { background: var(--c-today-bg); border-left-color: var(--c-today);   --focus-accent: var(--c-today); }
+.focus-highlight.focus-medium   { background: var(--c-soon-bg); border-left-color: var(--c-soon);    --focus-accent: var(--c-soon); }
+.focus-highlight.focus-calm     { background: var(--c-near-bg); border-left-color: var(--c-near);    --focus-accent: var(--c-near); }
+.focus-highlight.focus-neutral  { background: var(--c-bg); border-left-color: var(--c-border);       --focus-accent: var(--c-border); }
 
 .focus-highlight-name {
   font-size: 31px;
@@ -638,6 +638,19 @@ svg { display: block; flex-shrink: 0; }
 .focus-highlight.focus-neutral  .focus-highlight-ddl { color: var(--c-text-2); }
 
 
+.focus-highlight-body {
+  display: flex;
+  flex-direction: row;
+  align-items: flex-end;
+  gap: 12px;
+  min-width: 0;
+}
+.focus-highlight-left {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex-shrink: 0;
+}
 .focus-highlight-summary {
   font-size: 13px;
   font-weight: 500;
@@ -646,19 +659,29 @@ svg { display: block; flex-shrink: 0; }
 .focus-highlight-tasks {
   display: flex;
   flex-direction: column;
-  gap: 2px;
-  margin-top: 2px;
+  gap: 3px;
+  flex-shrink: 0;
+  max-width: 220px;
+  border-left: 2px solid color-mix(in srgb, var(--focus-accent, var(--c-border)) 40%, transparent);
+  padding-left: 10px;
+}
+.focus-highlight-tasks--two-cols {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  column-gap: 10px;
+  row-gap: 3px;
+  max-width: 380px;
 }
 .focus-highlight-task-item {
-  font-size: 11px;
-  color: var(--c-text-3);
+  font-size: 14px;
+  color: var(--c-text-2);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 .focus-highlight-task-more {
-  font-size: 11px;
-  color: var(--c-text-3);
+  font-size: 14px;
+  color: var(--c-text-2);
   font-weight: 600;
 }
 
@@ -673,6 +696,9 @@ svg { display: block; flex-shrink: 0; }
 }
 .focus-secondary-list:not(.focus-secondary-list--two-rows):not(.focus-secondary-list--three-cols) > .focus-card {
   height: 102px;
+}
+.focus-secondary-list:not(.focus-secondary-list--two-rows):not(.focus-secondary-list--three-cols) > .focus-card .focus-card-name {
+  font-size: 20px;
 }
 .focus-secondary-list--two-rows {
   align-content: stretch;
@@ -750,9 +776,11 @@ svg { display: block; flex-shrink: 0; }
 .focus-neutral  .focus-card-ddl { color: var(--c-text-2); }
 .focus-card-meta {
   font-size: 11px;
-  color: var(--c-text-3);
-  display: flex;
-  gap: 8px;
+  font-weight: 500;
+  color: var(--c-text-2);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 .focus-card-days {
   position: absolute;

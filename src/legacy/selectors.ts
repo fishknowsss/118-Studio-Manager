@@ -93,6 +93,7 @@ export type DashboardMiniCalendarModel = {
 }
 
 export type DashboardFocusCard = {
+  assigneeCount: number
   daysLeft: number | null
   ddlLabel: string
   id: string
@@ -697,7 +698,7 @@ export function getDashboardFocusData(
     overdueCount: projectTasks.filter((task) => task.endDate && task.endDate < todayStr && task.status !== 'done').length,
     remainingCount: openTasks.length,
     todayCount: projectTasks.filter((task) => task.scheduledDate === todayStr && task.status !== 'done').length,
-    topTasks: openTasks.slice(0, 3).map((task) => task.title || '未命名任务'),
+    topTasks: openTasks.slice(0, 8).map((task) => task.title || '未命名任务'),
     uc: urgencyClass(project.ddl, project.status || 'active'),
   }
 }
@@ -713,13 +714,15 @@ export function buildDashboardFocusCards(
 
   return topProjects.map((project) => {
     const projectTasks = tasks.filter((task) => task.projectId === project.id)
+    const openTasks = projectTasks.filter((task) => task.status !== 'done')
     const statusKey = project.status || 'active'
     return {
+      assigneeCount: new Set(openTasks.flatMap((task) => getTaskAssigneeIds(task))).size,
       daysLeft: (statusKey === 'active' || statusKey === 'paused') ? (daysUntil(project.ddl || null) ?? null) : null,
       ddlLabel: ddlLabel(project.ddl || null, statusKey),
       id: project.id,
       name: project.name || '未命名项目',
-      openTaskCount: projectTasks.filter((task) => task.status !== 'done').length,
+      openTaskCount: openTasks.length,
       urgencyKey: toneMap[project.id] || 'focus-neutral',
     } satisfies DashboardFocusCard
   })
