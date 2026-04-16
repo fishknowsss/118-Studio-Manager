@@ -6,26 +6,37 @@ All data lives in the browser's IndexedDB. Cloud sync is optional and self-hoste
 
 ---
 
-## Screenshots
+## 界面预览
 
-| Dashboard | Projects |
+### 首页
+
+| 浅色模式 | 深色模式 |
 |---|---|
-| ![Dashboard](docs/screenshots/vc-dashboard.png) | ![Projects](docs/screenshots/vc-projects.png) |
+| ![首页浅色模式](docs/screenshots/vc-dashboard-light.png) | ![首页深色模式](docs/screenshots/vc-dashboard-dark.png) |
 
-| Tasks | People |
+### 资料
+
+| 浅色模式 | 深色模式 |
 |---|---|
-| ![Tasks](docs/screenshots/vc-tasks.png) | ![People](docs/screenshots/vc-people.png) |
+| ![资料浅色模式](docs/screenshots/vc-repository-light.png) | ![资料深色模式](docs/screenshots/vc-repository-dark.png) |
 
-| Calendar | Settings |
+### 图谱
+
+| 浅色模式 | 深色模式 |
 |---|---|
-| ![Calendar](docs/screenshots/vc-calendar.png) | ![Settings](docs/screenshots/vc-settings.png) |
+| ![图谱浅色模式](docs/screenshots/vc-graph-light.png) | ![图谱深色模式](docs/screenshots/vc-graph-dark.png) |
 
-<details>
-<summary>Dark mode</summary>
+### 工具
 
-![Dashboard Dark](docs/screenshots/vc-dashboard-dark.png)
+| 浅色模式 | 深色模式 |
+|---|---|
+| ![工具浅色模式](docs/screenshots/vc-tools-light.png) | ![工具深色模式](docs/screenshots/vc-tools-dark.png) |
 
-</details>
+### 设置
+
+| 浅色模式 | 深色模式 |
+|---|---|
+| ![设置浅色模式](docs/screenshots/vc-settings-light.png) | ![设置深色模式](docs/screenshots/vc-settings-dark.png) |
 
 ---
 
