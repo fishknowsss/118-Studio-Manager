@@ -1,4 +1,5 @@
-import { useMemo, useState, useSyncExternalStore } from 'react'
+import { useMemo, useRef, useState, useEffect, useSyncExternalStore } from 'react'
+import { createPortal } from 'react-dom'
 import { useConfirm } from '../components/feedback/ConfirmProvider'
 import { useToast } from '../components/feedback/ToastProvider'
 import { ClientBriefDialog } from '../features/materials/ClientBriefDialog'
@@ -10,10 +11,10 @@ import {
   readAccounts,
   writeAccounts,
   subscribeAccounts,
-  ACCOUNT_CATEGORIES,
-  ACCOUNT_CATEGORY_LABELS,
+  readFolders,
+  writeFolders,
+  subscribeFolders,
   type ClientBrief,
-  type AccountCategory,
   type AccountCredential,
 } from '../features/materials/materialsState'
 import { useLegacyStoreSnapshot } from '../legacy/useLegacyStore'
@@ -28,8 +29,57 @@ async function copyToClipboard(text: string): Promise<boolean> {
   }
 }
 
-// ─── 账号卡片 ──────────────────────────────────────────
-function AccountCard({
+// ─── 平台色彩映射（确定性哈希）────────────────────────
+const PLATFORM_COLORS = [
+  '#6366f1', '#8b5cf6', '#ec4899', '#f59e0b',
+  '#10b981', '#3b82f6', '#ef4444', '#14b8a6',
+  '#f97316', '#06b6d4',
+]
+
+function getPlatformColor(name: string): string {
+  let h = 0
+  for (let i = 0; i < name.length; i++) h = (h * 31 + name.charCodeAt(i)) & 0xfffffff
+  return PLATFORM_COLORS[h % PLATFORM_COLORS.length]
+}
+
+// ─── 文件夹图标 SVG ────────────────────────────────────
+function FolderIcon({ color, hasContent }: { color: string; hasContent: boolean }) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" width="40" height="40" aria-hidden="true">
+      <path
+        d="M4 20h16a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.93a2 2 0 0 1-1.66-.9l-.82-1.2A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13c0 1.1.9 2 2 2z"
+        fill={color}
+        fillOpacity="0.15"
+        stroke={color}
+        strokeWidth="1.5"
+        strokeLinejoin="round"
+      />
+      {hasContent && (
+        <>
+          <line x1="7" y1="12.5" x2="17" y2="12.5" stroke={color} strokeOpacity="0.4" strokeWidth="1.5" strokeLinecap="round" />
+          <line x1="7" y1="16" x2="13" y2="16" stroke={color} strokeOpacity="0.4" strokeWidth="1.5" strokeLinecap="round" />
+        </>
+      )}
+    </svg>
+  )
+}
+
+// ─── 复制图标 SVG ──────────────────────────────────────
+const CopyIcon = () => (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" width="12" height="12" aria-hidden="true">
+    <rect x="9" y="9" width="13" height="13" rx="2" />
+    <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
+  </svg>
+)
+
+const CheckIcon = () => (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" width="12" height="12" aria-hidden="true">
+    <polyline points="20 6 9 17 4 12" />
+  </svg>
+)
+
+// ─── 账号条目（密码直显，整行点击复制）────────────────
+function AccountEntry({
   account,
   onEdit,
   onDelete,
@@ -38,96 +88,266 @@ function AccountCard({
   onEdit: () => void
   onDelete: () => void
 }) {
-  const [showPwd, setShowPwd] = useState(false)
+  const [flash, setFlash] = useState<'account' | 'password' | null>(null)
   const { toast } = useToast()
 
-  const copy = async (text: string, label: string) => {
+  const copy = async (text: string, field: 'account' | 'password', label: string) => {
     const ok = await copyToClipboard(text)
+    if (ok) {
+      setFlash(field)
+      setTimeout(() => setFlash(null), 1200)
+    }
     toast(ok ? `${label}已复制` : '复制失败，请手动选择', ok ? 'success' : 'error')
   }
 
   return (
-    <div className="acc-card">
-      <div className="acc-card-head">
-        <div className="acc-card-platform">
-          <span className="acc-platform-name">{account.platform}</span>
-          <span className={`acc-cat-badge acc-cat-${account.category}`}>
-            {ACCOUNT_CATEGORY_LABELS[account.category]}
-          </span>
-        </div>
-        <div className="acc-card-actions">
-          <button className="btn btn-xs btn-secondary" type="button" onClick={onEdit}>编辑</button>
-          <button className="btn btn-xs btn-danger" type="button" onClick={onDelete}>删除</button>
-        </div>
-      </div>
-
+    <div className="acc-entry">
       {account.url ? (
-        <a className="acc-url" href={account.url} target="_blank" rel="noreferrer">
-          {account.url}
+        <a className="acc-entry-url" href={account.url} target="_blank" rel="noreferrer">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" width="11" height="11" aria-hidden="true" style={{ flexShrink: 0 }}>
+            <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
+            <polyline points="15 3 21 3 21 9" />
+            <line x1="10" y1="14" x2="21" y2="3" />
+          </svg>
+          <span>{account.url}</span>
         </a>
       ) : null}
 
-      <div className="acc-field-row">
-        <span className="acc-field-label">账号</span>
-        <span className="acc-field-value">{account.account}</span>
-        <button
-          className="acc-copy-btn"
-          type="button"
-          onClick={() => void copy(account.account, '账号')}
-          title="复制账号"
-        >
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="13" height="13">
-            <rect x="9" y="9" width="13" height="13" rx="2" />
-            <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
-          </svg>
-        </button>
-      </div>
+      <button
+        className={`acc-copy-row${flash === 'account' ? ' is-copied' : ''}`}
+        type="button"
+        onClick={() => void copy(account.account, 'account', '账号')}
+        title="点击复制账号"
+      >
+        <span className="acc-copy-row-label">账号</span>
+        <span className="acc-copy-row-value">{account.account}</span>
+        <span className="acc-copy-row-icon">
+          {flash === 'account' ? <CheckIcon /> : <CopyIcon />}
+        </span>
+      </button>
 
       {account.password ? (
-        <div className="acc-field-row">
-          <span className="acc-field-label">密码</span>
-          <span className="acc-field-value acc-pwd-value">
-            {showPwd ? account.password : '●●●●●●●●'}
+        <button
+          className={`acc-copy-row${flash === 'password' ? ' is-copied' : ''}`}
+          type="button"
+          onClick={() => void copy(account.password, 'password', '密码')}
+          title="点击复制密码"
+        >
+          <span className="acc-copy-row-label">密码</span>
+          <span className="acc-copy-row-value acc-copy-row-pwd">{account.password}</span>
+          <span className="acc-copy-row-icon">
+            {flash === 'password' ? <CheckIcon /> : <CopyIcon />}
           </span>
-          <button
-            className="acc-copy-btn"
-            type="button"
-            onClick={() => setShowPwd((v) => !v)}
-            title={showPwd ? '隐藏密码' : '显示密码'}
-          >
-            {showPwd ? (
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="13" height="13">
-                <path d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94" />
-                <path d="M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19" />
-                <line x1="1" y1="1" x2="23" y2="23" />
-              </svg>
-            ) : (
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="13" height="13">
-                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
-                <circle cx="12" cy="12" r="3" />
-              </svg>
-            )}
-          </button>
-          {showPwd ? (
-            <button
-              className="acc-copy-btn"
-              type="button"
-              onClick={() => void copy(account.password, '密码')}
-              title="复制密码"
-            >
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="13" height="13">
-                <rect x="9" y="9" width="13" height="13" rx="2" />
-                <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
-              </svg>
-            </button>
-          ) : null}
-        </div>
+        </button>
       ) : null}
 
       {account.note ? (
-        <div className="acc-note">{account.note}</div>
+        <div className="acc-entry-note">{account.note}</div>
       ) : null}
+
+      <div className="acc-entry-footer">
+        <button className="btn btn-xs btn-secondary" type="button" onClick={onEdit}>编辑</button>
+        <button className="btn btn-xs btn-danger" type="button" onClick={onDelete}>删除</button>
+      </div>
     </div>
+  )
+}
+
+// ─── 平台卡片（文件夹图标 + hover 侧面扇状展开）──────
+function PlatformCard({
+  platform,
+  accounts,
+  onEdit,
+  onDelete,
+  onRenameFolder,
+  onDeleteFolder,
+  onAddAccount,
+}: {
+  platform: string
+  accounts: AccountCredential[]
+  onEdit: (account: AccountCredential) => void
+  onDelete: (account: AccountCredential) => void
+  onRenameFolder: (oldName: string, newName: string) => void
+  onDeleteFolder: (platform: string) => void
+  onAddAccount: (platform: string) => void
+}) {
+  const cardRef = useRef<HTMLDivElement>(null)
+  const renameInputRef = useRef<HTMLInputElement>(null)
+  const closeTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const isRenamingRef = useRef(false)
+  const [open, setOpen] = useState(false)
+  const [panelStyle, setPanelStyle] = useState<React.CSSProperties>({})
+  const [panelLeft, setPanelLeft] = useState(false)
+  const [isRenaming, setIsRenaming] = useState(false)
+  const [renameValue, setRenameValue] = useState(platform)
+  const color = getPlatformColor(platform)
+
+  useEffect(() => { isRenamingRef.current = isRenaming }, [isRenaming])
+
+  const openPanel = () => {
+    if (closeTimer.current) clearTimeout(closeTimer.current)
+    const rect = cardRef.current?.getBoundingClientRect()
+    if (!rect) return
+    const spaceRight = window.innerWidth - rect.right
+    const isLeft = spaceRight < 280
+    const top = Math.min(rect.top, window.innerHeight - 80)
+    setPanelLeft(isLeft)
+    setPanelStyle(
+      isLeft
+        ? { top, right: window.innerWidth - rect.left + 6 }
+        : { top, left: rect.right + 6 },
+    )
+    setOpen(true)
+  }
+
+  const scheduleClose = () => {
+    if (isRenamingRef.current) return
+    closeTimer.current = setTimeout(() => setOpen(false), 130)
+  }
+
+  const cancelClose = () => {
+    if (closeTimer.current) clearTimeout(closeTimer.current)
+  }
+
+  const startRename = (e: React.MouseEvent) => {
+    e.stopPropagation()
+    setRenameValue(platform)
+    setIsRenaming(true)
+    setTimeout(() => renameInputRef.current?.focus(), 0)
+  }
+
+  const confirmRename = () => {
+    const trimmed = renameValue.trim()
+    if (trimmed && trimmed !== platform) onRenameFolder(platform, trimmed)
+    setIsRenaming(false)
+  }
+
+  const cancelRename = () => {
+    setRenameValue(platform)
+    setIsRenaming(false)
+  }
+
+  useEffect(() => () => { if (closeTimer.current) clearTimeout(closeTimer.current) }, [])
+
+  return (
+    <>
+      <div
+        ref={cardRef}
+        className={`acc-platform-card${open ? ' is-open' : ''}${accounts.length === 0 ? ' is-empty' : ''}`}
+        style={{ '--acc-color': color } as React.CSSProperties}
+        onMouseEnter={openPanel}
+        onMouseLeave={scheduleClose}
+        onFocus={openPanel}
+        onBlur={scheduleClose}
+        tabIndex={0}
+        role="button"
+        aria-label={`${platform}，${accounts.length} 个账号`}
+        aria-expanded={open}
+      >
+        <div className="acc-platform-card-icon">
+          <FolderIcon color={color} hasContent={accounts.length > 0} />
+        </div>
+        <div className="acc-platform-card-name">{platform}</div>
+        <div className="acc-platform-card-count">
+          {accounts.length === 0 ? '空' : `${accounts.length} 个`}
+        </div>
+      </div>
+
+      {open && createPortal(
+        <div
+          className={`acc-fan-panel${panelLeft ? ' panel-left' : ''}`}
+          style={{ ...panelStyle, position: 'fixed', '--acc-panel-color': color } as React.CSSProperties}
+          onMouseEnter={cancelClose}
+          onMouseLeave={scheduleClose}
+          role="region"
+          aria-label={`${platform} 账号列表`}
+        >
+          {/* 标题栏：重命名 / 删除 */}
+          <div className="acc-fan-panel-head">
+            {isRenaming ? (
+              <>
+                <input
+                  ref={renameInputRef}
+                  className="acc-fan-rename-input"
+                  value={renameValue}
+                  onChange={(e) => setRenameValue(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') confirmRename()
+                    if (e.key === 'Escape') cancelRename()
+                  }}
+                  aria-label="重命名文件夹"
+                />
+                <button className="acc-fan-action-btn" type="button" title="确认" onClick={confirmRename}>
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" width="13" height="13" aria-hidden="true">
+                    <polyline points="20 6 9 17 4 12" />
+                  </svg>
+                </button>
+                <button className="acc-fan-action-btn" type="button" title="取消" onClick={cancelRename}>
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" width="13" height="13" aria-hidden="true">
+                    <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
+                  </svg>
+                </button>
+              </>
+            ) : (
+              <>
+                <span className="acc-fan-panel-title" style={{ color }}>{platform}</span>
+                <span className="acc-fan-panel-count">{accounts.length} 个账号</span>
+                <button className="acc-fan-action-btn" type="button" title="重命名文件夹" onClick={startRename}>
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" width="13" height="13" aria-hidden="true">
+                    <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+                    <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+                  </svg>
+                </button>
+                <button className="acc-fan-action-btn acc-fan-action-del" type="button" title="删除文件夹" onClick={() => onDeleteFolder(platform)}>
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" width="13" height="13" aria-hidden="true">
+                    <polyline points="3 6 5 6 21 6" />
+                    <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" />
+                    <path d="M10 11v6M14 11v6" />
+                    <path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2" />
+                  </svg>
+                </button>
+              </>
+            )}
+          </div>
+
+          {/* 账号列表 */}
+          {accounts.length === 0 ? (
+            <div className="acc-fan-empty">此文件夹暂无账号</div>
+          ) : (
+            accounts.map((account, i) => (
+              <div
+                key={account.id}
+                className="acc-fan-item"
+                style={{ '--i': i } as React.CSSProperties}
+              >
+                {i > 0 && <div className="acc-entry-sep" />}
+                <AccountEntry
+                  account={account}
+                  onEdit={() => { onEdit(account); setOpen(false) }}
+                  onDelete={() => { onDelete(account) }}
+                />
+              </div>
+            ))
+          )}
+
+          {/* 底栏：在此文件夹新建账号 */}
+          <div className="acc-fan-panel-footer">
+            <button
+              className="acc-fan-add-btn"
+              type="button"
+              onClick={() => { onAddAccount(platform); setOpen(false) }}
+            >
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" width="13" height="13" aria-hidden="true">
+                <line x1="12" y1="5" x2="12" y2="19" />
+                <line x1="5" y1="12" x2="19" y2="12" />
+              </svg>
+              在此文件夹新建账号
+            </button>
+          </div>
+        </div>,
+        document.body,
+      )}
+    </>
   )
 }
 
@@ -232,10 +452,14 @@ export function Materials() {
   const [briefProjectFilter, setBriefProjectFilter] = useState('')
 
   // 账号密码
-  const accounts = useSyncExternalStore(subscribeAccounts, readAccounts)
-  const [editingAccount, setEditingAccount] = useState<AccountCredential | null | undefined>(undefined)
-  const [accCategory, setAccCategory]       = useState<AccountCategory | ''>('')
-  const [accSearch, setAccSearch]           = useState('')
+  const accounts  = useSyncExternalStore(subscribeAccounts, readAccounts)
+  const folders   = useSyncExternalStore(subscribeFolders, readFolders)
+  const [editingAccount, setEditingAccount]     = useState<AccountCredential | null | undefined>(undefined)
+  const [defaultPlatform, setDefaultPlatform]   = useState('')
+  const [accSearch, setAccSearch]               = useState('')
+  const [newFolderMode, setNewFolderMode]        = useState(false)
+  const [newFolderName, setNewFolderName]        = useState('')
+  const newFolderInputRef                        = useRef<HTMLInputElement>(null)
 
   // 关联项目下拉选项
   const projectOptions = useMemo(() =>
@@ -251,20 +475,50 @@ export function Materials() {
     )
   }, [briefs, briefProjectFilter])
 
-  // 过滤账号密码
-  const filteredAccounts = useMemo(() => {
+  // 按平台分组（搜索过滤后）
+  const groupedAccounts = useMemo(() => {
     let result = accounts
-    if (accCategory) result = result.filter((a) => a.category === accCategory)
     if (accSearch.trim()) {
       const q = accSearch.trim().toLowerCase()
       result = result.filter(
-        (a) =>
-          a.platform.toLowerCase().includes(q) ||
-          a.account.toLowerCase().includes(q),
+        (a) => a.platform.toLowerCase().includes(q) || a.account.toLowerCase().includes(q),
       )
     }
+    const map = new Map<string, AccountCredential[]>()
+    for (const a of result) {
+      const list = map.get(a.platform)
+      if (list) list.push(a)
+      else map.set(a.platform, [a])
+    }
+    return map
+  }, [accounts, accSearch])
+
+  // 合并显示的平台列表：folders 顺序优先，再补充账号中有但不在 folders 的平台
+  // 搜索时只显示有匹配账号的平台（不展示空文件夹）
+  const allPlatforms = useMemo(() => {
+    if (accSearch.trim()) {
+      return Array.from(groupedAccounts.keys())
+    }
+    const result: string[] = []
+    const seen = new Set<string>()
+    for (const f of folders) {
+      if (!seen.has(f)) { result.push(f); seen.add(f) }
+    }
+    for (const p of groupedAccounts.keys()) {
+      if (!seen.has(p)) { result.push(p); seen.add(p) }
+    }
     return result
-  }, [accounts, accCategory, accSearch])
+  }, [folders, groupedAccounts, accSearch])
+
+  const totalFiltered = useMemo(
+    () => Array.from(groupedAccounts.values()).reduce((s, a) => s + a.length, 0),
+    [groupedAccounts],
+  )
+
+  // 新建文件夹时自动聚焦
+  useEffect(() => {
+    if (newFolderMode) setTimeout(() => newFolderInputRef.current?.focus(), 0)
+  }, [newFolderMode])
 
   // ── 甲方要求操作 ────────────────────────────────────
   const saveBrief = (brief: ClientBrief) => {
@@ -291,8 +545,13 @@ export function Materials() {
       ? accounts.map((item) => (item.id === account.id ? account : item))
       : [account, ...accounts]
     writeAccounts(next)
+    // 若平台名不在 folders 列表，自动注册
+    if (account.platform && !folders.includes(account.platform)) {
+      writeFolders([...folders, account.platform])
+    }
     toast(editingAccount ? '已保存' : '账号已创建', 'success')
     setEditingAccount(undefined)
+    setDefaultPlatform('')
   }
 
   const deleteAccount = async (account: AccountCredential) => {
@@ -302,11 +561,59 @@ export function Materials() {
     toast('已删除', 'error')
   }
 
+  // ── 文件夹操作 ──────────────────────────────────────
+  const createFolder = (e: React.FormEvent) => {
+    e.preventDefault()
+    const name = newFolderName.trim()
+    if (!name) return
+    if (folders.includes(name)) {
+      toast(`文件夹「${name}」已存在`, 'error')
+      return
+    }
+    writeFolders([...folders, name])
+    toast(`文件夹「${name}」已创建`, 'success')
+    setNewFolderName('')
+    setNewFolderMode(false)
+  }
+
+  const renamePlatform = (oldName: string, newName: string) => {
+    writeAccounts(accounts.map((a) => a.platform === oldName ? { ...a, platform: newName } : a))
+    if (folders.includes(oldName)) {
+      writeFolders(folders.map((f) => f === oldName ? newName : f))
+    } else if (!folders.includes(newName)) {
+      writeFolders([...folders, newName])
+    }
+    toast('文件夹已重命名', 'success')
+  }
+
+  const deletePlatform = async (platform: string) => {
+    const count = (groupedAccounts.get(platform) ?? []).length
+    const ok = await confirm(
+      '删除文件夹',
+      count > 0
+        ? `确认删除「${platform}」文件夹及其 ${count} 个账号记录？此操作不可撤销。`
+        : `确认删除空文件夹「${platform}」？`,
+    )
+    if (!ok) return
+    writeAccounts(accounts.filter((a) => a.platform !== platform))
+    writeFolders(folders.filter((f) => f !== platform))
+    toast('已删除', 'error')
+  }
+
+  const openAddAccountInFolder = (platform: string) => {
+    setDefaultPlatform(platform)
+    setEditingAccount(null)
+  }
+
+  // 是否有任何内容可展示（文件夹 + 账号）
+  const hasContent = allPlatforms.length > 0
+
   return (
     <div className="view-materials fade-in">
       <div className="view-header">
         <h1 className="view-title">资料</h1>
       </div>
+
       {/* ── 分区子栏：甲方要求 / 账号密码 ───────────────── */}
       <div className="mat-topbar">
         <div className="mat-col-head">
@@ -343,23 +650,56 @@ export function Materials() {
           <div className="mat-col-identity">
             <span className="mat-col-title">账号密码</span>
             {accounts.length > 0 && (
-              <span className="mat-col-count">{filteredAccounts.length}</span>
+              <span className="mat-col-count">{totalFiltered}</span>
             )}
           </div>
           <div className="mat-col-controls">
-            <input
-              className="filter-input"
-              placeholder="搜索平台或账号…"
-              value={accSearch}
-              onChange={(e) => setAccSearch(e.target.value)}
-            />
-            <button
-              className="btn btn-primary btn-sm"
-              type="button"
-              onClick={() => setEditingAccount(null)}
-            >
-              新建账号
-            </button>
+            {newFolderMode ? (
+              <form className="acc-new-folder-form" onSubmit={createFolder}>
+                <input
+                  ref={newFolderInputRef}
+                  className="filter-input acc-new-folder-input"
+                  placeholder="文件夹名称…"
+                  value={newFolderName}
+                  onChange={(e) => setNewFolderName(e.target.value)}
+                  onKeyDown={(e) => { if (e.key === 'Escape') { setNewFolderMode(false); setNewFolderName('') } }}
+                />
+                <button type="submit" className="btn btn-primary btn-sm">创建</button>
+                <button
+                  type="button"
+                  className="btn btn-secondary btn-sm"
+                  onClick={() => { setNewFolderMode(false); setNewFolderName('') }}
+                >取消</button>
+              </form>
+            ) : (
+              <>
+                <input
+                  className="filter-input"
+                  placeholder="搜索文件夹或账号…"
+                  value={accSearch}
+                  onChange={(e) => setAccSearch(e.target.value)}
+                />
+                <button
+                  className="btn btn-sm btn-secondary"
+                  type="button"
+                  title="新建文件夹"
+                  onClick={() => setNewFolderMode(true)}
+                >
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" width="14" height="14" aria-hidden="true">
+                    <path d="M4 20h16a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.93a2 2 0 0 1-1.66-.9l-.82-1.2A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13c0 1.1.9 2 2 2z" />
+                    <line x1="12" y1="10" x2="12" y2="16" />
+                    <line x1="9" y1="13" x2="15" y2="13" />
+                  </svg>
+                </button>
+                <button
+                  className="btn btn-primary btn-sm"
+                  type="button"
+                  onClick={() => setEditingAccount(null)}
+                >
+                  新建账号
+                </button>
+              </>
+            )}
           </div>
         </div>
       </div>
@@ -413,27 +753,7 @@ export function Materials() {
 
         {/* ── 右：账号密码 ──────────────────────────── */}
         <div className="materials-pane">
-          {/* 分类筛选 + 安全提示 */}
           <div className="acc-subhead">
-            <div className="acc-category-tabs">
-              <button
-                className={`acc-cat-tab${accCategory === '' ? ' active' : ''}`}
-                type="button"
-                onClick={() => setAccCategory('')}
-              >
-                全部
-              </button>
-              {ACCOUNT_CATEGORIES.map((cat) => (
-                <button
-                  key={cat}
-                  className={`acc-cat-tab${accCategory === cat ? ' active' : ''}`}
-                  type="button"
-                  onClick={() => setAccCategory(cat === accCategory ? '' : cat)}
-                >
-                  {ACCOUNT_CATEGORY_LABELS[cat]}
-                </button>
-              ))}
-            </div>
             <div className="acc-warn-inline">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="11" height="11">
                 <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
@@ -445,34 +765,38 @@ export function Materials() {
           </div>
 
           <div className="materials-pane-body">
-            {filteredAccounts.length === 0 ? (
+            {!hasContent ? (
               <div className="empty-state">
                 <div className="empty-icon">
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" width="40" height="40">
-                    <rect x="3" y="11" width="18" height="11" rx="2" />
-                    <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+                    <path d="M4 20h16a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.93a2 2 0 0 1-1.66-.9l-.82-1.2A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13c0 1.1.9 2 2 2z" />
                   </svg>
                 </div>
                 <div className="empty-text">
-                  {accSearch || accCategory ? '没有匹配的账号' : '还没有保存任何账号'}
+                  {accSearch ? '没有匹配的文件夹或账号' : '还没有文件夹和账号'}
                 </div>
-                <div className="empty-sub">把团队共用的平台账号整理在这里，方便成员随时取用</div>
-                <button
-                  className="btn btn-primary"
-                  type="button"
-                  onClick={() => setEditingAccount(null)}
-                >
-                  新建账号
-                </button>
+                {!accSearch && (
+                  <div className="empty-sub">先新建一个文件夹，再把账号归类整理进去</div>
+                )}
+                {!accSearch && (
+                  <div className="empty-actions">
+                    <button className="btn btn-secondary" type="button" onClick={() => setNewFolderMode(true)}>新建文件夹</button>
+                    <button className="btn btn-primary" type="button" onClick={() => setEditingAccount(null)}>新建账号</button>
+                  </div>
+                )}
               </div>
             ) : (
-              <div className="acc-list acc-list-pane">
-                {filteredAccounts.map((account) => (
-                  <AccountCard
-                    key={account.id}
-                    account={account}
-                    onEdit={() => setEditingAccount(account)}
-                    onDelete={() => void deleteAccount(account)}
+              <div className="acc-grid">
+                {allPlatforms.map((platform) => (
+                  <PlatformCard
+                    key={platform}
+                    platform={platform}
+                    accounts={groupedAccounts.get(platform) ?? []}
+                    onEdit={(account) => setEditingAccount(account)}
+                    onDelete={(account) => void deleteAccount(account)}
+                    onRenameFolder={renamePlatform}
+                    onDeleteFolder={(p) => void deletePlatform(p)}
+                    onAddAccount={openAddAccountInFolder}
                   />
                 ))}
               </div>
@@ -495,8 +819,10 @@ export function Materials() {
       {editingAccount !== undefined ? (
         <AccountDialog
           account={editingAccount}
+          folders={folders}
+          defaultPlatform={defaultPlatform}
           onSave={saveAccount}
-          onClose={() => setEditingAccount(undefined)}
+          onClose={() => { setEditingAccount(undefined); setDefaultPlatform('') }}
         />
       ) : null}
     </div>

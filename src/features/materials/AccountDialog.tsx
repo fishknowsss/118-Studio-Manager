@@ -1,34 +1,32 @@
 import { useState } from 'react'
 import { useToast } from '../../components/feedback/ToastProvider'
 import { Dialog } from '../../components/ui/Dialog'
-import {
-  ACCOUNT_CATEGORIES,
-  ACCOUNT_CATEGORY_LABELS,
-  type AccountCategory,
-  type AccountCredential,
-} from './materialsState'
+import { type AccountCredential } from './materialsState'
 
 type Props = {
   account: AccountCredential | null
+  /** 已有文件夹名称列表，用于 datalist 下拉提示 */
+  folders: string[]
+  /** 从某个文件夹打开"新建"时预填文件夹名 */
+  defaultPlatform?: string
   onSave: (account: AccountCredential) => void
   onClose: () => void
 }
 
-export function AccountDialog({ account, onSave, onClose }: Props) {
+export function AccountDialog({ account, folders, defaultPlatform, onSave, onClose }: Props) {
   const isNew = !account
   const { toast } = useToast()
 
-  const [platform, setPlatform]   = useState(account?.platform ?? '')
-  const [url, setUrl]             = useState(account?.url ?? '')
-  const [acc, setAcc]             = useState(account?.account ?? '')
-  const [password, setPassword]   = useState(account?.password ?? '')
-  const [note, setNote]           = useState(account?.note ?? '')
-  const [category, setCategory]   = useState<AccountCategory>(account?.category ?? 'other')
-  const [showPwd, setShowPwd]     = useState(false)
+  const [platform, setPlatform] = useState(account?.platform ?? defaultPlatform ?? '')
+  const [url, setUrl]           = useState(account?.url ?? '')
+  const [acc, setAcc]           = useState(account?.account ?? '')
+  const [password, setPassword] = useState(account?.password ?? '')
+  const [note, setNote]         = useState(account?.note ?? '')
+  const [showPwd, setShowPwd]   = useState(false)
 
   const save = () => {
     if (!platform.trim()) {
-      toast('请填写平台名称', 'error')
+      toast('请填写所在文件夹', 'error')
       return
     }
     if (!acc.trim()) {
@@ -42,9 +40,9 @@ export function AccountDialog({ account, onSave, onClose }: Props) {
       platform:  platform.trim(),
       url:       url.trim() ? (url.trim().startsWith('http') ? url.trim() : `https://${url.trim()}`) : '',
       account:   acc.trim(),
-      password:  password,
+      password,
       note:      note.trim(),
-      category,
+      category:  account?.category ?? 'other',
       createdAt: account?.createdAt ?? now,
       updatedAt: now,
     })
@@ -65,34 +63,29 @@ export function AccountDialog({ account, onSave, onClose }: Props) {
       )}
     >
       <div className="form-grid">
-        {/* 平台名称 */}
-        <div className="form-field">
-          <label className="form-label" htmlFor="acc-platform">平台名称 *</label>
+        {/* 所在文件夹 */}
+        <div className="form-field span2">
+          <label className="form-label" htmlFor="acc-platform">所在文件夹 *</label>
           <input
             id="acc-platform"
             className="form-input"
-            placeholder="例：剪映、爱奇艺创作者"
+            list="acc-platform-datalist"
+            placeholder="选择已有文件夹，或直接输入新名称"
             value={platform}
             onChange={(e) => setPlatform(e.target.value)}
+            autoComplete="off"
           />
-        </div>
-
-        {/* 分类 */}
-        <div className="form-field">
-          <label className="form-label" htmlFor="acc-category">分类</label>
-          <select
-            id="acc-category"
-            className="form-input"
-            value={category}
-            onChange={(e) => setCategory(e.target.value as AccountCategory)}
-          >
-            {ACCOUNT_CATEGORIES.map((cat) => (
-              <option key={cat} value={cat}>{ACCOUNT_CATEGORY_LABELS[cat]}</option>
+          <datalist id="acc-platform-datalist">
+            {folders.map((f) => (
+              <option key={f} value={f} />
             ))}
-          </select>
+          </datalist>
+          {folders.length > 0 && (
+            <div className="form-hint">输入框已列出现有文件夹，也可填写新文件夹名称自动创建</div>
+          )}
         </div>
 
-        {/* 网址 */}
+        {/* 官网地址 */}
         <div className="form-field span2">
           <label className="form-label" htmlFor="acc-url">官网地址</label>
           <input
