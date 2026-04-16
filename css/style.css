@@ -1149,7 +1149,7 @@ svg { display: block; flex-shrink: 0; }
 .person-assignment-skills {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
-  align-items: center;
+  align-items: start;
   column-gap: 8px;
   min-height: 0;
   min-width: 0;
@@ -1158,23 +1158,26 @@ svg { display: block; flex-shrink: 0; }
 .person-assignment-skill-list {
   display: grid;
   grid-auto-rows: minmax(0, auto);
-  row-gap: 4px;
+  row-gap: 3px;
   min-width: 0;
 }
 .person-assignment-skill-list .skill-tag {
-  display: flex;
+  display: inline-flex;
   align-items: center;
   justify-content: center;
   text-align: center;
+  font-size: 11px;
+  padding: 2px 6px;
+  border-radius: 18px;
 }
 .person-assignment-skills .skill-tag.skill-tag-compact {
   font-size: 10px;
-  padding: 1px 5px;
+  padding: 1px 4px;
   line-height: 1.2;
   letter-spacing: -0.03em;
 }
 .person-assignment-skills-overflow {
-  padding: 1px 5px;
+  padding: 1px 6px;
   border-radius: 999px;
   background: var(--c-border-light);
   color: var(--c-text-2);
@@ -1182,7 +1185,7 @@ svg { display: block; flex-shrink: 0; }
   line-height: 1.2;
   font-weight: 600;
   justify-self: end;
-  align-self: center;
+  align-self: start;
 }
 .person-assignment-empty-skill {
   font-size: 11px;
@@ -2981,25 +2984,16 @@ svg { display: block; flex-shrink: 0; }
   background: var(--c-surface);
   border-radius: var(--r-lg);
   padding: 14px;
-  display: flex;
-  flex-direction: row;
-  gap: 14px;
-  align-items: stretch;
 }
 .tools-section-title {
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 700;
-  color: var(--c-text-2);
-  writing-mode: vertical-lr;
-  text-orientation: upright;
-  letter-spacing: .01em;
-  align-self: center;
-  flex-shrink: 0;
+  color: var(--c-text);
+  margin-bottom: 10px;
 }
 .tools-grid {
-  flex: 1;
   display: grid;
-  grid-template-columns: repeat(4, minmax(200px, 1fr));
+  grid-template-columns: repeat(4, minmax(220px, 1fr));
   gap: 10px;
 }
 .tool-card {
@@ -3007,20 +3001,15 @@ svg { display: block; flex-shrink: 0; }
   border-radius: var(--r-md);
   background: var(--c-bg);
   padding: 12px;
-  padding-bottom: 36px;
-  position: relative;
   display: flex;
   flex-direction: column;
   gap: 8px;
-  aspect-ratio: 90 / 29;
-  overflow: hidden;
 }
 .tool-card-footer {
-  position: absolute;
-  bottom: 12px;
-  right: 12px;
   display: flex;
+  justify-content: space-between;
   align-items: center;
+  gap: 10px;
 }
 .tool-card-arrow {
   display: inline-flex;
@@ -3044,7 +3033,7 @@ svg { display: block; flex-shrink: 0; }
   transform: translateY(-1px);
 }
 .tool-card-title {
-  font-size: 16px;
+  font-size: 13px;
   font-weight: 700;
   color: var(--c-text);
 }
