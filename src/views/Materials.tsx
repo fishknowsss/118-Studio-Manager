@@ -29,37 +29,73 @@ async function copyToClipboard(text: string): Promise<boolean> {
   }
 }
 
-// ─── 平台色彩映射（确定性哈希）────────────────────────
-const PLATFORM_COLORS = [
-  '#6366f1', '#8b5cf6', '#ec4899', '#f59e0b',
-  '#10b981', '#3b82f6', '#ef4444', '#14b8a6',
-  '#f97316', '#06b6d4',
+// ─── 文件夹色彩映射（按项目DDL紧急度色阶递减）────────────────────────
+const FOLDER_TONE_COLORS = [
+  '#E54D4D', // overdue / focus-critical
+  '#E8840F', // today / focus-strong
+  '#CA8A04', // soon / focus-medium
+  '#4166F5', // near / focus-calm
+  '#E4E8F0', // neutral / border
 ]
 
-function getPlatformColor(name: string): string {
-  let h = 0
-  for (let i = 0; i < name.length; i++) h = (h * 31 + name.charCodeAt(i)) & 0xfffffff
-  return PLATFORM_COLORS[h % PLATFORM_COLORS.length]
+function getFolderColor(count: number, maxCount: number): string {
+  if (maxCount <= 0 || count <= 0) {
+    return FOLDER_TONE_COLORS[4]
+  }
+  const ratio = count / maxCount
+  if (ratio >= 0.8) return FOLDER_TONE_COLORS[0]
+  if (ratio >= 0.6) return FOLDER_TONE_COLORS[1]
+  if (ratio >= 0.4) return FOLDER_TONE_COLORS[2]
+  if (ratio >= 0.2) return FOLDER_TONE_COLORS[3]
+  return FOLDER_TONE_COLORS[4]
 }
 
-// ─── 文件夹图标 SVG ────────────────────────────────────
-function FolderIcon({ color, hasContent }: { color: string; hasContent: boolean }) {
+// ─── 文件夹图标 SVG（近方形、极简线稿双态）──────────
+function FolderIcon({ color, open }: { color: string; open: boolean }) {
+  if (open) {
+    return (
+      <svg viewBox="0 0 48 44" fill="none" width="82" height="76" aria-hidden="true">
+        <path
+          d="M10 18v-6a4 4 0 0 1 4-4h9.4l3.58 3.45A4 4 0 0 0 29.76 12.6H34a4 4 0 0 1 4 4V18"
+          stroke={color}
+          strokeWidth="2"
+          strokeLinejoin="round"
+          strokeLinecap="round"
+        />
+        <path
+          d="M10.4 18H37.6a4 4 0 0 1 3.92 4.78l-1.18 6.02A4 4 0 0 1 36.42 32H11.58a4 4 0 0 1-3.92-4.78l1.14-6.02A4 4 0 0 1 10.4 18z"
+          stroke={color}
+          strokeWidth="2"
+          strokeLinejoin="round"
+          strokeLinecap="round"
+        />
+        <path
+          d="M15.5 18h17"
+          stroke={color}
+          strokeWidth="1.35"
+          strokeOpacity="0.22"
+          strokeLinecap="round"
+        />
+      </svg>
+    )
+  }
+
   return (
-    <svg viewBox="0 0 24 24" fill="none" width="40" height="40" aria-hidden="true">
+    <svg viewBox="0 0 48 44" fill="none" width="82" height="76" aria-hidden="true">
       <path
-        d="M4 20h16a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.93a2 2 0 0 1-1.66-.9l-.82-1.2A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13c0 1.1.9 2 2 2z"
-        fill={color}
-        fillOpacity="0.15"
+        d="M10 16v-4a4 4 0 0 1 4-4h9.7l3.56 3.45a4 4 0 0 0 2.78 1.15H34a4 4 0 0 1 4 4v13a4 4 0 0 1-4 4H14a4 4 0 0 1-4-4V16z"
         stroke={color}
-        strokeWidth="1.5"
+        strokeWidth="2"
         strokeLinejoin="round"
+        strokeLinecap="round"
       />
-      {hasContent && (
-        <>
-          <line x1="7" y1="12.5" x2="17" y2="12.5" stroke={color} strokeOpacity="0.4" strokeWidth="1.5" strokeLinecap="round" />
-          <line x1="7" y1="16" x2="13" y2="16" stroke={color} strokeOpacity="0.4" strokeWidth="1.5" strokeLinecap="round" />
-        </>
-      )}
+      <path
+        d="M10 18h28"
+        stroke={color}
+        strokeWidth="1.35"
+        strokeOpacity="0.22"
+        strokeLinecap="round"
+      />
     </svg>
   )
 }
@@ -78,17 +114,24 @@ const CheckIcon = () => (
   </svg>
 )
 
-// ─── 账号条目（密码直显，整行点击复制）────────────────
+// ─── 账号条目（编辑/删除右对齐，支持移至文件夹）─────
 function AccountEntry({
   account,
+  folders,
   onEdit,
   onDelete,
+  onMoveToFolder,
+  onMoveModeChange,
 }: {
   account: AccountCredential
+  folders: string[]
   onEdit: () => void
   onDelete: () => void
+  onMoveToFolder: (targetFolder: string) => void
+  onMoveModeChange?: (active: boolean) => void
 }) {
   const [flash, setFlash] = useState<'account' | 'password' | null>(null)
+  const [showMove, setShowMove] = useState(false)
   const { toast } = useToast()
 
   const copy = async (text: string, field: 'account' | 'password', label: string) => {
@@ -100,18 +143,75 @@ function AccountEntry({
     toast(ok ? `${label}已复制` : '复制失败，请手动选择', ok ? 'success' : 'error')
   }
 
+  const targetFolders = folders.filter((f) => f !== account.platform)
+
+  const openMovePanel = () => {
+    setShowMove(true)
+    onMoveModeChange?.(true)
+  }
+  const closeMovePanel = () => {
+    setShowMove(false)
+    onMoveModeChange?.(false)
+  }
+
   return (
     <div className="acc-entry">
-      {account.url ? (
-        <a className="acc-entry-url" href={account.url} target="_blank" rel="noreferrer">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" width="11" height="11" aria-hidden="true" style={{ flexShrink: 0 }}>
-            <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
-            <polyline points="15 3 21 3 21 9" />
-            <line x1="10" y1="14" x2="21" y2="3" />
-          </svg>
-          <span>{account.url}</span>
-        </a>
-      ) : null}
+      {/* 头部：URL + 右侧操作按钮 */}
+      <div className="acc-entry-head">
+        {account.url ? (
+          <a className="acc-entry-url" href={account.url} target="_blank" rel="noreferrer">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" width="11" height="11" aria-hidden="true" style={{ flexShrink: 0 }}>
+              <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
+              <polyline points="15 3 21 3 21 9" />
+              <line x1="10" y1="14" x2="21" y2="3" />
+            </svg>
+            <span>{account.url}</span>
+          </a>
+        ) : <div className="acc-entry-url-gap" />}
+        <div className="acc-entry-actions">
+          <button className="acc-entry-action-btn" type="button" title="编辑" onClick={onEdit}>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" width="12" height="12" aria-hidden="true">
+              <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+              <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+            </svg>
+          </button>
+          {targetFolders.length > 0 && (
+            <button className="acc-entry-action-btn acc-entry-action-move" type="button" title="移至文件夹" onClick={openMovePanel}>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" width="12" height="12" aria-hidden="true">
+                <path d="M3 7a2 2 0 0 1 2-2h3.17l2 2H20a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7z" />
+                <line x1="9" y1="14" x2="15" y2="14" />
+                <line x1="12" y1="11" x2="12" y2="17" />
+              </svg>
+            </button>
+          )}
+          <button className="acc-entry-action-btn acc-entry-action-del" type="button" title="删除" onClick={onDelete}>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" width="12" height="12" aria-hidden="true">
+              <polyline points="3 6 5 6 21 6" />
+              <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" />
+              <path d="M10 11v6M14 11v6" />
+              <path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2" />
+            </svg>
+          </button>
+        </div>
+      </div>
+
+      {/* 移至文件夹面板（内联展开） */}
+      {showMove && (
+        <div className="acc-move-panel">
+          <span className="acc-move-label">移至</span>
+          {targetFolders.map((f) => (
+            <button
+              key={f}
+              className="acc-move-tag"
+              type="button"
+              onClick={() => { onMoveToFolder(f); closeMovePanel() }}
+            >
+              {f}
+            </button>
+          ))}
+          <button className="acc-move-cancel" type="button" onClick={closeMovePanel}>取消</button>
+        </div>
+      )}
 
       <button
         className={`acc-copy-row${flash === 'account' ? ' is-copied' : ''}`}
@@ -144,11 +244,6 @@ function AccountEntry({
       {account.note ? (
         <div className="acc-entry-note">{account.note}</div>
       ) : null}
-
-      <div className="acc-entry-footer">
-        <button className="btn btn-xs btn-secondary" type="button" onClick={onEdit}>编辑</button>
-        <button className="btn btn-xs btn-danger" type="button" onClick={onDelete}>删除</button>
-      </div>
     </div>
   )
 }
@@ -157,16 +252,22 @@ function AccountEntry({
 function PlatformCard({
   platform,
   accounts,
+  folders,
+  maxCount,
   onEdit,
   onDelete,
+  onMoveToFolder,
   onRenameFolder,
   onDeleteFolder,
   onAddAccount,
 }: {
   platform: string
   accounts: AccountCredential[]
+  folders: string[]
+  maxCount: number
   onEdit: (account: AccountCredential) => void
   onDelete: (account: AccountCredential) => void
+  onMoveToFolder: (account: AccountCredential, targetFolder: string) => void
   onRenameFolder: (oldName: string, newName: string) => void
   onDeleteFolder: (platform: string) => void
   onAddAccount: (platform: string) => void
@@ -175,12 +276,13 @@ function PlatformCard({
   const renameInputRef = useRef<HTMLInputElement>(null)
   const closeTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
   const isRenamingRef = useRef(false)
+  const isMovingRef = useRef(false)
   const [open, setOpen] = useState(false)
   const [panelStyle, setPanelStyle] = useState<React.CSSProperties>({})
   const [panelLeft, setPanelLeft] = useState(false)
   const [isRenaming, setIsRenaming] = useState(false)
   const [renameValue, setRenameValue] = useState(platform)
-  const color = getPlatformColor(platform)
+  const color = getFolderColor(accounts.length, maxCount)
 
   useEffect(() => { isRenamingRef.current = isRenaming }, [isRenaming])
 
@@ -201,7 +303,7 @@ function PlatformCard({
   }
 
   const scheduleClose = () => {
-    if (isRenamingRef.current) return
+    if (isRenamingRef.current || isMovingRef.current) return
     closeTimer.current = setTimeout(() => setOpen(false), 130)
   }
 
@@ -245,11 +347,11 @@ function PlatformCard({
         aria-expanded={open}
       >
         <div className="acc-platform-card-icon">
-          <FolderIcon color={color} hasContent={accounts.length > 0} />
+          <FolderIcon color={color} open={open} />
         </div>
         <div className="acc-platform-card-name">{platform}</div>
         <div className="acc-platform-card-count">
-          {accounts.length === 0 ? '空' : `${accounts.length} 个`}
+          {accounts.length === 0 ? '空文件夹' : `${accounts.length} 个账号`}
         </div>
       </div>
 
@@ -323,8 +425,11 @@ function PlatformCard({
                 {i > 0 && <div className="acc-entry-sep" />}
                 <AccountEntry
                   account={account}
+                  folders={folders}
                   onEdit={() => { onEdit(account); setOpen(false) }}
                   onDelete={() => { onDelete(account) }}
+                  onMoveToFolder={(targetFolder) => { onMoveToFolder(account, targetFolder); setOpen(false) }}
+                  onMoveModeChange={(active) => { isMovingRef.current = active }}  
                 />
               </div>
             ))
@@ -515,6 +620,10 @@ export function Materials() {
     [groupedAccounts],
   )
 
+  const maxFolderCount = useMemo(() => {
+    return Math.max(0, ...Array.from(groupedAccounts.values()).map((accounts) => accounts.length))
+  }, [groupedAccounts])
+
   // 新建文件夹时自动聚焦
   useEffect(() => {
     if (newFolderMode) setTimeout(() => newFolderInputRef.current?.focus(), 0)
@@ -603,6 +712,12 @@ export function Materials() {
   const openAddAccountInFolder = (platform: string) => {
     setDefaultPlatform(platform)
     setEditingAccount(null)
+  }
+
+  const moveAccountToFolder = (account: AccountCredential, targetFolder: string) => {
+    const updated = { ...account, platform: targetFolder, updatedAt: new Date().toISOString() }
+    writeAccounts(accounts.map((a) => (a.id === account.id ? updated : a)))
+    toast(`已移至「${targetFolder}」`, 'success')
   }
 
   // 是否有任何内容可展示（文件夹 + 账号）
@@ -792,8 +907,11 @@ export function Materials() {
                     key={platform}
                     platform={platform}
                     accounts={groupedAccounts.get(platform) ?? []}
+                    folders={allPlatforms}
+                    maxCount={maxFolderCount}
                     onEdit={(account) => setEditingAccount(account)}
                     onDelete={(account) => void deleteAccount(account)}
+                    onMoveToFolder={moveAccountToFolder}
                     onRenameFolder={renamePlatform}
                     onDeleteFolder={(p) => void deletePlatform(p)}
                     onAddAccount={openAddAccountInFolder}
