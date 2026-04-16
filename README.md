@@ -77,6 +77,12 @@ macOS one-click start:
 ./118-start.command
 ```
 
+Windows one-click start:
+
+```cmd
+118-start.cmd
+```
+
 **Common commands**
 
 ```bash
