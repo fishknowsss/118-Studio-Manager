@@ -29,8 +29,7 @@ import {
   writePersistedCloudSyncState,
 } from './syncClientState'
 import { reloadSyncableViewStateFromDB } from '../persistence/syncableViewState'
-import { readAccounts, readBriefs } from '../materials/materialsState'
-import { readRepositoryLinks } from '../repository/repositoryLinksState'
+import { readAccounts, readBriefs, readFolders } from '../materials/materialsState'
 
 type SyncPhase = 'disabled' | 'checking' | 'ready' | 'syncing' | 'restoring' | 'error'
 
@@ -66,7 +65,7 @@ function hasLocalData() {
     store.logs.length > 0 ||
     readBriefs().length > 0 ||
     readAccounts().length > 0 ||
-    readRepositoryLinks().length > 0
+    readFolders().length > 0
   )
 }
 

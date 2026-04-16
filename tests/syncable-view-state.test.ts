@@ -18,14 +18,10 @@ import {
   __resetMaterialsStateForTests,
   initializeMaterialsState,
   readBriefs,
+  readFolders,
   reloadMaterialsStateFromDB,
+  writeFolders,
 } from '../src/features/materials/materialsState'
-import {
-  __resetRepositoryLinksStateForTests,
-  initializeRepositoryLinksState,
-  readRepositoryLinks,
-  writeRepositoryLinks,
-} from '../src/features/repository/repositoryLinksState'
 
 describe('syncable view state', () => {
   beforeEach(() => {
@@ -33,7 +29,6 @@ describe('syncable view state', () => {
     dbPutMock.mockReset()
     localStorage.clear()
     __resetMaterialsStateForTests()
-    __resetRepositoryLinksStateForTests()
   })
 
   it('migrates materials data from legacy localStorage into syncable settings storage', async () => {
@@ -109,68 +104,20 @@ describe('syncable view state', () => {
     ])
   })
 
-  it('persists repository links through syncable settings and emits a sync event on local edits', () => {
+  it('persists materials folders through syncable settings and emits a sync event on local edits', () => {
     const handler = vi.fn()
     document.addEventListener('syncableDataUpdated', handler)
 
-    writeRepositoryLinks([
-      {
-        id: 'link-1',
-        targetType: 'project',
-        targetId: 'project-1',
-        title: 'Notion',
-        url: 'https://notion.so/demo',
-        note: '',
-        createdAt: '2026-04-15T10:00:00.000Z',
-        updatedAt: '2026-04-15T10:00:00.000Z',
-      },
-    ])
+    writeFolders(['设计协作', '云盘归档'])
 
-    expect(readRepositoryLinks()).toEqual([
-      expect.objectContaining({
-        id: 'link-1',
-        title: 'Notion',
-      }),
-    ])
+    expect(readFolders()).toEqual(['设计协作', '云盘归档'])
     expect(dbPutMock).toHaveBeenCalledWith('settings', expect.objectContaining({
-      key: 'repository:links',
-      value: expect.arrayContaining([
-        expect.objectContaining({ id: 'link-1' }),
-      ]),
+      key: 'materials:folders',
+      value: ['设计协作', '云盘归档'],
     }))
     expect(handler).toHaveBeenCalledTimes(1)
-    expect((handler.mock.calls[0]?.[0] as CustomEvent).detail).toEqual({ key: 'repository:links' })
+    expect((handler.mock.calls[0]?.[0] as CustomEvent).detail).toEqual({ key: 'materials:folders' })
 
     document.removeEventListener('syncableDataUpdated', handler)
-  })
-
-  it('migrates repository links from legacy localStorage when no synced copy exists', async () => {
-    localStorage.setItem('repository-links-v1', JSON.stringify([
-      {
-        id: 'link-old',
-        targetType: 'task',
-        targetId: 'task-1',
-        title: 'Drive',
-        url: 'https://drive.google.com/demo',
-        note: '',
-      },
-    ]))
-
-    dbGetMock.mockResolvedValue(undefined)
-
-    await initializeRepositoryLinksState()
-
-    expect(readRepositoryLinks()).toEqual([
-      expect.objectContaining({
-        id: 'link-old',
-        targetType: 'task',
-      }),
-    ])
-    expect(dbPutMock).toHaveBeenCalledWith('settings', expect.objectContaining({
-      key: 'repository:links',
-      value: expect.arrayContaining([
-        expect.objectContaining({ id: 'link-old' }),
-      ]),
-    }))
   })
 })

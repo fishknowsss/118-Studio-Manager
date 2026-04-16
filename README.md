@@ -1,54 +1,106 @@
-# 118 Studio Manager
+# 118 Studio Manager VC
 
-A local-first studio management web app built for a digital media art studio — designed around daily focus, not dashboard bloat.
+A local-first studio operations app for small media and design teams, built around daily focus, reusable materials, and low-friction backup workflows.
 
-All data lives in the browser's IndexedDB. Cloud sync is optional and self-hosted via Cloudflare Workers.
-
----
-
-## 界面预览
-
-### 首页
-
-| 浅色模式 | 深色模式 |
-|---|---|
-| ![首页浅色模式](docs/screenshots/vc-dashboard-light.png) | ![首页深色模式](docs/screenshots/vc-dashboard-dark.png) |
-
-### 资料
-
-| 浅色模式 | 深色模式 |
-|---|---|
-| ![资料浅色模式](docs/screenshots/vc-repository-light.png) | ![资料深色模式](docs/screenshots/vc-repository-dark.png) |
-
-### 图谱
-
-| 浅色模式 | 深色模式 |
-|---|---|
-| ![图谱浅色模式](docs/screenshots/vc-graph-light.png) | ![图谱深色模式](docs/screenshots/vc-graph-dark.png) |
-
-### 工具
-
-| 浅色模式 | 深色模式 |
-|---|---|
-| ![工具浅色模式](docs/screenshots/vc-tools-light.png) | ![工具深色模式](docs/screenshots/vc-tools-dark.png) |
-
-### 设置
-
-| 浅色模式 | 深色模式 |
-|---|---|
-| ![设置浅色模式](docs/screenshots/vc-settings-light.png) | ![设置深色模式](docs/screenshots/vc-settings-dark.png) |
+All working data stays in the browser's IndexedDB. Cloud sync is optional and can be self-hosted with Cloudflare Workers.
 
 ---
 
-## Features
+## Overview
 
-- **Today Dashboard** — focus project stack, task pool, people workload, and mini calendar in one view
-- **Project Management** — status, priority, deadlines, and a visual timeline
-- **Task Management** — filter/search, right-click context menu for quick status/assignee/priority updates
-- **People Management** — member profiles, active/inactive toggle, task associations, skill tags
-- **Calendar View** — monthly grid with deadline markers; click any day to open its schedule panel
-- **Data Management** — JSON/CSV export, JSON import, full wipe with confirmation
-- **Cloud Sync (optional)** — two-way sync between local IndexedDB and a Cloudflare Worker/KV backend
+The current VC build centers the product around five working views:
+
+- **Home** for daily focus, assignments, and deadlines
+- **Materials** for client briefs and shared account folders
+- **Graph** for project-task-people relationships
+- **Tools** for reusable external references and production utilities
+- **Settings** for backup, restore, sync, and operational logs
+
+It is designed for a studio workflow where planning, handoff, and asset access happen in one place without depending on a traditional backend.
+
+---
+
+## Interface Preview
+
+### Home
+
+| Light | Dark |
+|---|---|
+| ![Home Light](docs/screenshots/vc-dashboard-light.png) | ![Home Dark](docs/screenshots/vc-dashboard-dark.png) |
+
+### Materials
+
+| Light | Dark |
+|---|---|
+| ![Materials Light](docs/screenshots/vc-materials-light.png) | ![Materials Dark](docs/screenshots/vc-materials-dark.png) |
+
+### Graph
+
+| Light | Dark |
+|---|---|
+| ![Graph Light](docs/screenshots/vc-graph-light.png) | ![Graph Dark](docs/screenshots/vc-graph-dark.png) |
+
+### Tools
+
+| Light | Dark |
+|---|---|
+| ![Tools Light](docs/screenshots/vc-tools-light.png) | ![Tools Dark](docs/screenshots/vc-tools-dark.png) |
+
+### Settings
+
+| Light | Dark |
+|---|---|
+| ![Settings Light](docs/screenshots/vc-settings-light.png) | ![Settings Dark](docs/screenshots/vc-settings-dark.png) |
+
+---
+
+## What's New In This Iteration
+
+- The product is now organized around five primary views instead of the older project/task/people/calendar split.
+- The **Materials** workspace now combines client briefs with **folder-based shared account management**, including folder creation, rename, delete, and account move actions.
+- The **Home** view has been refined into a true daily operations surface with drag-and-drop task assignment, paged people cards, richer focus cards, and leave tracking.
+- The **Graph** view supports multiple layout modes, scoped relationship filters, node search, and focused detail inspection.
+- The **Settings** view now covers export/import, cloud restore, manual sync, transfer summaries, and undo-aware recent operation history.
+
+---
+
+## Key Capabilities
+
+### Home
+
+- Prioritized project focus cards with urgency-aware deadline treatment
+- A task pool that supports quick actions, contextual edits, and drag-to-assign flows
+- A people assignment panel with task counts, skill tags, leave indicators, and page-based navigation
+- A mini calendar that surfaces deadlines and leave markers
+- Quick jump search across projects, tasks, and people
+
+### Materials
+
+- Client briefs with linked projects, requirements, style notes, prohibitions, and reference links
+- Folder-based account storage for team credentials and shared platform access
+- Inline account copy actions and folder-to-folder move actions
+- Empty-folder support, searchable folder/account lists, and lightweight organization without nested dashboards
+
+### Graph
+
+- Relationship graph built from projects, tasks, and people
+- Toggleable scopes for full graph, project-task edges, or task-person edges
+- Force, radial, and lane layouts
+- Search-driven focus, node selection, zoom/pan, and detail side panel
+
+### Tools
+
+- Curated inspiration links for motion, video, sound, and visual research
+- Common web utilities for color, compression, animation, panorama, conversion, and asset processing
+- Lightweight launch surface for external tools frequently used in studio production
+
+### Settings
+
+- JSON export/import for full local backup and restore
+- CSV export for project and task lists
+- Optional Cloudflare-based cloud sync with manual push and remote restore
+- Local data summary, transfer summary, and recent operation history
+- Full wipe flow with confirmation for destructive actions
 
 ---
 
@@ -57,189 +109,167 @@ All data lives in the browser's IndexedDB. Cloud sync is optional and self-hoste
 | Layer | Technology |
 |---|---|
 | UI | React 19 + TypeScript |
-| Build | Vite |
-| Local storage | IndexedDB (`studio118db`) |
-| Cloud sync | Cloudflare Worker + KV |
-| Deployment | GitHub Pages |
+| Build | Vite 8 |
+| Styling | Plain CSS + CSS variables |
+| Local persistence | IndexedDB (`studio118db`) |
+| Optional sync | Cloudflare Worker + KV |
 | Testing | Vitest + jsdom |
 | Linting | ESLint |
+| Deployment | Static hosting (GitHub Pages, Cloudflare Pages, Vercel, self-hosted) |
+
+---
+
+## Architecture
+
+The app uses a React interface on top of a legacy-style data layer that still provides the single source of truth for persisted entities and derived selectors.
+
+```text
+src/
+├── App.tsx                     # App shell, theme toggle, view routing
+├── views/                      # Top-level views (Home, Materials, Graph, Tools, Settings)
+├── features/                   # Domain-specific UI and state helpers
+├── components/                 # Shared UI primitives and feedback components
+├── content/                    # Static content such as quotes
+└── legacy/
+    ├── store.ts                # In-memory entity store + subscriptions
+    ├── actions.ts              # State mutations and import/export helpers
+    ├── selectors.ts            # Derived models for views
+    ├── db.ts                   # IndexedDB open/read/write/import/export
+    └── utils.ts                # Shared date, backup, and formatting helpers
+```
+
+### Architectural notes
+
+- React renders the UI, but entity persistence still flows through the legacy store and IndexedDB helpers.
+- Derived view models are centralized in `src/legacy/selectors.ts`.
+- Syncable view data such as materials briefs, account records, and account folders lives in the `settings` store through `createSyncableSettingsStore`.
+- On first boot with an empty database, the app tries cloud restore first and falls back to seeded demo data.
+- Older hash routes are still aliased so historical links continue to resolve into the current five-view structure.
+
+---
+
+## Data And Sync
+
+All persistent data is stored in IndexedDB under `studio118db`.
+
+| Store | Purpose |
+|---|---|
+| `projects` | Project records, priority, status, deadline, description |
+| `tasks` | Task records, assignees, schedule, status, estimate |
+| `people` | Team members, skills, status, notes |
+| `logs` | Recent operations and activity traces |
+| `settings` | Syncable view state such as briefs, account folders, account records, and other keyed settings |
+| `leaveRecords` | Per-person leave dates used by the Home view and planner |
+
+### Backup model
+
+Every store registered in `BACKUP_COLLECTION_NAMES` is included in:
+
+- `db.exportAll()`
+- `db.importAll()`
+- `db.clearAll()`
+- Cloud sync payloads
+
+Current backup schema:
+
+```jsonc
+{
+  "schemaVersion": 3,
+  "exportedAt": "2026-04-16T12:00:00.000Z",
+  "projects": [],
+  "tasks": [],
+  "people": [],
+  "logs": [],
+  "settings": [],
+  "leaveRecords": []
+}
+```
+
+### Optional cloud sync
+
+Cloud sync is not required for the app to work. When configured, it adds:
+
+- debounced auto-sync after local edits
+- manual sync plus local JSON download
+- remote metadata polling
+- cloud-to-local restore for the latest snapshot
+
+The worker exposes:
+
+- `GET /meta`
+- `GET /data`
+- `PUT /data`
+
+See [cloudflare/sync-worker/](cloudflare/sync-worker/) for the worker setup.
 
 ---
 
 ## Getting Started
 
-**Requirements**
+### Requirements
 
-- Node.js `24.14.1` (pinned via `volta` in `package.json`)
+- Node.js `24.14.1`
 - npm `11.11.0`
 
-**Install and run**
+Both are pinned in `package.json` via Volta.
+
+### Install and run
 
 ```bash
 npm install
 npm run dev
 ```
 
-Default dev server: `http://127.0.0.1:5173/`
+Default local server:
 
-macOS one-click start:
+```text
+http://127.0.0.1:5173/
+```
+
+One-click launchers:
 
 ```bash
 ./118-start.command
 ```
 
-Windows one-click start:
-
 ```cmd
 118-start.cmd
 ```
 
-**Common commands**
+---
+
+## Build And Test
 
 ```bash
-npm run lint      # ESLint
-npm run test      # Vitest
-npm run build     # TypeScript check + Vite build
-npm run preview   # Preview the production build locally
+npm run lint
+npm run test
+npm run build
 ```
 
----
-
-## Architecture
-
-The app uses a **React view layer** on top of a **legacy data layer** — separating UI concerns from state management.
-
-```
-src/
-├── main.tsx / App.tsx     # Entry point and app shell
-├── views/                 # Page-level components (one per route)
-├── features/              # Domain feature components (dashboard, projects, tasks…)
-├── components/            # Shared UI and feedback primitives
-├── content/               # Static content (quotes, etc.)
-└── legacy/
-    ├── store.ts           # In-memory state, subscriptions
-    ├── actions.ts         # State mutations
-    ├── selectors.ts       # Derived state / computed models
-    ├── db.ts              # IndexedDB read/write
-    └── …
-```
-
-**Key design points:**
-- State lives in `legacy/store` (in-memory), connected to React via `useSyncExternalStore`
-- IndexedDB persists all data locally (no backend required for core functionality)
-- Selectors in `legacy/selectors.ts` centralize derived state calculations
-- On first launch with an empty database, the app attempts a cloud restore, then falls back to demo data
-
-### Routes (hash router)
-
-| Hash | View | Description |
-|---|---|---|
-| `#dashboard` | Today | Focus projects, task pool, people panel, mini calendar |
-| `#projects` | Projects | Card and timeline view with quick status actions |
-| `#tasks` | Tasks | Searchable task list with context menu shortcuts |
-| `#people` | People | Member management and task associations |
-| `#calendar` | Calendar | Monthly deadline overview |
-| `#settings` | Settings | Import/export, cloud sync, logs |
-
----
-
-## Cloud Sync
-
-Cloud sync is optional and requires a deployed Cloudflare Worker.
-
-**Setup**
-
-1. Create a KV Namespace in your Cloudflare account.
-2. Update `cloudflare/sync-worker/wrangler.toml` with your KV Namespace ID.
-3. Set `ALLOWED_ORIGIN` to your frontend domain.
-4. Deploy with Wrangler.
-5. Set the `VITE_SYNC_API_URL` environment variable to your Worker URL:
+Preview the production build locally:
 
 ```bash
-# .env (not committed — see .env.example)
-VITE_SYNC_API_URL=https://sync.example.com
+npm run preview
 ```
 
-**Sync behavior**
-
-| Trigger | Action |
-|---|---|
-| Data change | Auto-upload ~2 minutes after last change |
-| Manual sync | Immediate upload + local JSON backup download |
-| Cloud restore | Overwrites local IndexedDB with cloud snapshot |
-| Boot (empty DB) | Automatically pulls latest cloud snapshot if available |
-
-The Worker exposes three endpoints: `GET /meta`, `GET /data`, `PUT /data`. Only one snapshot (`sync:current`) is kept in KV at a time.
-
-See [`cloudflare/sync-worker/`](cloudflare/sync-worker/) for full setup details.
-
----
-
-## Data Structure
-
-All data is persisted in IndexedDB under the database name `studio118db`.
-
-| Store | Contents |
-|---|---|
-| `projects` | Project records: status, priority, deadline |
-| `tasks` | Tasks: assignees, schedule, status |
-| `people` | Members: skills, active state |
-| `logs` | Operation log (last 50 entries) |
-| `settings` | Syncable key-value settings |
-| `leaveRecords` | Member leave/absence records |
-
-All stores listed in `BACKUP_COLLECTION_NAMES` (`src/legacy/utils.ts`) are automatically included in cloud sync exports.
-
-JSON export format (schema v3):
-
-```jsonc
-{
-  "schemaVersion": 3,
-  "exportedAt": "…",
-  "projects": […],
-  "tasks": […],
-  "people": […],
-  "logs": […],
-  "settings": […],
-  "leaveRecords": […]
-}
-```
+Tests live in `tests/` and cover selectors, sync behavior, materials state migration, dashboard panels, theme regressions, and current React app regressions.
 
 ---
 
 ## Deployment
 
-The app is a static site built by Vite and can be deployed anywhere that serves static files (GitHub Pages, Cloudflare Pages, Vercel, self-hosted, etc.).
+This is a static Vite app and can be deployed anywhere that serves static assets.
 
-Deployments can be automated with GitHub Actions. The build base path is injected via the `DEPLOY_BASE` environment variable (see `vite.config.ts`), which allows serving from a subdirectory path if needed.
+If you need to build for a subdirectory:
 
 ```bash
-# Example: build for a subdirectory
 DEPLOY_BASE=/studio/ npm run build
 ```
 
-To enable cloud sync on GitHub Pages, add `VITE_SYNC_API_URL` as a repository Actions Variable.
-
----
-
-## Branch Strategy
-
-| Branch | Role | Status |
-|---|---|---|
-| `vc` | **Main development branch** | Active |
-| `main` | Legacy v1 | Archived, no active development |
-| `singleD` | Legacy single-page variant | Archived, no active development |
-
-All new development happens on `vc`.
-
----
-
-## Testing
-
-Tests live in `tests/` and use Vitest + jsdom.
+To enable optional cloud sync in deployment, provide:
 
 ```bash
-npm run lint && npm run test && npm run build
+VITE_SYNC_API_URL=https://your-worker.example.com
 ```
 
-Run all three before submitting changes.
+For GitHub Pages, add `VITE_SYNC_API_URL` as a GitHub Actions variable if sync should be enabled in the deployed build.
