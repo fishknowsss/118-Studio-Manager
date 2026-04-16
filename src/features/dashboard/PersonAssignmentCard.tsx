@@ -28,6 +28,10 @@ export function PersonAssignmentCard({
   const visibleSkills = model.skills.slice(0, 2)
   const hiddenSkillCount = Math.max(0, model.skills.length - visibleSkills.length)
   const isTaskLabelEmpty = model.topInProgressTaskLabel === '暂无进行中'
+  const hiddenTaskCount = Math.max(0, model.taskCount - 1)
+  const taskLabel = isTaskLabelEmpty
+    ? model.topInProgressTaskLabel
+    : `${model.topInProgressTaskLabel}${hiddenTaskCount > 0 ? `+${hiddenTaskCount}` : ''}`
 
   return (
     <div
@@ -45,7 +49,7 @@ export function PersonAssignmentCard({
           {model.name}
           {model.isOnLeaveToday && <span className="person-leave-badge" title="今日请假">假</span>}
         </div>
-        <div className={`person-assignment-count ${isTaskLabelEmpty ? 'is-empty' : ''}`}>{model.topInProgressTaskLabel}</div>
+        <div className={`person-assignment-count ${isTaskLabelEmpty ? 'is-empty' : ''}`}>{taskLabel}</div>
       </div>
 
       <div className="person-assignment-skills">

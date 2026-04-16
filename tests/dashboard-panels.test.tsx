@@ -78,7 +78,7 @@ describe('dashboard panels', () => {
     expect(cards).toHaveLength(2)
     expect(placeholders).toHaveLength(14)
     expect(firstCard?.textContent).toContain('王浩然')
-    expect(firstCardTaskLabel?.textContent).toBe('渲染输出终+3')
+    expect(firstCardTaskLabel?.textContent).toBe('渲染输出终+1')
     expect(firstCardSkills?.[0]?.textContent).toBe('Cinema 4D')
     expect(secondCard?.textContent).toContain('佳宁')
     expect(secondCard?.textContent).toContain('After Effects')
