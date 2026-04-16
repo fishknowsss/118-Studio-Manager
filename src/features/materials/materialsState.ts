@@ -150,33 +150,10 @@ export function subscribeAccounts(listener: () => void) {
   return accountsStore.subscribe(listener)
 }
 
-// ─── 文件夹列表 ───────────────────────────────────────
-// 仅存储文件夹名称数组，保证空文件夹可以存在
-const FOLDER_SETTINGS_KEY = 'materials:folders'
-
-function sanitizeFolders(raw: unknown): string[] {
-  if (!Array.isArray(raw)) return []
-  return (raw as unknown[])
-    .filter((item): item is string => typeof item === 'string' && item.trim().length > 0)
-    .map((s) => s.trim())
-    .filter((s, i, arr) => arr.indexOf(s) === i) // 去重
-}
-
-const foldersStore = createSyncableSettingsStore<string[]>({
-  key: FOLDER_SETTINGS_KEY,
-  emptyValue: [],
-  sanitize: sanitizeFolders,
-})
-
-export function readFolders(): string[]                { return foldersStore.read() }
-export function writeFolders(folders: string[])        { foldersStore.write(folders) }
-export function subscribeFolders(listener: () => void) { return foldersStore.subscribe(listener) }
-
 export async function initializeMaterialsState() {
   await Promise.all([
     briefsStore.initialize(),
     accountsStore.initialize(),
-    foldersStore.initialize(),
   ])
 }
 
@@ -184,14 +161,12 @@ export async function reloadMaterialsStateFromDB() {
   await Promise.all([
     briefsStore.reloadFromDB(),
     accountsStore.reloadFromDB(),
-    foldersStore.reloadFromDB(),
   ])
 }
 
 export function __resetMaterialsStateForTests() {
   briefsStore.resetForTests()
   accountsStore.resetForTests()
-  foldersStore.resetForTests()
 }
 
 export function normalizeMaterialUrl(value: string): string {
