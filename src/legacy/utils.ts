@@ -13,7 +13,25 @@ export type BackupPayload = {
   settings: BackupRecord[]
 }
 
-export const BACKUP_SCHEMA_VERSION = 2
+export const BACKUP_SCHEMA_VERSION = 3
+
+const PROJECT_BACKUP_KEYS = new Set(['createdAt', 'ddl', 'description', 'id', 'name', 'priority', 'status', 'updatedAt'])
+
+function sanitizeProjectBackupRecord(record: BackupRecord): BackupRecord {
+  return Object.fromEntries(
+    Object.entries(record).filter(([key]) => PROJECT_BACKUP_KEYS.has(key)),
+  )
+}
+
+function normalizeBackupCollection(
+  records: unknown,
+  sanitizeRecord?: (record: BackupRecord) => BackupRecord,
+) {
+  if (!Array.isArray(records)) return []
+  return records
+    .filter((record): record is BackupRecord => Boolean(record) && typeof record === 'object' && !Array.isArray(record))
+    .map((record) => (sanitizeRecord ? sanitizeRecord(record) : record))
+}
 
 function pad(value: number) {
   return String(value).padStart(2, '0')
@@ -200,11 +218,11 @@ export function buildBackupPayload(data: Partial<BackupPayload>): BackupPayload 
   return {
     schemaVersion: data.schemaVersion ?? BACKUP_SCHEMA_VERSION,
     exportedAt: data.exportedAt ?? now(),
-    projects: Array.isArray(data.projects) ? data.projects : [],
-    tasks: Array.isArray(data.tasks) ? data.tasks : [],
-    people: Array.isArray(data.people) ? data.people : [],
-    logs: Array.isArray(data.logs) ? data.logs : [],
-    settings: Array.isArray(data.settings) ? data.settings : [],
+    projects: normalizeBackupCollection(data.projects, sanitizeProjectBackupRecord),
+    tasks: normalizeBackupCollection(data.tasks),
+    people: normalizeBackupCollection(data.people),
+    logs: normalizeBackupCollection(data.logs),
+    settings: normalizeBackupCollection(data.settings),
   }
 }
 

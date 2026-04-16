@@ -50,17 +50,13 @@ describe('store selectors', () => {
     expect(pool.map((task) => task.id)).toEqual(['task-5', 'task-3', 'task-2', 'task-4', 'task-1'])
   })
 
-  it('computes dashboard focus counters and next milestone from one place', () => {
+  it('computes dashboard focus counters from one place', () => {
     const focus = getDashboardFocusData(
       {
         id: 'project-1',
         name: '项目 A',
         status: 'active',
         ddl: '2026-04-15',
-        milestones: [
-          { id: 'ms-1', title: '已完成节点', date: '2026-04-11', completed: true },
-          { id: 'ms-2', title: '下一个节点', date: '2026-04-14', completed: false },
-        ],
       },
       [
         { id: 'task-1', projectId: 'project-1', status: 'todo', scheduledDate: '2026-04-12', endDate: '2026-04-12' },
@@ -73,7 +69,7 @@ describe('store selectors', () => {
     expect(focus?.todayCount).toBe(1)
     expect(focus?.overdueCount).toBe(1)
     expect(focus?.remainingCount).toBe(2)
-    expect(focus?.nextMs?.title).toBe('下一个节点')
+    expect(focus?.brief).toBeTruthy()
   })
 
   it('builds dashboard secondary focus cards from one selector', () => {
@@ -84,44 +80,36 @@ describe('store selectors', () => {
           name: '项目 逾期',
           status: 'active',
           ddl: '2026-04-10',
-          milestones: [],
         },
         {
           id: 'project-1',
           name: '项目 A',
           status: 'active',
           ddl: '2026-04-15',
-          milestones: [
-            { id: 'ms-1', title: '验收', date: '2026-04-14', completed: false },
-          ],
         },
         {
           id: 'project-2',
           name: '项目 B',
           status: 'active',
           ddl: '2026-04-18',
-          milestones: [],
         },
         {
           id: 'project-3',
           name: '项目 C',
           status: 'active',
           ddl: '2026-04-21',
-          milestones: [],
         },
         {
           id: 'project-4',
           name: '项目 D',
           status: 'active',
           ddl: '2026-04-25',
-          milestones: [],
         },
         {
           id: 'project-5',
           name: '项目 E',
           status: 'active',
           ddl: '2026-05-02',
-          milestones: [],
         },
       ],
       [
@@ -142,7 +130,6 @@ describe('store selectors', () => {
       openTaskCount: 1,
       urgencyKey: 'focus-critical',
     })
-    expect(cards[1].nextMilestone?.title).toBe('验收')
     expect(cards[2]).toMatchObject({
       id: 'project-2',
       openTaskCount: 1,
@@ -169,21 +156,17 @@ describe('store selectors', () => {
       new Date('2026-04-12T10:00:00+08:00'),
       {
         '2026-04-12': {
-          ddls: [],
-          hasDdl: false,
-          hasMs: true,
-          markerKind: 'milestone',
+          ddls: [{ label: '检查点', toneKey: 'focus-calm' }],
+          hasDdl: true,
+          markerKind: 'ddl',
           markerTone: 'focus-calm',
-          milestones: [{ label: '检查点', toneKey: 'focus-calm' }],
           urgent: false,
         },
         '2026-04-18': {
           ddls: [{ label: '毕业设计', toneKey: 'focus-critical' }],
           hasDdl: true,
-          hasMs: false,
           markerKind: 'ddl',
           markerTone: 'focus-critical',
-          milestones: [],
           urgent: true,
         },
       },
@@ -201,7 +184,7 @@ describe('store selectors', () => {
       hasUrgent: false,
       isOtherMonth: false,
       isToday: true,
-      markerKind: 'milestone',
+      markerKind: 'ddl',
       markerTone: 'focus-calm',
     })
 
@@ -214,26 +197,25 @@ describe('store selectors', () => {
     })
   })
 
-  it('builds calendar events from project ddl and milestones in one place', () => {
+  it('builds calendar events from project ddl in one place', () => {
     const eventMap = buildCalendarEventMap([
       {
         id: 'project-1',
+        name: '中期汇报',
+        ddl: '2026-04-14',
+      },
+      {
+        id: 'project-2',
         name: '毕业设计',
         ddl: '2026-04-18',
-        milestones: [
-          { id: 'ms-1', title: '中期检查', date: '2026-04-14' },
-          { id: 'ms-2', title: '终稿提交', date: '2026-04-18' },
-        ],
       },
     ])
 
     expect(eventMap['2026-04-14']).toEqual({
-      ddls: [],
-      milestones: ['中期检查'],
+      ddls: ['中期汇报'],
     })
     expect(eventMap['2026-04-18']).toEqual({
       ddls: ['毕业设计'],
-      milestones: ['终稿提交'],
     })
   })
 
@@ -244,10 +226,6 @@ describe('store selectors', () => {
         name: '毕业设计',
         status: 'active',
         ddl: '2026-04-18',
-        milestones: [
-          { id: 'ms-1', title: '中期检查', date: '2026-04-14' },
-          { id: 'ms-2', title: '终稿提交', date: '2026-04-18' },
-        ],
       },
       {
         id: 'project-2',
@@ -260,10 +238,8 @@ describe('store selectors', () => {
     expect(eventMap['2026-04-18']).toEqual({
       ddls: [{ label: '毕业设计', toneKey: 'focus-critical' }],
       hasDdl: true,
-      hasMs: true,
       markerKind: 'ddl',
       markerTone: 'focus-critical',
-      milestones: [{ label: '终稿提交', toneKey: 'focus-critical' }],
       urgent: false,
     })
     expect(eventMap['2026-04-10']?.urgent).toBe(true)
@@ -277,15 +253,11 @@ describe('store selectors', () => {
         name: '毕业设计',
         status: 'active',
         ddl: '2026-04-18',
-        milestones: [
-          { id: 'ms-1', title: '中期检查', date: '2026-04-18' },
-        ],
       },
     ])
 
     expect(getProjectEventsForDate(eventMap, '2026-04-18')).toEqual([
       { label: 'DDL · 毕业设计', toneKey: 'focus-critical', type: 'ddl' },
-      { label: '里程碑 · 中期检查', toneKey: 'focus-critical', type: 'milestone' },
     ])
   })
 
@@ -317,7 +289,7 @@ describe('store selectors', () => {
     expect(timeline.rows[1].urgencyKey).toBe('focus-strong')
   })
 
-  it('builds project card models with progress and milestone summary', () => {
+  it('builds project card models with progress summary', () => {
     const cards = buildProjectCardModels(
       [
         {
@@ -327,10 +299,6 @@ describe('store selectors', () => {
           status: 'active',
           priority: 'urgent',
           ddl: '2026-04-18',
-          milestones: [
-            { id: 'ms-1', title: '中期检查', date: '2026-04-14', completed: true },
-            { id: 'ms-2', title: '终稿提交', date: '2026-04-18', completed: false },
-          ],
         },
         {
           id: 'project-2',
@@ -339,7 +307,6 @@ describe('store selectors', () => {
           status: 'active',
           priority: 'high',
           ddl: '2026-04-22',
-          milestones: [],
         },
       ],
       [
@@ -356,11 +323,6 @@ describe('store selectors', () => {
       statusLabel: '进行中',
       priorityLabel: '紧急',
       urgencyKey: 'focus-critical',
-    })
-    expect(cards[0].milestones[0]).toMatchObject({
-      title: '中期检查',
-      dateText: '2026/4/14',
-      completed: true,
     })
     expect(cards[1].urgencyKey).toBe('focus-strong')
   })

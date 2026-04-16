@@ -17,29 +17,16 @@ async function seedDemoData() {
   const projA: LegacyProject = {
     id: uid(), name: '品牌宣传片 · 第三季', status: 'active', priority: 'urgent',
     ddl: shiftLocalDateKey(new Date(), 1), description: '客户品牌年度宣传片，3分钟正片+15s短版，需要4K交付。',
-    milestones: [
-      { id: uid(), title: '初剪完成', date: shiftLocalDateKey(new Date(), -1), completed: true },
-      { id: uid(), title: '客户审片', date: shiftLocalDateKey(new Date(), 1), completed: false },
-      { id: uid(), title: '终版交付', date: shiftLocalDateKey(new Date(), 3), completed: false },
-    ],
     createdAt: timestamp(), updatedAt: timestamp(),
   }
   const projB: LegacyProject = {
     id: uid(), name: '线下活动视觉设计', status: 'active', priority: 'high',
     ddl: shiftLocalDateKey(new Date(), 5), description: '5月线下沙龙活动——VI设计、海报、物料、现场大屏素材。',
-    milestones: [
-      { id: uid(), title: 'VI方案定稿', date: shiftLocalDateKey(new Date(), 2), completed: false },
-      { id: uid(), title: '印刷文件提交', date: shiftLocalDateKey(new Date(), 4), completed: false },
-    ],
     createdAt: timestamp(), updatedAt: timestamp(),
   }
   const projC: LegacyProject = {
     id: uid(), name: '社交媒体内容 · 4月', status: 'active', priority: 'medium',
     ddl: shiftLocalDateKey(new Date(), 18), description: '小红书 + 微博 + 视频号月度内容矩阵，共20条。',
-    milestones: [
-      { id: uid(), title: '选题策划', date: shiftLocalDateKey(new Date(), 2), completed: false },
-      { id: uid(), title: '拍摄完成', date: shiftLocalDateKey(new Date(), 10), completed: false },
-    ],
     createdAt: timestamp(), updatedAt: timestamp(),
   }
 

@@ -75,7 +75,6 @@ export function DashboardMiniCalendar({
             day.isOtherMonth ? 'other-month' : '',
             day.hasEvents ? 'has-events' : '',
             day.markerKind === 'ddl' ? 'has-ddl' : '',
-            day.markerKind === 'milestone' ? 'has-milestone' : '',
             day.markerTone || '',
             draggingPersonId && dragOverDate === day.dateKey ? 'leave-drop-target' : '',
           ].filter(Boolean).join(' ')
@@ -108,9 +107,6 @@ export function DashboardMiniCalendar({
               <div className="cal-legend-dot focus-neutral"></div>
             </div>
             截止越近越暖
-          </div>
-          <div className="cal-legend-item">
-            <div className="cal-legend-dot milestone"></div> 里程碑
           </div>
         </div>
         <div className="mini-cal-nav" aria-label="切换月份">

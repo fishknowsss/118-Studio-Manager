@@ -9,7 +9,6 @@ import {
   undoLastEdit,
 } from './editUndo'
 import type {
-  LegacyMilestone,
   LegacyPerson,
   LegacyProject,
   LegacyTask,
@@ -31,7 +30,6 @@ export type ProjectFormInput = {
   priority: ProjectPriority | null
   ddl: string | null
   description: string | null
-  milestones: LegacyMilestone[]
 }
 
 export type TaskFormInput = {
@@ -78,7 +76,6 @@ export function buildProjectRecord(
     priority: form.priority || 'medium',
     ddl: form.ddl || null,
     description: form.description || '',
-    milestones: form.milestones,
     createdAt: project?.createdAt || timestamp,
     updatedAt: timestamp,
   }

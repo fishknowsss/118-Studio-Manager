@@ -59,10 +59,11 @@ export function Calendar() {
         <div className="cal-grid">
           {days.map(({ date, otherMonth }) => {
             const dateStr = dateToStr(date)
-            const events = eventMap[dateStr] || { ddls: [], milestones: [] }
+            const events = eventMap[dateStr]
+            const ddlEvents = events?.ddls || []
             const isToday = dateStr === today()
             const leaveNames = leaveByDate[dateStr]
-            const eventTotal = events.ddls.length + events.milestones.length
+            const eventTotal = ddlEvents.length
             const eventSlots = leaveNames ? 3 : 4
             const moreCount = eventTotal - eventSlots
 
@@ -74,11 +75,8 @@ export function Calendar() {
                 onClick={(e) => { const r = e.currentTarget.getBoundingClientRect(); openPlanner(dateStr, r.left + r.width / 2, r.top + r.height / 2) }}
               >
                 <div className="cal-day-num">{date.getDate()}</div>
-                {events.ddls.slice(0, eventSlots).map((item) => (
+                {ddlEvents.slice(0, eventSlots).map((item) => (
                   <div key={`ddl-${item.label}`} className={`cal-event ddl ${item.toneKey}`} title={item.label}>⬡ {item.label}</div>
-                ))}
-                {events.milestones.slice(0, Math.max(0, eventSlots - events.ddls.length)).map((item) => (
-                  <div key={`ms-${item.label}`} className={`cal-event milestone ${item.toneKey}`} title={item.label}>◆ {item.label}</div>
                 ))}
                 {moreCount > 0 ? <div className="cal-event more">+{moreCount} 项</div> : null}
                 {leaveNames ? (

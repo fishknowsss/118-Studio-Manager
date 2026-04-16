@@ -20,20 +20,12 @@ export type LegacyEntity = {
   updatedAt?: string
 }
 
-export type LegacyMilestone = {
-  id: string
-  title?: string
-  date?: string | null
-  completed?: boolean
-}
-
 export type LegacyProject = LegacyEntity & {
   name?: string
   status?: ProjectStatus
   priority?: ProjectPriority
   ddl?: string | null
   description?: string
-  milestones?: LegacyMilestone[]
 }
 
 export type LegacyTask = LegacyEntity & {
@@ -100,6 +92,20 @@ export type LeaveRecord = {
   reason?: string
 }
 
+type ProjectRecord = LegacyProject & Record<string, unknown>
+
+const PROJECT_RECORD_KEYS = new Set(['createdAt', 'ddl', 'description', 'id', 'name', 'priority', 'status', 'updatedAt'])
+
+function projectNeedsNormalization(project: ProjectRecord) {
+  return Object.keys(project).some((key) => !PROJECT_RECORD_KEYS.has(key))
+}
+
+function sanitizeProjectRecord(project: ProjectRecord): LegacyProject {
+  return Object.fromEntries(
+    Object.entries(project).filter(([key]) => PROJECT_RECORD_KEYS.has(key)),
+  ) as LegacyProject
+}
+
 const listeners: Set<() => void> = new Set()
 
 function emitStoreUpdated(detail: Record<string, unknown> = {}) {
@@ -126,13 +132,21 @@ export const store = {
   },
 
   async loadAll() {
-    const [projects, rawTasks, people, logs, leaveRecords] = await Promise.all([
-      db.getAll('projects') as Promise<LegacyProject[]>,
+    const [rawProjects, rawTasks, people, logs, leaveRecords] = await Promise.all([
+      db.getAll('projects') as Promise<ProjectRecord[]>,
       db.getAll('tasks') as Promise<LegacyTask[]>,
       db.getAll('people') as Promise<LegacyPerson[]>,
       db.getAll('logs') as Promise<LegacyLog[]>,
       db.getAll('leaveRecords') as Promise<LeaveRecord[]>,
     ])
+    const projects = rawProjects.map((project) => sanitizeProjectRecord(project))
+    const projectsNeedCleanup = rawProjects.some((project) => projectNeedsNormalization(project))
+    if (projectsNeedCleanup) {
+      await Promise.all(rawProjects.map((project, index) => {
+        if (!projectNeedsNormalization(project)) return Promise.resolve(undefined)
+        return db.put('projects', projects[index])
+      }))
+    }
     // 迁移旧字段：assigneeId → assigneeIds
     this.projects = projects
     this.tasks = rawTasks.map((t) =>
@@ -145,16 +159,17 @@ export const store = {
   },
 
   async saveProject(project: LegacyProject) {
-    await db.put('projects', project)
-    const index = this.projects.findIndex(item => item.id === project.id)
+    const sanitizedProject = sanitizeProjectRecord(project as ProjectRecord)
+    await db.put('projects', sanitizedProject)
+    const index = this.projects.findIndex(item => item.id === sanitizedProject.id)
     if (index >= 0) {
       const next = [...this.projects]
-      next[index] = project
+      next[index] = sanitizedProject
       this.projects = next
     } else {
-      this.projects = [...this.projects, project]
+      this.projects = [...this.projects, sanitizedProject]
     }
-    emitStoreUpdated({ type: 'project', action: 'save', id: project.id })
+    emitStoreUpdated({ type: 'project', action: 'save', id: sanitizedProject.id })
   },
 
   async deleteProject(id: string) {

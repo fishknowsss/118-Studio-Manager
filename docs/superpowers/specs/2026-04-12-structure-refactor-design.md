@@ -59,7 +59,7 @@
 - `buildDashboardMiniCalendarModel`:
   - 输出月份标题、weekday、day cell、事件态
 - `buildProjectCardModels`:
-  - 输出项目卡片的进度、DDL、里程碑摘要和状态标签
+  - 输出项目卡片的进度、DDL 和状态标签
 - `buildTaskListItemModels`:
   - 输出任务行的项目名、人员名、日期态和标签文案
 - `buildPersonCardModels`:

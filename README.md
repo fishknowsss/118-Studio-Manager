@@ -32,10 +32,10 @@ A local-first project collaboration tool built for 118 Studio — designed aroun
 ## Features
 
 - **Today Dashboard** — focus project stack, task pool, people workload, and mini calendar in one view
-- **Project Management** — status, priority, deadlines, milestones, and a visual timeline
+- **Project Management** — status, priority, deadlines, and a visual timeline
 - **Task Management** — filter/search, right-click context menu for quick status/assignee/priority updates
 - **People Management** — member profiles, active/inactive toggle, task associations, skill tags
-- **Calendar View** — monthly grid with deadline and milestone markers; click any day to open its schedule panel
+- **Calendar View** — monthly grid with deadline markers; click any day to open its schedule panel
 - **Data Management** — JSON/CSV export, JSON import, full wipe with confirmation
 - **Cloud Sync (optional)** — two-way sync between local IndexedDB and a Cloudflare Worker/KV backend
 
@@ -121,7 +121,7 @@ src/
 | `#projects` | Projects | Card and timeline view with quick status actions |
 | `#tasks` | Tasks | Searchable task list with context menu shortcuts |
 | `#people` | People | Member management and task associations |
-| `#calendar` | Calendar | Monthly deadline/milestone overview |
+| `#calendar` | Calendar | Monthly deadline overview |
 | `#settings` | Settings | Import/export, cloud sync, logs |
 
 ---
@@ -164,17 +164,17 @@ All data is persisted in IndexedDB under the database name `studio118db`.
 
 | Store | Contents |
 |---|---|
-| `projects` | Project records: status, priority, deadline, milestones |
+| `projects` | Project records: status, priority, deadline |
 | `tasks` | Tasks: assignees, schedule, status |
 | `people` | Members: skills, active state |
 | `logs` | Operation log (last 50 entries) |
 | `settings` | Local settings |
 
-JSON export format (schema v2):
+JSON export format (schema v3):
 
 ```jsonc
 {
-  "schemaVersion": 2,
+  "schemaVersion": 3,
   "exportedAt": "…",
   "projects": […],
   "tasks": […],

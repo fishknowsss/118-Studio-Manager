@@ -12,7 +12,7 @@ import {
   urgencyClass,
 } from './utils'
 import type { BackupPayload } from './utils'
-import type { LegacyLog, LegacyMilestone, LegacyPerson, LegacyProject, LegacyTask } from './store'
+import type { LegacyLog, LegacyPerson, LegacyProject, LegacyTask } from './store'
 import { getTaskAssigneeIds } from './store'
 
 type EntityMaps = {
@@ -81,7 +81,7 @@ export type DashboardMiniCalendarDay = {
   hasUrgent: boolean
   isOtherMonth: boolean
   isToday: boolean
-  markerKind?: 'ddl' | 'milestone' | ''
+  markerKind?: 'ddl' | ''
   markerTone?: ProjectDeadlineToneKey | ''
 }
 
@@ -96,7 +96,6 @@ export type DashboardFocusCard = {
   ddlLabel: string
   id: string
   name: string
-  nextMilestone?: LegacyMilestone
   openTaskCount: number
   urgencyKey: string
 }
@@ -109,18 +108,9 @@ export type ProjectEventItem = {
 export type ProjectEventSummary = {
   ddls: ProjectEventItem[]
   hasDdl: boolean
-  hasMs: boolean
-  markerKind?: 'ddl' | 'milestone' | ''
+  markerKind?: 'ddl' | ''
   markerTone?: ProjectDeadlineToneKey | ''
-  milestones: ProjectEventItem[]
   urgent: boolean
-}
-
-export type ProjectCardMilestone = {
-  completed: boolean
-  dateText: string
-  id: string
-  title: string
 }
 
 export type ProjectCardModel = {
@@ -128,7 +118,6 @@ export type ProjectCardModel = {
   description: string
   doneCount: number
   id: string
-  milestones: ProjectCardMilestone[]
   name: string
   priorityKey: string
   priorityLabel: string
@@ -390,7 +379,7 @@ export function buildDashboardMiniCalendarModel(
     return {
       dateKey,
       dayOfMonth: date.getDate(),
-      hasEvents: Boolean(eventSummary?.hasDdl || eventSummary?.hasMs),
+      hasEvents: Boolean(eventSummary?.hasDdl),
       hasLeave: leaveDates.has(dateKey),
       hasUrgent: Boolean(eventSummary?.urgent),
       isOtherMonth: otherMonth,
@@ -413,7 +402,6 @@ export function getProjectEventMap(projects: LegacyProject[]) {
   return Object.fromEntries(
     Object.entries(summaryMap).map(([key, value]) => [key, {
       hasDdl: value.hasDdl,
-      hasMs: value.hasMs,
       urgent: value.urgent,
     }]),
   )
@@ -425,7 +413,6 @@ export function buildCalendarEventMap(projects: LegacyProject[]) {
   return Object.fromEntries(
     Object.entries(summaryMap).map(([key, value]) => [key, {
       ddls: value.ddls.map((item) => item.label),
-      milestones: value.milestones.map((item) => item.label),
     }]),
   )
 }
@@ -441,10 +428,8 @@ export function buildProjectEventSummaryMap(
     nextMap[key] ||= {
       ddls: [],
       hasDdl: false,
-      hasMs: false,
       markerKind: '',
       markerTone: '',
-      milestones: [],
       urgent: false,
     }
     return nextMap[key]
@@ -465,19 +450,6 @@ export function buildProjectEventSummaryMap(
         day.markerKind = 'ddl'
       }
     }
-
-    for (const milestone of project.milestones || []) {
-      const milestoneKey = coerceToLocalDateKey(milestone.date)
-      if (milestoneKey && milestone.title) {
-        const day = ensureDay(milestoneKey)
-        day.milestones.push({ label: milestone.title, toneKey })
-        day.hasMs = true
-        if (!day.hasDdl && isToneMoreUrgent(toneKey, day.markerTone)) {
-          day.markerTone = toneKey
-          day.markerKind = 'milestone'
-        }
-      }
-    }
   }
 
   return nextMap
@@ -492,7 +464,6 @@ export function getProjectEventsForDate(
 
   return [
     ...day.ddls.map((item) => ({ label: `DDL · ${item.label}`, toneKey: item.toneKey, type: 'ddl' as const })),
-    ...day.milestones.map((item) => ({ label: `里程碑 · ${item.label}`, toneKey: item.toneKey, type: 'milestone' as const })),
   ]
 }
 
@@ -569,22 +540,12 @@ export function buildProjectCardModels(
     const projectTasks = tasksByProjectId[project.id] || []
     const statusKey = project.status || 'active'
     const priorityKey = project.priority || 'medium'
-    const milestones = (project.milestones || [])
-      .filter((milestone) => milestone.title)
-      .slice(0, 3)
-      .map((milestone, index) => ({
-        completed: Boolean(milestone.completed),
-        dateText: formatSlashDate(coerceToLocalDateKey(milestone.date)),
-        id: milestone.id || `${project.id}-milestone-${index}`,
-        title: milestone.title || '',
-      }))
 
     return {
       ddlText: ddlLabel(project.ddl || null, statusKey),
       description: project.description || '',
       doneCount: projectTasks.filter((task) => task.status === 'done').length,
       id: project.id,
-      milestones,
       name: project.name || '未命名项目',
       priorityKey,
       priorityLabel: PRIORITY_LABELS[priorityKey] || PRIORITY_LABELS.medium,
@@ -715,9 +676,6 @@ export function getDashboardFocusData(
   if (!project) return null
 
   const projectTasks = tasks.filter((task) => task.projectId === project.id)
-  const nextMs = (project.milestones || [])
-    .filter((milestone) => !milestone.completed && milestone.date && milestone.date >= todayStr)
-    .sort((a, b) => (a.date || '').localeCompare(b.date || ''))[0]
   const days = daysUntil(project.ddl)
 
   let brief = '该项目未设置 DDL，请尽快补齐时间点。'
@@ -725,7 +683,7 @@ export function getDashboardFocusData(
     if (days < 0) brief = `已逾期 ${Math.abs(days)} 天，建议立即处理交付风险。`
     else if (days === 0) brief = '今天截止，请优先完成最终交付与确认。'
     else if (days <= 3) brief = `距离截止 ${days} 天，进入冲刺窗口。`
-    else if (days <= 7) brief = `距离截止 ${days} 天，请锁定关键里程碑。`
+    else if (days <= 7) brief = `距离截止 ${days} 天，请锁定关键交付项。`
     else brief = `距离截止 ${days} 天，保持节奏推进。`
   }
 
@@ -735,7 +693,6 @@ export function getDashboardFocusData(
   return {
     assigneeCount,
     brief,
-    nextMs,
     overdueCount: projectTasks.filter((task) => task.endDate && task.endDate < todayStr && task.status !== 'done').length,
     remainingCount: openTasks.length,
     todayCount: projectTasks.filter((task) => task.scheduledDate === todayStr && task.status !== 'done').length,
@@ -755,17 +712,12 @@ export function buildDashboardFocusCards(
 
   return topProjects.map((project) => {
     const projectTasks = tasks.filter((task) => task.projectId === project.id)
-    const nextMilestone = (project.milestones || [])
-      .filter((milestone) => !milestone.completed && milestone.date && milestone.date >= todayStr)
-      .sort((left, right) => (left.date || '').localeCompare(right.date || ''))[0]
-
     const statusKey = project.status || 'active'
     return {
       daysLeft: (statusKey === 'active' || statusKey === 'paused') ? (daysUntil(project.ddl || null) ?? null) : null,
       ddlLabel: ddlLabel(project.ddl || null, statusKey),
       id: project.id,
       name: project.name || '未命名项目',
-      nextMilestone,
       openTaskCount: projectTasks.filter((task) => task.status !== 'done').length,
       urgencyKey: toneMap[project.id] || 'focus-neutral',
     } satisfies DashboardFocusCard
@@ -788,11 +740,7 @@ export function buildQuickJumpSearchItems(
   const items: ScoredItem[] = []
 
   for (const project of projects) {
-    const matchScore = pickBestMatchScore([
-      project.name || '',
-      project.description || '',
-      ...(project.milestones || []).map((milestone) => milestone.title || ''),
-    ], normalizedQuery)
+    const matchScore = pickBestMatchScore([project.name || '', project.description || ''], normalizedQuery)
     if (matchScore === null) continue
 
     items.push({

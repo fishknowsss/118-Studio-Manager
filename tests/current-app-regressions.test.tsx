@@ -233,7 +233,6 @@ describe('current app regressions', () => {
 
     expect(dashboardSource).toMatch(/buildDashboardFocusCards/)
     expect(dashboardSource).not.toMatch(/const projectTasks =/)
-    expect(dashboardSource).not.toMatch(/const nextMilestone =/)
   })
 
   it('keeps dashboard focus area split into dedicated components', () => {
@@ -244,7 +243,6 @@ describe('current app regressions', () => {
     expect(dashboardSource).toMatch(/DashboardHeader/)
     expect(dashboardSource).toMatch(/DashboardMiniCalendar/)
     expect(dashboardSource).not.toMatch(/focus-highlight-head/)
-    expect(dashboardSource).not.toMatch(/focus-card-milestone/)
     expect(dashboardSource).not.toMatch(/dash-date-block/)
     expect(dashboardSource).not.toMatch(/mini-cal-header/)
   })

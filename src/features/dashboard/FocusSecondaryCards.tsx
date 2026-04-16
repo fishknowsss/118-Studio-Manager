@@ -1,5 +1,4 @@
 import type { DashboardFocusCard } from '../../legacy/selectors'
-import { formatDate } from '../../legacy/utils'
 import { URGENCY_TEXT } from './focusLabels'
 
 export function FocusSecondaryCards({
@@ -25,9 +24,6 @@ export function FocusSecondaryCards({
             <span>{URGENCY_TEXT[card.urgencyKey] || '未迫近'}</span>
             <span>{card.openTaskCount} 个任务</span>
           </div>
-          {card.nextMilestone ? (
-            <div className="focus-card-milestone">◆ {card.nextMilestone.title} · {formatDate(card.nextMilestone.date || null)}</div>
-          ) : null}
           {card.daysLeft !== null ? (
             <div className="focus-card-days">
               <span className="focus-card-days-num">{Math.abs(card.daysLeft)}</span>

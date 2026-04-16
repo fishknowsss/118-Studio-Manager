@@ -6,7 +6,7 @@ import { TaskDialog } from '../tasks/TaskDialog'
 import { deleteTaskWithLog, toggleTaskStatus, updateTaskQuickField } from '../../legacy/actions'
 import { buildTaskListItemModels } from '../../legacy/selectors'
 import { useLegacyStoreSnapshot } from '../../legacy/useLegacyStore'
-import { ddlLabel, formatDate, today, PRIORITY_LABELS, STATUS_LABELS } from '../../legacy/utils'
+import { ddlLabel, today, PRIORITY_LABELS, STATUS_LABELS } from '../../legacy/utils'
 import type { LegacyTask, TaskPriority, TaskStatus } from '../../legacy/store'
 import { PROJECT_PRIORITIES, TASK_STATUSES, getTaskAssigneeIds } from '../../legacy/store'
 import { ContextMenu, type ContextMenuItem } from '../../components/ui/ContextMenu'
@@ -109,7 +109,6 @@ export function ProjectDetailPanel({ projectId }: { projectId: string }) {
   const statusKey = project.status || 'active'
   const priorityKey = project.priority || 'medium'
   const ddl = ddlLabel(project.ddl || null, statusKey)
-  const milestones = (project.milestones || []).filter((m) => m.title)
 
   return (
     <div className="project-detail-panel">
@@ -122,22 +121,6 @@ export function ProjectDetailPanel({ projectId }: { projectId: string }) {
 
       {/* Description */}
       {project.description ? <p className="pdp-desc">{project.description}</p> : null}
-
-      {/* Milestones */}
-      {milestones.length > 0 ? (
-        <div className="pdp-section">
-          <div className="pdp-section-title">里程碑</div>
-          {milestones.map((m) => (
-            <div key={m.id} className={`pdp-milestone ${m.completed ? 'done' : ''}`}>
-              {m.completed
-                ? <span className="pdp-ms-check">✓</span>
-                : <span className="pdp-ms-diamond">◆</span>}
-              <span className="pdp-ms-label">{m.title}</span>
-              {m.date ? <span className="pdp-ms-date">{formatDate(m.date)}</span> : null}
-            </div>
-          ))}
-        </div>
-      ) : null}
 
       {/* Tasks */}
       <div className="pdp-section">

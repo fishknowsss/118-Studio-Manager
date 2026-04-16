@@ -37,17 +37,6 @@ export function ProjectCard({
         <span className={`badge badge-${model.priorityKey}`}>{model.priorityLabel}</span>
         <span className="project-task-count">{model.doneCount}/{model.taskCount} 完成</span>
       </div>
-
-      {model.milestones.length > 0 ? (
-        <div className="milestones-mini">
-          {model.milestones.map((milestone) => (
-            <div key={milestone.id} className={`milestone-mini-item ${milestone.completed ? 'done' : ''}`}>
-              <div className={`milestone-dot ${milestone.completed ? 'done' : ''}`} />
-              {milestone.title} {milestone.dateText ? `· ${milestone.dateText}` : ''}
-            </div>
-          ))}
-        </div>
-      ) : null}
     </div>
   )
 }
