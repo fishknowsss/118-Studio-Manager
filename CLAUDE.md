@@ -59,6 +59,14 @@ cloudflare/       — Cloudflare Worker 后端
 - 远程拉取：每 10 分钟轮询 + 页面 visibility change 时检查
 - 配置：通过 `VITE_SYNC_API_URL` 环境变量启用
 
+### 生产鉴权边界
+
+- 生产环境中，Cloudflare Worker 同步接口的真实鉴权边界是 Cloudflare Access。
+- 主站自定义域名与同步自定义域名都必须受 Access 保护；公开仓库中不要写入真实生产域名。
+- 前端不使用静态共享 token 作为主要鉴权手段；对于静态站点，这类 token 会进入浏览器产物，安全收益有限。
+- 审查同步相关代码时，不能仅因代码里缺少 Bearer token 就直接判定“生产无鉴权”；应先确认部署环境是否已对同步自定义域启用 Access。
+- 但如果匿名访问仍可直接读取同步入口的 `/data` 或 `/meta`，仍应视为高危并优先修复。
+
 ## 状态管理
 
 - **Legacy Store**（`src/legacy/store.ts`）：核心数据的单例 store，基于观察者模式 + IndexedDB
