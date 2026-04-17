@@ -6,7 +6,8 @@ import { join } from 'node:path'
 import { act } from 'react'
 import { createRoot } from 'react-dom/client'
 import { Dialog } from '../src/components/ui/Dialog'
-import { formatLocalDateKey, normalizeImportedBackup } from '../src/legacy/utils'
+import { buildTaskExportRows } from '../src/legacy/selectors'
+import { downloadFile, formatLocalDateKey, normalizeImportedBackup, toCSV } from '../src/legacy/utils'
 import { getAssignableTasks } from '../src/features/planner/plannerUtils'
 import { ContextMenu } from '../src/components/ui/ContextMenu'
 
@@ -31,6 +32,54 @@ describe('current app regressions', () => {
     expect(normalized.schemaVersion).toBe(2)
     expect(normalized.logs).toHaveLength(1)
     expect(normalized.settings).toEqual([{ key: 'theme', value: 'dark' }])
+  })
+
+  it('prepends a UTF-8 BOM for CSV downloads so Chinese text opens correctly', async () => {
+    let capturedBlob: Blob | null = null
+    const createObjectURL = vi.spyOn(URL, 'createObjectURL').mockImplementation((value) => {
+      capturedBlob = value as Blob
+      return 'blob:test'
+    })
+    const revokeObjectURL = vi.spyOn(URL, 'revokeObjectURL').mockImplementation(() => {})
+    const clickSpy = vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => {})
+
+    downloadFile('标题,内容\n中文,测试', 'test.csv', 'text/csv;charset=utf-8')
+
+    expect(capturedBlob).not.toBeNull()
+  const bytes = new Uint8Array(await capturedBlob!.arrayBuffer())
+  expect(Array.from(bytes.slice(0, 3))).toEqual([0xef, 0xbb, 0xbf])
+  expect(new TextDecoder().decode(bytes.slice(3))).toBe('标题,内容\n中文,测试')
+    expect(clickSpy).toHaveBeenCalledTimes(1)
+
+    createObjectURL.mockRestore()
+    revokeObjectURL.mockRestore()
+    clickSpy.mockRestore()
+  })
+
+  it('keeps task CSV assignee headers aligned with exported row fields', () => {
+    const csv = toCSV(
+      buildTaskExportRows(
+        [{
+          id: 'task-1',
+          title: '宣传片剪辑',
+          projectId: 'project-1',
+          assigneeIds: ['person-1', 'person-2'],
+          createdAt: '2026-04-17T10:00:00+08:00',
+        }],
+        {
+          peopleById: {
+            'person-1': { id: 'person-1', name: '张三' },
+            'person-2': { id: 'person-2', name: '李四' },
+          },
+          projectsById: {
+            'project-1': { id: 'project-1', name: '品牌宣传片' },
+          },
+        },
+      ),
+      ['id', 'title', 'project', 'status', 'priority', 'assignees', 'startDate', 'endDate', 'scheduledDate', 'estimatedHours', 'createdAt'],
+    )
+
+    expect(csv).toContain('"张三, 李四"')
   })
 
   it('closes the React dialog exactly once on backdrop click', () => {
@@ -245,6 +294,22 @@ describe('current app regressions', () => {
     expect(dashboardSource).not.toMatch(/focus-highlight-head/)
     expect(dashboardSource).not.toMatch(/dash-date-block/)
     expect(dashboardSource).not.toMatch(/mini-cal-header/)
+  })
+
+  it('treats settings and leave records as first-class backup data across bootstrap and settings UI', () => {
+    const bootstrapSource = readFileSync(join(process.cwd(), 'src/legacy/bootstrap.ts'), 'utf8')
+    const syncProviderSource = readFileSync(join(process.cwd(), 'src/features/sync/SyncProvider.tsx'), 'utf8')
+    const syncSharedSource = readFileSync(join(process.cwd(), 'src/features/sync/syncShared.ts'), 'utf8')
+    const settingsSource = readFileSync(join(process.cwd(), 'src/views/Settings.tsx'), 'utf8')
+
+    expect(syncSharedSource).toMatch(/payload\.leaveRecords\.length > 0/)
+    expect(syncProviderSource).toMatch(/store\.leaveRecords\.length > 0/)
+    expect(bootstrapSource).toMatch(/const localBackup = await db\.exportAll\(\)/)
+    expect(bootstrapSource).toMatch(/if \(!hasBackupContent\(localBackup\)\)/)
+    expect(settingsSource).toMatch(/currentSummary\.settingsCount/)
+    expect(settingsSource).toMatch(/currentSummary\.leaveRecordCount/)
+    expect(settingsSource).toMatch(/同步设置/)
+    expect(settingsSource).toMatch(/请假记录/)
   })
 
   it('uses node24-compatible GitHub Pages actions in deploy workflow', () => {

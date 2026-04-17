@@ -3,6 +3,8 @@ import { store, type LegacyPerson, type LegacyProject, type LegacyTask } from '.
 import { shiftLocalDateKey } from './utils'
 import { restoreCloudSnapshotOnBoot } from '../features/sync/bootstrapSync'
 import { initializeSyncableViewState } from '../features/persistence/syncableViewState'
+import { hasBackupContent } from '../features/sync/syncShared'
+import { db } from './db'
 
 let hasBooted = false
 
@@ -53,8 +55,9 @@ export async function initializeAppData() {
 
   await openDB()
   await store.loadAll()
+  const localBackup = await db.exportAll()
 
-  if (!store.projects.length && !store.tasks.length && !store.people.length) {
+  if (!hasBackupContent(localBackup)) {
     try {
       const restored = await restoreCloudSnapshotOnBoot()
       if (!restored) {

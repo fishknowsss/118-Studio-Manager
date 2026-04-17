@@ -24,7 +24,8 @@ export function hasBackupContent(payload: BackupPayload) {
     payload.tasks.length > 0 ||
     payload.people.length > 0 ||
     payload.logs.length > 0 ||
-    payload.settings.length > 0
+    payload.settings.length > 0 ||
+    payload.leaveRecords.length > 0
   )
 }
 

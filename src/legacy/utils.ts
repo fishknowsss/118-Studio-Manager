@@ -263,7 +263,10 @@ export function normalizeImportedBackup(data: unknown): BackupPayload {
 }
 
 export function downloadFile(content: string, filename: string, mime = 'application/json') {
-  const url = URL.createObjectURL(new Blob([content], { type: mime }))
+  const normalizedContent = mime.toLowerCase().includes('text/csv') && !content.startsWith('\uFEFF')
+    ? `\uFEFF${content}`
+    : content
+  const url = URL.createObjectURL(new Blob([normalizedContent], { type: mime }))
   const link = document.createElement('a')
   link.href = url
   link.download = filename

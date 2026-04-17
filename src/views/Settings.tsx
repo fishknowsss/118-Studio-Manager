@@ -1,11 +1,20 @@
-import { useMemo, useState, useSyncExternalStore } from 'react'
+import { useEffect, useMemo, useState, useSyncExternalStore } from 'react'
 import { useConfirm } from '../components/feedback/ConfirmProvider'
 import { useToast } from '../components/feedback/ToastProvider'
+import {
+  readAccounts,
+  readBriefs,
+  readFolders,
+  subscribeAccounts,
+  subscribeBriefs,
+  subscribeFolders,
+} from '../features/materials/materialsState'
 import {
   readPersistedTransferState,
   writePersistedTransferState,
 } from '../features/settings/settingsTransferState'
 import { useCloudSync } from '../features/sync/SyncProvider'
+import { db } from '../legacy/db'
 import {
   clearAllData,
   exportBackupData,
@@ -30,12 +39,26 @@ type TransferState = {
   summary: ReturnType<typeof buildBackupSummary>
 }
 
+function formatTransferSummary(summary: ReturnType<typeof buildBackupSummary>) {
+  return [
+    `${summary.projectCount} 项目`,
+    `${summary.taskCount} 任务`,
+    `${summary.personCount} 人员`,
+    `${summary.logCount} 日志`,
+    `${summary.settingsCount} 设置`,
+    `${summary.leaveRecordCount} 请假`,
+  ].join(' · ')
+}
+
 export function Settings() {
   const store = useLegacyStoreSnapshot()
-  const { projects, tasks, people, logs } = store
+  const { projects, tasks, people, logs, leaveRecords } = store
   const { toast } = useToast()
   const { confirm } = useConfirm()
   useSyncExternalStore(subscribeUndoHistory, getUndoHistorySnapshot)
+  const briefs = useSyncExternalStore(subscribeBriefs, readBriefs)
+  const accounts = useSyncExternalStore(subscribeAccounts, readAccounts)
+  const folders = useSyncExternalStore(subscribeFolders, readFolders)
   const {
     state: cloudSyncState,
     statusLabel,
@@ -45,11 +68,45 @@ export function Settings() {
     restoreCloudToLocal,
   } = useCloudSync()
   const [transferState, setTransferState] = useState<TransferState | null>(() => readPersistedTransferState())
+  const [currentSummary, setCurrentSummary] = useState(() => buildBackupSummary({
+    projects,
+    tasks,
+    people,
+    logs,
+    settings: [],
+    leaveRecords,
+  }))
   const entityMaps = useMemo(() => buildEntityMaps(projects, tasks, people), [people, projects, tasks])
   const needsBackup = useMemo(() => getNeedsBackup(logs, projects), [logs, projects])
-  const currentSummary = useMemo(() => buildBackupSummary({ projects, tasks, people, logs, settings: [] }), [logs, people, projects, tasks])
   const recentLogs = useMemo(() => formatRecentLogs(logs), [logs])
   const undoState = getUndoHistoryState()
+
+  useEffect(() => {
+    let cancelled = false
+
+    void db.exportAll()
+      .then((data) => {
+        if (!cancelled) {
+          setCurrentSummary(buildBackupSummary(data))
+        }
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setCurrentSummary(buildBackupSummary({
+            projects,
+            tasks,
+            people,
+            logs,
+            settings: [],
+            leaveRecords,
+          }))
+        }
+      })
+
+    return () => {
+      cancelled = true
+    }
+  }, [accounts, briefs, folders, leaveRecords, logs, people, projects, tasks])
 
   const formatUndoTime = (value: string) => {
     const date = new Date(value)
@@ -83,7 +140,7 @@ export function Settings() {
 
   const handleExportTasksCSV = () => {
     const rows = buildTaskExportRows(tasks, entityMaps)
-    const csv = toCSV(rows, ['id', 'title', 'project', 'status', 'priority', 'assignee', 'startDate', 'endDate', 'scheduledDate', 'estimatedHours', 'createdAt'])
+    const csv = toCSV(rows, ['id', 'title', 'project', 'status', 'priority', 'assignees', 'startDate', 'endDate', 'scheduledDate', 'estimatedHours', 'createdAt'])
     downloadFile(csv, `118-tasks-${formatFileDate(new Date())}.csv`, 'text/csv;charset=utf-8')
     toast('任务 CSV 已导出', 'success')
   }
@@ -96,7 +153,7 @@ export function Settings() {
       const target = event.target as HTMLInputElement
       const file = target.files?.[0]
       if (!file) return
-      const ok = await confirm('确认导入', '导入会用备份内容覆盖当前数据。建议先导出一份当前备份。')
+      const ok = await confirm('确认导入', '导入会用备份内容覆盖当前项目、任务、人员、日志、请假记录和同步设置。建议先导出一份当前备份。')
       if (!ok) return
 
       try {
@@ -113,7 +170,7 @@ export function Settings() {
   }
 
   const handleClearAll = async () => {
-    const ok = await confirm('清空数据', '将清除所有项目、任务、人员和日志，且无法撤销。')
+    const ok = await confirm('清空数据', '将清除所有项目、任务、人员、日志、请假记录和同步设置，且无法撤销。建议先导出 JSON 备份。')
     if (!ok) return
     const summary = await clearAllData()
     const nextState = { action: 'clear' as const, summary }
@@ -217,7 +274,7 @@ export function Settings() {
               <div className="settings-row">
                 <div className="settings-row-info">
                   <div className="settings-row-label">导出 JSON</div>
-                  <div className="settings-row-desc">完整备份项目、任务、人员、日志和设置。</div>
+                  <div className="settings-row-desc">完整备份项目、任务、人员、日志、请假记录和同步设置。</div>
                 </div>
                 <div className="settings-row-action">
                   <button className="btn btn-primary" type="button" onClick={() => void handleExportJSON()}>导出 JSON</button>
@@ -285,7 +342,7 @@ export function Settings() {
               <div className="settings-row">
                 <div className="settings-row-info">
                   <div className="settings-row-label danger-text">清空所有数据</div>
-                  <div className="settings-row-desc">删除全部项目、任务、人员和日志。建议先备份。</div>
+                  <div className="settings-row-desc">删除全部项目、任务、人员、日志、请假记录和同步设置。建议先备份。</div>
                 </div>
                 <div className="settings-row-action">
                   <button className="btn btn-danger" type="button" onClick={() => void handleClearAll()}>清空</button>
@@ -300,11 +357,13 @@ export function Settings() {
                 <div className="settings-summary-item"><span>任务</span><strong>{currentSummary.taskCount}</strong></div>
                 <div className="settings-summary-item"><span>人员</span><strong>{currentSummary.personCount}</strong></div>
                 <div className="settings-summary-item"><span>日志</span><strong>{currentSummary.logCount}</strong></div>
+                <div className="settings-summary-item"><span>设置</span><strong>{currentSummary.settingsCount}</strong></div>
+                <div className="settings-summary-item"><span>请假</span><strong>{currentSummary.leaveRecordCount}</strong></div>
               </div>
               {transferState ? (
                 <div className="settings-transfer-note">
                   最近一次{transferState.action === 'export' ? '导出' : transferState.action === 'import' ? '导入' : '清空'}：
-                  {transferState.summary.projectCount} 项目 · {transferState.summary.taskCount} 任务 · {transferState.summary.personCount} 人员 · {transferState.summary.logCount} 日志
+                  {formatTransferSummary(transferState.summary)}
                 </div>
               ) : null}
             </div>

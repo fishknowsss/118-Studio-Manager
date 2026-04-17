@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import {
   applyRemoteWrite,
+  hasBackupContent,
   shouldApplyRemoteCurrent,
 } from '../src/features/sync/syncShared'
 import type { BackupPayload } from '../src/legacy/utils'
@@ -68,5 +69,40 @@ describe('cloud sync helpers', () => {
       remoteVersion: 'remote-v2',
       localAppliedVersion: 'remote-v1',
     })).toBe(true)
+  })
+
+  it('treats leave-only and settings-only snapshots as non-empty backups', () => {
+    expect(hasBackupContent({
+      schemaVersion: 3,
+      exportedAt: '2026-04-17T16:00:00+08:00',
+      projects: [],
+      tasks: [],
+      people: [],
+      logs: [],
+      settings: [],
+      leaveRecords: [{ id: 'leave-1' }],
+    })).toBe(true)
+
+    expect(hasBackupContent({
+      schemaVersion: 3,
+      exportedAt: '2026-04-17T16:00:00+08:00',
+      projects: [],
+      tasks: [],
+      people: [],
+      logs: [],
+      settings: [{ key: 'materials:briefs', value: [] }],
+      leaveRecords: [],
+    })).toBe(true)
+
+    expect(hasBackupContent({
+      schemaVersion: 3,
+      exportedAt: '2026-04-17T16:00:00+08:00',
+      projects: [],
+      tasks: [],
+      people: [],
+      logs: [],
+      settings: [],
+      leaveRecords: [],
+    })).toBe(false)
   })
 })
