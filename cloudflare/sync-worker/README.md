@@ -21,6 +21,7 @@ VITE_SYNC_API_URL=https://sync.example.com
 - `ALLOWED_ORIGIN` 仅用于 CORS 放行，不承担身份认证作用。
 - 不应将 `workers.dev` 地址作为公开生产同步入口；生产流量应走受 Access 保护的自定义域名。
 - 每次调整自定义域名、Worker 绑定或 Access application 后，都必须重新验证匿名访问不能直接读取 `/data` 或 `/meta`。
+- 前端跨子域访问受保护的同步域时，必须使用携带浏览器凭证的简单请求；否则 Cloudflare Access 重定向或预检拦截会在浏览器里表现为 `Failed to fetch`。
 
 ## 最小部署步骤
 
@@ -31,6 +32,13 @@ VITE_SYNC_API_URL=https://sync.example.com
 5. 给 Worker 绑定一个受 Cloudflare Access 保护的同步自定义子域名。
 6. 在前端环境变量中把 `VITE_SYNC_API_URL` 指向该同步自定义子域名。
 7. 用未登录的浏览器会话验证：同步自定义域名下的 `/data` 与 `/meta` 不能直接返回同步数据。
+
+## Access 联调提示
+
+- 如果同步域名重新加上 Cloudflare Access 保护后，设置页出现 `Failed to fetch`，优先检查三件事：
+- 前端请求是否携带了浏览器凭证。
+- 同步读请求是否避免了不必要的 CORS 预检。
+- Worker 返回是否包含 `Access-Control-Allow-Credentials: true`。
 
 ## 数据结构
 

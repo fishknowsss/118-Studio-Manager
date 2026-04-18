@@ -6,5 +6,16 @@ compatibility_date = "2026-04-13"
 binding = "SYNC_DATA"
 id = "2558bc293f854095bc0269f386d99130"
 
+[[routes]]
+pattern = "sync.fishknowsss.com"
+zone_name = "fishknowsss.com"
+custom_domain = true
+
+[observability]
+enabled = true
+
+[observability.logs]
+enabled = true
+
 [vars]
 ALLOWED_ORIGIN = "https://118.fishknowsss.com"

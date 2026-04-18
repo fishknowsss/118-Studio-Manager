@@ -5,7 +5,8 @@ function corsHeaders(request, env) {
   const allowedOrigin = env.ALLOWED_ORIGIN || origin || '*'
   return {
     'Access-Control-Allow-Origin': allowedOrigin,
-    'Access-Control-Allow-Methods': 'GET,PUT,OPTIONS',
+    'Access-Control-Allow-Credentials': 'true',
+    'Access-Control-Allow-Methods': 'GET,POST,PUT,OPTIONS',
     'Access-Control-Allow-Headers': 'Content-Type',
     'Content-Type': 'application/json',
   }
@@ -20,6 +21,11 @@ function json(data, request, env, status = 200) {
 
 async function readCurrent(env) {
   const text = await env.SYNC_DATA.get(SNAPSHOT_KEY)
+  return text ? JSON.parse(text) : null
+}
+
+async function readJsonBody(request) {
+  const text = await request.text()
   return text ? JSON.parse(text) : null
 }
 
@@ -47,8 +53,13 @@ export default {
       return json({ current }, request, env)
     }
 
-    if (url.pathname === '/data' && request.method === 'PUT') {
-      const body = await request.json()
+    if (url.pathname === '/data' && (request.method === 'PUT' || request.method === 'POST')) {
+      let body
+      try {
+        body = await readJsonBody(request)
+      } catch {
+        return json({ error: '请求格式无效' }, request, env, 400)
+      }
       const payload = body?.payload
       const source = body?.source
 
