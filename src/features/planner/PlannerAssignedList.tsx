@@ -33,6 +33,7 @@ export function PlannerAssignedList({
         return (
           <PlannerDropZone
             key={person.id}
+            gender={person.gender}
             name={person.name || '未命名成员'}
             count={assigned.length}
             isDragOver={dragOverPersonId === person.id}

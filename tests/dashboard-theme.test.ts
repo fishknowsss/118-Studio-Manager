@@ -21,6 +21,19 @@ describe('dashboard dark theme styles', () => {
     expect(darkThemeRootBlock?.[0]).not.toMatch(/--fs-(2xs|xs|sm|base)\s*:/)
   })
 
+  it('keeps core dark theme color tokens intact and free of leaked selectors', () => {
+    const darkThemeRootBlock = stylesheet.match(/\[data-theme='dark'\]\s*\{[\s\S]*?\n\}/)
+
+    expect(darkThemeRootBlock?.[0]).toBeDefined()
+    expect(darkThemeRootBlock?.[0]).toMatch(/--c-bg\s*:\s*#0F172A;/)
+    expect(darkThemeRootBlock?.[0]).toMatch(/--c-surface\s*:\s*#1E293B;/)
+    expect(darkThemeRootBlock?.[0]).toMatch(/--c-text\s*:\s*#F8FAFC;/)
+    expect(darkThemeRootBlock?.[0]).toMatch(/--c-text-2\s*:\s*#CBD5E1;/)
+    expect(darkThemeRootBlock?.[0]).toMatch(/--c-overdue-bg\s*:\s*rgba\(229, 77, 77, 0\.22\);/)
+    expect(darkThemeRootBlock?.[0]).not.toMatch(/\.assignee-chip-name/)
+    expect(darkThemeRootBlock?.[0]).not.toMatch(/font-size\s*:/)
+  })
+
   it('defines dark theme overrides for focus summary chips', () => {
     expect(stylesheet).toContain("[data-theme='dark'] .focus-highlight-tier")
     expect(stylesheet).toContain("[data-theme='dark'] .focus-highlight-summary")

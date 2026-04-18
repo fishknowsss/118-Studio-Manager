@@ -1,4 +1,5 @@
-import { useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
+import { PersonGenderAvatar } from '../../components/ui/PersonGenderAvatar'
 import { useToast } from '../../components/feedback/ToastProvider'
 import { Dialog } from '../../components/ui/Dialog'
 import {
@@ -8,9 +9,19 @@ import {
   type LegacyProject,
   type LegacyTask,
 } from '../../legacy/store'
-import { PRIORITY_LABELS, STATUS_LABELS, initials } from '../../legacy/utils'
+import { PRIORITY_LABELS, STATUS_LABELS } from '../../legacy/utils'
 import { saveTaskFromForm, type TaskFormInput } from '../../legacy/actions'
 import { getTaskAssigneeIds } from '../../legacy/store'
+
+const ASSIGNEE_ROWS = 3
+
+function getAssigneeColumns(width: number) {
+  if (width >= 650) return 6
+  if (width >= 560) return 5
+  if (width >= 450) return 4
+  if (width >= 340) return 3
+  return 2
+}
 
 export function TaskDialog({
   initialProjectId,
@@ -50,6 +61,43 @@ export function TaskDialog({
   const displayPeople = assignedInactive.length > 0
     ? [...activePeople, ...assignedInactive]
     : activePeople
+  const assigneeViewportRef = useRef<HTMLDivElement | null>(null)
+  const [assigneeColumns, setAssigneeColumns] = useState(4)
+  const [assigneePage, setAssigneePage] = useState(0)
+
+  useEffect(() => {
+    const node = assigneeViewportRef.current
+    if (!node) return undefined
+
+    const updateColumns = (width = node.clientWidth || node.getBoundingClientRect().width) => {
+      const nextColumns = getAssigneeColumns(width)
+      setAssigneeColumns((current) => (current === nextColumns ? current : nextColumns))
+    }
+
+    updateColumns()
+
+    if (typeof ResizeObserver === 'undefined') return undefined
+
+    const observer = new ResizeObserver((entries) => {
+      const width = entries[0]?.contentRect.width ?? node.clientWidth
+      updateColumns(width)
+    })
+
+    observer.observe(node)
+    return () => observer.disconnect()
+  }, [])
+
+  const assigneePageSize = assigneeColumns * ASSIGNEE_ROWS
+  const assigneePageCount = Math.max(1, Math.ceil(displayPeople.length / assigneePageSize))
+
+  useEffect(() => {
+    setAssigneePage((current) => Math.min(current, assigneePageCount - 1))
+  }, [assigneePageCount])
+
+  const visiblePeople = useMemo(() => {
+    const startIndex = assigneePage * assigneePageSize
+    return displayPeople.slice(startIndex, startIndex + assigneePageSize)
+  }, [assigneePage, assigneePageSize, displayPeople])
 
   const toggleAssignee = (personId: string) => {
     setForm((cur) => ({
@@ -76,6 +124,9 @@ export function TaskDialog({
       open
       title={isNew ? '新建任务' : '编辑任务'}
       onClose={onClose}
+      backdropScrollable={false}
+      bodyScrollable={false}
+      className="task-dialog"
       footer={(
         <>
           <button className="btn btn-secondary" type="button" onClick={onClose}>取消</button>
@@ -119,40 +170,60 @@ export function TaskDialog({
             负责人
             {form.assigneeIds.length > 0 ? <span className="form-label-count"> · {form.assigneeIds.length} 人</span> : null}
           </label>
-          <div className="assignee-picker">
-            {displayPeople.map((person) => {
-              const selected = form.assigneeIds.includes(person.id)
-              const isInactive = person.status !== 'active'
-              return (
-                <button
-                  key={person.id}
-                  type="button"
-                  className={`assignee-chip${selected ? ' selected' : ''}${isInactive ? ' inactive' : ''}`}
-                  onClick={() => toggleAssignee(person.id)}
-                >
-                  <span className="assignee-chip-avatar">{initials(person.name || '')}</span>
-                  <span className="assignee-chip-name">
-                    {person.name}
-                    {isInactive ? <span className="assignee-chip-inactive-label">（已停用）</span> : null}
-                  </span>
-                  {selected ? (
-                    <svg className="assignee-chip-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" width="12" height="12">
-                      <polyline points="20 6 9 17 4 12" />
-                    </svg>
-                  ) : null}
-                </button>
-              )
-            })}
-            {displayPeople.length === 0 ? <span className="text-muted text-sm">暂无可用人员</span> : null}
+          <div className="task-assignee-picker">
+            <div ref={assigneeViewportRef} className="task-assignee-viewport">
+              {displayPeople.length === 0 ? <span className="text-muted text-sm">暂无可用人员</span> : null}
+              {displayPeople.length > 0 ? (
+                <div className={`task-assignee-page cols-${assigneeColumns}`}>
+                  {visiblePeople.map((person) => {
+                    const selected = form.assigneeIds.includes(person.id)
+                    const isInactive = person.status !== 'active'
+
+                    return (
+                      <button
+                        key={person.id}
+                        type="button"
+                        className={`assignee-chip${selected ? ' selected' : ''}${isInactive ? ' inactive' : ''}`}
+                        onClick={() => toggleAssignee(person.id)}
+                      >
+                        <PersonGenderAvatar className="assignee-chip-avatar" gender={person.gender} inactive={isInactive} />
+                        <span className="assignee-chip-name">
+                          {person.name}
+                          {isInactive ? <span className="assignee-chip-inactive-label">（已停用）</span> : null}
+                        </span>
+                        {selected ? (
+                          <svg className="assignee-chip-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" width="12" height="12">
+                            <polyline points="20 6 9 17 4 12" />
+                          </svg>
+                        ) : null}
+                      </button>
+                    )
+                  })}
+                </div>
+              ) : null}
+            </div>
+            <div className="task-assignee-pagination" aria-label="负责人分页">
+              <button
+                aria-label="负责人上一页"
+                className="task-assignee-page-btn"
+                disabled={assigneePage === 0 || displayPeople.length === 0}
+                type="button"
+                onClick={() => setAssigneePage((current) => Math.max(0, current - 1))}
+              >
+                ‹
+              </button>
+              <span className="task-assignee-page-indicator">{assigneePage + 1} / {assigneePageCount}</span>
+              <button
+                aria-label="负责人下一页"
+                className="task-assignee-page-btn"
+                disabled={assigneePage >= assigneePageCount - 1 || displayPeople.length === 0}
+                type="button"
+                onClick={() => setAssigneePage((current) => Math.min(assigneePageCount - 1, current + 1))}
+              >
+                ›
+              </button>
+            </div>
           </div>
-        </div>
-        <div className="form-field">
-          <label className="form-label" htmlFor="task-scheduled">安排日期</label>
-          <input id="task-scheduled" className="form-input" type="date" value={form.scheduledDate || ''} onChange={(event) => setForm((current) => ({ ...current, scheduledDate: event.target.value || null }))} />
-        </div>
-        <div className="form-field">
-          <label className="form-label" htmlFor="task-start">开始日期</label>
-          <input id="task-start" className="form-input" type="date" value={form.startDate || ''} onChange={(event) => setForm((current) => ({ ...current, startDate: event.target.value || null }))} />
         </div>
         <div className="form-field">
           <label className="form-label" htmlFor="task-end">截止日期</label>

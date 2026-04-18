@@ -1,12 +1,13 @@
 import { useMemo, useState } from 'react'
 import { useConfirm } from '../../components/feedback/ConfirmProvider'
 import { useToast } from '../../components/feedback/ToastProvider'
+import { PersonGenderAvatar } from '../../components/ui/PersonGenderAvatar'
 import { PersonDialog } from '../people/PersonDialog'
 import { ContextMenu, type ContextMenuItem } from '../../components/ui/ContextMenu'
 import { toggleTaskStatus, updateTaskQuickField } from '../../legacy/actions'
 import { buildTaskListItemModels } from '../../legacy/selectors'
 import { useLegacyStoreSnapshot } from '../../legacy/useLegacyStore'
-import { initials, today, STATUS_LABELS, PRIORITY_LABELS } from '../../legacy/utils'
+import { getPersonGenderLabel, today, STATUS_LABELS, PRIORITY_LABELS } from '../../legacy/utils'
 import { TASK_STATUSES, PROJECT_PRIORITIES, type LegacyTask, type TaskStatus, type TaskPriority, getTaskAssigneeIds } from '../../legacy/store'
 import { TaskItem } from '../tasks/TaskItem'
 import { TaskDialog } from '../tasks/TaskDialog'
@@ -63,7 +64,7 @@ export function PersonDetailPanel({ personId }: { personId: string }) {
   if (!person) return <div className="text-muted text-sm" style={{ padding: 24 }}>成员不存在</div>
 
   const skills = person.skills || []
-  const genderLabel = person.gender === 'male' ? '男' : person.gender === 'female' ? '女' : person.gender === 'other' ? '其他' : ''
+  const genderLabel = getPersonGenderLabel(person.gender)
   const statusLabel = person.status === 'inactive' ? '已停用' : '在职'
 
   const doneTasks = taskItems.filter((t) => t.isDone)
@@ -73,7 +74,7 @@ export function PersonDetailPanel({ personId }: { personId: string }) {
     <div className="person-detail-panel">
       {/* 顶部信息 */}
       <div className="pdp-top">
-        <div className="pdp-avatar">{initials(person.name || '')}</div>
+        <PersonGenderAvatar className="pdp-avatar" gender={person.gender} inactive={person.status === 'inactive'} />
         <div className="pdp-info">
           <div className="pdp-name">{person.name || '未命名成员'}</div>
           <div className="pdp-meta-row">

@@ -7,9 +7,22 @@ type DialogProps = {
   children: ReactNode
   footer?: ReactNode
   width?: 'default' | 'wide'
+  className?: string
+  backdropScrollable?: boolean
+  bodyScrollable?: boolean
 }
 
-export function Dialog({ open, title, onClose, children, footer, width = 'default' }: DialogProps) {
+export function Dialog({
+  open,
+  title,
+  onClose,
+  children,
+  footer,
+  width = 'default',
+  className,
+  backdropScrollable = true,
+  bodyScrollable = true,
+}: DialogProps) {
   useEffect(() => {
     if (!open) return undefined
 
@@ -29,9 +42,9 @@ export function Dialog({ open, title, onClose, children, footer, width = 'defaul
   if (!open) return null
 
   return (
-    <div className="dialog-backdrop" onClick={onClose} role="presentation">
+    <div className={`dialog-backdrop ${backdropScrollable ? '' : 'no-scroll'}`.trim()} onClick={onClose} role="presentation">
       <div
-        className={`app-modal app-modal-react ${width === 'wide' ? 'wide' : ''}`}
+        className={`app-modal app-modal-react ${width === 'wide' ? 'wide' : ''} ${className || ''}`.trim()}
         role="dialog"
         aria-modal="true"
         aria-label={title}
@@ -47,7 +60,7 @@ export function Dialog({ open, title, onClose, children, footer, width = 'defaul
               </svg>
             </button>
           </div>
-          <div className="modal-body">{children}</div>
+          <div className={`modal-body ${bodyScrollable ? '' : 'no-scroll'}`.trim()}>{children}</div>
           {footer ? <div className="modal-footer">{footer}</div> : null}
         </div>
       </div>

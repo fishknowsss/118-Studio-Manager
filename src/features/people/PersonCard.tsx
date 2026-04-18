@@ -1,4 +1,5 @@
 import type { PersonCardModel } from '../../legacy/selectors'
+import { PersonGenderAvatar } from '../../components/ui/PersonGenderAvatar'
 
 export function PersonCard({
   model,
@@ -14,7 +15,7 @@ export function PersonCard({
   return (
     <div className={`person-card ${model.isInactive ? 'inactive' : ''}`} onClick={onEdit}>
       <div className="person-card-top">
-        <div className={`person-card-avatar ${model.isInactive ? 'inactive' : ''}`}>{model.avatarText}</div>
+        <PersonGenderAvatar className="person-card-avatar" gender={model.genderLabel} inactive={model.isInactive} />
         <div className="person-card-main">
           <div className="person-card-name">{model.name}</div>
           <div className="person-card-status">

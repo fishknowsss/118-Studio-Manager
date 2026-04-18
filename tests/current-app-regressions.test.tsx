@@ -5,11 +5,13 @@ import { existsSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { act } from 'react'
 import { createRoot } from 'react-dom/client'
+import { ToastProvider } from '../src/components/feedback/ToastProvider'
 import { Dialog } from '../src/components/ui/Dialog'
 import { buildTaskExportRows } from '../src/legacy/selectors'
 import { downloadFile, formatLocalDateKey, normalizeImportedBackup, toCSV } from '../src/legacy/utils'
 import { getAssignableTasks } from '../src/features/planner/plannerUtils'
 import { ContextMenu } from '../src/components/ui/ContextMenu'
+import { TaskDialog } from '../src/features/tasks/TaskDialog'
 
 describe('current app regressions', () => {
   it('formats local calendar dates without UTC rollback', () => {
@@ -109,6 +111,105 @@ describe('current app regressions', () => {
       root.unmount()
     })
     container.remove()
+  })
+
+  it('keeps task dialog focused on deadline metadata and prevents modal footer clipping in short viewports', () => {
+    const taskDialogSource = readFileSync(join(process.cwd(), 'src/features/tasks/TaskDialog.tsx'), 'utf8')
+    const styleSource = readFileSync(join(process.cwd(), 'css/style.css'), 'utf8')
+
+    expect(taskDialogSource).not.toMatch(/安排日期/)
+    expect(taskDialogSource).not.toMatch(/开始日期/)
+    expect(taskDialogSource).toMatch(/截止日期/)
+    expect(taskDialogSource).toMatch(/预计工时\(h\)/)
+    expect(taskDialogSource).toMatch(/backdropScrollable=\{false\}/)
+    expect(taskDialogSource).toMatch(/bodyScrollable=\{false\}/)
+    expect(taskDialogSource).toMatch(/task-assignee-picker/)
+    expect(taskDialogSource).toMatch(/if \(width >= 650\) return 6/)
+
+    expect(styleSource).toMatch(/\.dialog-backdrop\s*\{[\s\S]*padding:\s*24px 16px;[\s\S]*overflow-y:\s*auto;/)
+    expect(styleSource).toMatch(/\.dialog-backdrop\.no-scroll\s*\{[\s\S]*overflow-y:\s*hidden;/)
+    expect(styleSource).toMatch(/\.app-modal\s*\{[\s\S]*max-height:\s*calc\(100dvh - 48px\);/)
+    expect(styleSource).toMatch(/\.modal-inner\s*\{[\s\S]*min-height:\s*0;[\s\S]*max-height:\s*calc\(100dvh - 48px\);/)
+    expect(styleSource).toMatch(/\.modal-body\s*\{[\s\S]*min-height:\s*0;/)
+    expect(styleSource).toMatch(/\.modal-body\.no-scroll\s*\{[\s\S]*overflow:\s*hidden;/)
+    expect(styleSource).toMatch(/\.task-assignee-page\s*\{[\s\S]*min-height:\s*114px;/)
+    expect(styleSource).toMatch(/\.task-assignee-page\.cols-6\s*\{[\s\S]*repeat\(6, minmax\(0, 1fr\)\);/)
+  })
+
+  it('pages assignee chips inside task dialog without reintroducing modal scrolling', () => {
+    const people = Array.from({ length: 13 }, (_, index) => ({
+      id: `person-${index + 1}`,
+      name: `成员${index + 1}`,
+      gender: index % 2 === 0 ? 'male' : 'female',
+      status: 'active' as const,
+      skills: [],
+      notes: '',
+    }))
+    const projects = [{ id: 'project-1', name: '项目 A', status: 'active' as const }]
+    const container = document.createElement('div')
+    document.body.appendChild(container)
+    const root = createRoot(container)
+
+    act(() => {
+      root.render(
+        <ToastProvider>
+          <TaskDialog
+            task={null}
+            people={people}
+            projects={projects}
+            onClose={() => {}}
+          />
+        </ToastProvider>,
+      )
+    })
+
+    expect(container.querySelectorAll('.assignee-chip')).toHaveLength(6)
+    expect(container.querySelector('.modal-body')?.className).toContain('no-scroll')
+    expect(container.textContent).toContain('1 / 3')
+
+    const nextButton = container.querySelector('[aria-label="负责人下一页"]') as HTMLButtonElement | null
+    expect(nextButton?.disabled).toBe(false)
+
+    act(() => {
+      nextButton?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+    })
+
+    act(() => {
+      nextButton?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+    })
+
+    expect(container.querySelectorAll('.assignee-chip')).toHaveLength(1)
+    expect(container.textContent).toContain('成员13')
+    expect(container.textContent).toContain('3 / 3')
+    expect(container.querySelector('.assignee-chip-avatar')?.textContent).toBe('♂')
+
+    act(() => {
+      root.unmount()
+    })
+    container.remove()
+  })
+
+  it('uses the shared gender avatar component for all circular person badges', () => {
+    const taskDialogSource = readFileSync(join(process.cwd(), 'src/features/tasks/TaskDialog.tsx'), 'utf8')
+    const personCardSource = readFileSync(join(process.cwd(), 'src/features/people/PersonCard.tsx'), 'utf8')
+    const plannerDropZoneSource = readFileSync(join(process.cwd(), 'src/features/planner/PlannerDropZone.tsx'), 'utf8')
+    const personDetailSource = readFileSync(join(process.cwd(), 'src/features/dashboard/PersonDetailPanel.tsx'), 'utf8')
+    const styleSource = readFileSync(join(process.cwd(), 'css/style.css'), 'utf8')
+
+    expect(taskDialogSource).toMatch(/PersonGenderAvatar/)
+    expect(personCardSource).toMatch(/PersonGenderAvatar/)
+    expect(plannerDropZoneSource).toMatch(/PersonGenderAvatar/)
+    expect(personDetailSource).toMatch(/PersonGenderAvatar/)
+
+    expect(taskDialogSource).not.toMatch(/initials\(/)
+    expect(personDetailSource).not.toMatch(/initials\(/)
+    expect(plannerDropZoneSource).not.toMatch(/initials\(/)
+
+    expect(styleSource).toMatch(/\.person-gender-avatar\.male\s*\{[\s\S]*background:\s*rgba\(47, 107, 255, 0\.16\);/)
+    expect(styleSource).toMatch(/\.person-gender-avatar\.female\s*\{[\s\S]*background:\s*rgba\(239, 71, 111, 0\.16\);/)
+    expect(styleSource).toMatch(/\.assignee-chip\.selected:has\(\.assignee-chip-avatar\.male\)\s*\{[\s\S]*color:\s*#225cff;/)
+    expect(styleSource).toMatch(/\.assignee-chip\.selected:has\(\.assignee-chip-avatar\.female\)\s*\{[\s\S]*color:\s*#dd3f69;/)
+    expect(styleSource).not.toMatch(/\.pdp-avatar\s*\{[\s\S]*linear-gradient/)
   })
 
   it('executes context menu actions and closes after clicking an item', () => {

@@ -46,7 +46,7 @@ describe('dashboard panels', () => {
     ]
     const tasks: LegacyTask[] = [
       { id: 'task-1', title: '需求整理', assigneeId: 'person-1', status: 'todo' },
-      { id: 'task-2', title: '渲染输出终版确认', assigneeId: 'person-1', status: 'in-progress', priority: 'urgent' },
+      { id: 'task-2', title: '渲染输出终版确认结果', assigneeId: 'person-1', status: 'in-progress', priority: 'urgent' },
       { id: 'task-3', assigneeId: 'person-2', status: 'done' },
     ]
     const models = buildPersonCardModels(people, tasks)
@@ -78,7 +78,7 @@ describe('dashboard panels', () => {
     expect(cards).toHaveLength(2)
     expect(placeholders).toHaveLength(14)
     expect(firstCard?.textContent).toContain('王浩然')
-    expect(firstCardTaskLabel?.textContent).toBe('渲染输出终+1')
+    expect(firstCardTaskLabel?.textContent).toBe('渲染输出终版确…+1')
     expect(firstCardSkills?.[0]?.textContent).toBe('Cinema 4D')
     expect(secondCard?.textContent).toContain('佳宁')
     expect(secondCard?.textContent).toContain('After Effects')

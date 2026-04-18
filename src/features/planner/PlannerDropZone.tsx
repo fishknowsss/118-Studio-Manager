@@ -1,9 +1,10 @@
 import type { DragEvent, ReactNode } from 'react'
-import { initials } from '../../legacy/utils'
+import { PersonGenderAvatar } from '../../components/ui/PersonGenderAvatar'
 
 export function PlannerDropZone({
   children,
   count,
+  gender,
   isDragOver,
   name,
   onDragLeave,
@@ -12,6 +13,7 @@ export function PlannerDropZone({
 }: {
   children?: ReactNode
   count: number
+  gender?: string | null
   isDragOver: boolean
   name: string
   onDragLeave: () => void
@@ -26,7 +28,7 @@ export function PlannerDropZone({
         onDragLeave={onDragLeave}
         onDrop={onDrop}
       >
-        <div className="avatar sm">{initials(name || '')}</div>
+        <PersonGenderAvatar className="planner-person-avatar" gender={gender} />
         <div className="planner-person-name">{name}</div>
         <span className="planner-person-count">{count} 个任务</span>
       </div>

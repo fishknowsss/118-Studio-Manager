@@ -3,7 +3,7 @@ import {
   daysUntil,
   ddlLabel,
   getCalendarDays,
-  initials,
+  getPersonGenderLabel,
   now,
   parseLocalDateKey,
   PRIORITY_LABELS,
@@ -145,7 +145,6 @@ export type TaskListItemModel = {
 }
 
 export type PersonCardModel = {
-  avatarText: string
   genderLabel: string
   id: string
   isInactive: boolean
@@ -617,7 +616,7 @@ function comparePersonHighlightTask(left: LegacyTask, right: LegacyTask) {
 function formatPersonHighlightTaskLabel(title: string | undefined) {
   const source = (title || '').trim() || '未命名'
   const chars = Array.from(source)
-  return chars.length <= 5 ? source : chars.slice(0, 5).join('')
+    return chars.length <= 7 ? source : `${chars.slice(0, 7).join('')}…`
 }
 
 export function buildPersonCardModels(
@@ -653,8 +652,7 @@ export function buildPersonCardModels(
     const highlightTask = highlightTaskByPersonId[person.id]
 
     return {
-      avatarText: initials(person.name || ''),
-      genderLabel: person.gender === 'male' ? '男' : person.gender === 'female' ? '女' : person.gender === 'other' ? '其他' : '',
+      genderLabel: getPersonGenderLabel(person.gender),
       id: person.id,
       isInactive,
       isOnLeaveToday: leavePersonIdsToday.has(person.id),

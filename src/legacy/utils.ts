@@ -157,6 +157,35 @@ export function initials(name: string) {
   return name[0].toUpperCase()
 }
 
+function normalizePersonGender(gender?: string | null) {
+  if (gender === 'male' || gender === '男') return 'male'
+  if (gender === 'female' || gender === '女') return 'female'
+  if (gender === 'other' || gender === '其他') return 'other'
+  return ''
+}
+
+export function getPersonGenderLabel(gender?: string | null) {
+  const normalized = normalizePersonGender(gender)
+  if (normalized === 'male') return '男'
+  if (normalized === 'female') return '女'
+  if (normalized === 'other') return '其他'
+  return ''
+}
+
+export function getPersonGenderSymbol(gender?: string | null) {
+  const normalized = normalizePersonGender(gender)
+  if (normalized === 'male') return '♂'
+  if (normalized === 'female') return '♀'
+  return '•'
+}
+
+export function getPersonGenderTone(gender?: string | null) {
+  const normalized = normalizePersonGender(gender)
+  if (normalized === 'male') return 'male'
+  if (normalized === 'female') return 'female'
+  return 'neutral'
+}
+
 export const STATUS_LABELS: Record<string, string> = {
   active: '进行中',
   completed: '已完成',

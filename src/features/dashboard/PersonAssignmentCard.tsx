@@ -1,5 +1,6 @@
 import type { DragEvent } from 'react'
 import type { PersonCardModel } from '../../legacy/selectors'
+import { getPersonGenderSymbol, getPersonGenderTone } from '../../legacy/utils'
 
 function getSkillTagClassName(skill: string) {
   const charCount = Array.from(skill.trim()).length
@@ -32,6 +33,8 @@ export function PersonAssignmentCard({
   const taskLabel = isTaskLabelEmpty
     ? model.topInProgressTaskLabel
     : `${model.topInProgressTaskLabel}${hiddenTaskCount > 0 ? `+${hiddenTaskCount}` : ''}`
+  const genderTone = getPersonGenderTone(model.genderLabel)
+  const genderSymbol = getPersonGenderSymbol(model.genderLabel)
 
   return (
     <div
@@ -64,8 +67,7 @@ export function PersonAssignmentCard({
           )
           : <span className="person-assignment-empty-skill">待补技能</span>}
       </div>
-      {model.genderLabel === '男' ? <span className="person-assignment-gender-mark male">♂</span> : null}
-      {model.genderLabel === '女' ? <span className="person-assignment-gender-mark female">♀</span> : null}
+      {genderTone !== 'neutral' ? <span className={`person-assignment-gender-mark ${genderTone}`}>{genderSymbol}</span> : null}
     </div>
   )
 }
