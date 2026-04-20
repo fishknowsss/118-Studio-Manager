@@ -53,15 +53,18 @@ describe('dashboard panels', () => {
     const view = renderNode(
       <PeopleAssignmentPanel
         people={models}
+        draggingPersonId={null}
         dragOverPersonId={null}
         draggingTaskId={null}
         onDragLeavePerson={() => {}}
         onDragOverPerson={() => {}}
         onExpand={() => {}}
         onDropToPerson={() => {}}
+        onPersonStateChange={() => {}}
         onPersonDragEnd={() => {}}
         onPersonDragStart={() => {}}
         onPersonClick={() => {}}
+        onReorderPeople={() => {}}
       />,
     )
 
@@ -87,6 +90,169 @@ describe('dashboard panels', () => {
     expect(firstCard?.querySelector('.person-assignment-avatar')).toBeNull()
 
     view.cleanup()
+  })
+
+  it('shows person shortcut menu and keeps adjacent people reorder working in the dashboard people panel', () => {
+    const onPersonStateChange = vi.fn()
+    const onReorderPeople = vi.fn()
+    const onPersonClick = vi.fn()
+    const view = renderNode(
+      <PeopleAssignmentPanel
+        people={[
+          {
+            genderLabel: '女',
+            id: 'person-1',
+            isInactive: false,
+            isOnLeaveToday: false,
+            isPresent: true,
+            name: '佳宁',
+            notePreview: '',
+            skills: ['After Effects'],
+            statusKey: 'active',
+            statusLabel: '在职',
+            taskCount: 1,
+            topInProgressTaskLabel: '镜头调色',
+          },
+          {
+            genderLabel: '男',
+            id: 'person-2',
+            isInactive: false,
+            isOnLeaveToday: false,
+            isPresent: false,
+            name: '王浩然',
+            notePreview: '',
+            skills: ['Cinema 4D'],
+            statusKey: 'active',
+            statusLabel: '在职',
+            taskCount: 2,
+            topInProgressTaskLabel: '棚拍执行',
+          },
+          {
+            genderLabel: '男',
+            id: 'person-3',
+            isInactive: false,
+            isOnLeaveToday: true,
+            isPresent: false,
+            name: '陈乐',
+            notePreview: '',
+            skills: ['剪辑'],
+            statusKey: 'active',
+            statusLabel: '在职',
+            taskCount: 0,
+            topInProgressTaskLabel: '暂无进行中',
+          },
+        ]}
+        draggingPersonId="person-1"
+        dragOverPersonId={null}
+        draggingTaskId={null}
+        onDragLeavePerson={() => {}}
+        onDragOverPerson={() => {}}
+        onExpand={() => {}}
+        onDropToPerson={() => {}}
+        onPersonStateChange={onPersonStateChange}
+        onPersonDragEnd={() => {}}
+        onPersonDragStart={() => {}}
+        onPersonClick={onPersonClick}
+        onReorderPeople={onReorderPeople}
+      />,
+    )
+
+    const cards = view.container.querySelectorAll('.person-assignment-card')
+    const firstCard = cards[0] as HTMLElement | null
+    const secondCard = cards[1] as HTMLElement | null
+
+    expect(view.container.querySelector('.person-status-mark--present')).not.toBeNull()
+
+    act(() => {
+      firstCard?.dispatchEvent(new MouseEvent('contextmenu', { bubbles: true, cancelable: true, clientX: 24, clientY: 36 }))
+    })
+
+    const buttons = Array.from(view.container.querySelectorAll('.context-menu-item')) as HTMLButtonElement[]
+    expect(buttons.map((button) => button.textContent)).toEqual(['设为在岗', '设为请假', '恢复默认'])
+
+    const leaveButton = buttons.find((button) => button.textContent === '设为请假')
+    act(() => {
+      leaveButton?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+    })
+
+    expect(onPersonStateChange).toHaveBeenCalledWith('person-1', 'leave')
+
+    act(() => {
+      secondCard?.dispatchEvent(new Event('dragover', { bubbles: true, cancelable: true }))
+      secondCard?.dispatchEvent(new Event('drop', { bubbles: true, cancelable: true }))
+    })
+
+    expect(onReorderPeople).toHaveBeenCalledWith(['person-2', 'person-1', 'person-3'])
+
+    view.cleanup()
+  })
+
+  it('does not trigger person click when opening a card context menu', () => {
+    const onPersonClick = vi.fn()
+    const view = renderNode(
+      <PeopleAssignmentPanel
+        people={[
+          {
+            genderLabel: '女',
+            id: 'person-1',
+            isInactive: false,
+            isOnLeaveToday: false,
+            isPresent: true,
+            name: '佳宁',
+            notePreview: '',
+            skills: ['After Effects'],
+            statusKey: 'active',
+            statusLabel: '在职',
+            taskCount: 1,
+            topInProgressTaskLabel: '镜头调色',
+          },
+        ]}
+        draggingPersonId={null}
+        dragOverPersonId={null}
+        draggingTaskId={null}
+        onDragLeavePerson={() => {}}
+        onDragOverPerson={() => {}}
+        onExpand={() => {}}
+        onDropToPerson={() => {}}
+        onPersonStateChange={() => {}}
+        onPersonDragEnd={() => {}}
+        onPersonDragStart={() => {}}
+        onPersonClick={onPersonClick}
+        onReorderPeople={() => {}}
+      />,
+    )
+
+    const card = view.container.querySelector('.person-assignment-card') as HTMLElement | null
+
+    act(() => {
+      card?.dispatchEvent(new MouseEvent('mousedown', { bubbles: true, cancelable: true, button: 2 }))
+      card?.dispatchEvent(new MouseEvent('contextmenu', { bubbles: true, cancelable: true, clientX: 18, clientY: 26, button: 2 }))
+      card?.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true, button: 0 }))
+    })
+
+    expect(onPersonClick).not.toHaveBeenCalled()
+
+    view.cleanup()
+  })
+
+  it('keeps a dedicated status slot, brighter present styling, leave gray state, hover lift, and reorder transition hooks in people cards', () => {
+    const styleSource = readFileSync(join(process.cwd(), 'css/style.css'), 'utf8')
+    const cardSource = readFileSync(join(process.cwd(), 'src/features/dashboard/PersonAssignmentCard.tsx'), 'utf8')
+    const panelSource = readFileSync(join(process.cwd(), 'src/features/dashboard/PeopleAssignmentPanel.tsx'), 'utf8')
+    const cardHoverRule = styleSource.match(/\.person-assignment-card:hover\s*\{[^}]*\}/)?.[0] ?? ''
+
+    expect(styleSource).toMatch(/\.person-assignment-name-row\s*\{/)
+    expect(styleSource).toMatch(/\.person-status-mark--present\s*\{[\s\S]*#29dfd3/i)
+    expect(styleSource).toMatch(/\.person-assignment-card\.is-present\s*\{[\s\S]*#29dfd3/i)
+    expect(styleSource).toMatch(/\.person-assignment-card\.on-leave\s*\{[\s\S]*opacity:\s*\.5[\s\S]*grayscale\(\.85\) brightness\(\.82\)/i)
+    expect(cardHoverRule).toMatch(/translateY\(-2px\)/)
+    expect(styleSource).toMatch(/@keyframes person-status-pulse/)
+    expect(cardSource).toMatch(/event\.button === 2[\s\S]*preventDefault\(\)/)
+    expect(panelSource).toMatch(/const pagePeopleKey = pagePeople\.map\(\(person\) => person\.id\)\.join\('\|'\)/)
+    expect(panelSource).toMatch(/useLayoutEffect/)
+    expect(panelSource).toMatch(/\}, \[page,\s*pagePeopleKey\]\)/)
+    expect(panelSource).not.toMatch(/\}, \[page,\s*pagePeople\]\)/)
+    expect(panelSource).toMatch(/\.animate\(\[/)
   })
 
   it('keeps task rows and people cards wired for two-way assignment drag targets when task people are missing', () => {
@@ -124,15 +290,18 @@ describe('dashboard panels', () => {
     const peopleView = renderNode(
       <PeopleAssignmentPanel
         people={models}
+        draggingPersonId={null}
         dragOverPersonId="person-1"
         draggingTaskId="task-1"
         onDragLeavePerson={onPersonDragLeave}
         onDragOverPerson={onPersonDragOver}
         onExpand={() => {}}
         onDropToPerson={onDropToPerson}
+        onPersonStateChange={() => {}}
         onPersonDragEnd={onPersonDragEnd}
         onPersonDragStart={onPersonDragStart}
         onPersonClick={() => {}}
+        onReorderPeople={() => {}}
       />,
     )
 

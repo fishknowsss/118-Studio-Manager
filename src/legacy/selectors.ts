@@ -149,6 +149,7 @@ export type PersonCardModel = {
   id: string
   isInactive: boolean
   isOnLeaveToday: boolean
+  isPresent: boolean
   name: string
   notePreview: string
   skills: string[]
@@ -156,6 +157,11 @@ export type PersonCardModel = {
   statusLabel: string
   taskCount: number
   topInProgressTaskLabel: string
+}
+
+export type DashboardPersonPanelPreferences = {
+  order?: string[]
+  presenceByPersonId?: Record<string, 'default' | 'present' | undefined>
 }
 
 export type ProjectDeadlineToneKey =
@@ -623,9 +629,14 @@ export function buildPersonCardModels(
   people: LegacyPerson[],
   tasks: LegacyTask[],
   leavePersonIdsToday: Set<string> = new Set(),
+  preferences: DashboardPersonPanelPreferences = {},
 ): PersonCardModel[] {
   const openTaskCountByPersonId = buildEntityMaps([], tasks, people).openTaskCountByPersonId
   const highlightTaskByPersonId: Record<string, LegacyTask> = {}
+  const order = Array.isArray(preferences.order) ? preferences.order : []
+  const orderMap = new Map(order.map((personId, index) => [personId, index]))
+  const hasCustomOrder = orderMap.size > 0
+  const presenceByPersonId = preferences.presenceByPersonId ?? {}
 
   for (const task of tasks) {
     if (task.status !== 'in-progress') continue
@@ -638,11 +649,37 @@ export function buildPersonCardModels(
     }
   }
 
-  const sorted = [...people].sort((a, b) => {
+  const compareDefaultOrder = (a: LegacyPerson, b: LegacyPerson) => {
     const aLeave = leavePersonIdsToday.has(a.id) ? 1 : 0
     const bLeave = leavePersonIdsToday.has(b.id) ? 1 : 0
     if (aLeave !== bLeave) return aLeave - bLeave
     return genderSortKey(a.gender) - genderSortKey(b.gender)
+  }
+
+  const isPresent = (personId: string) => (
+    !leavePersonIdsToday.has(personId) &&
+    presenceByPersonId[personId] === 'present'
+  )
+
+  const getSortBucket = (personId: string) => {
+    if (leavePersonIdsToday.has(personId)) return 2
+    if (isPresent(personId)) return 0
+    return 1
+  }
+
+  const sorted = [...people].sort((a, b) => {
+    const bucketDiff = getSortBucket(a.id) - getSortBucket(b.id)
+    if (bucketDiff !== 0) return bucketDiff
+
+    if (hasCustomOrder) {
+      const aOrder = orderMap.get(a.id)
+      const bOrder = orderMap.get(b.id)
+      if (aOrder !== undefined && bOrder !== undefined) return aOrder - bOrder
+      if (aOrder !== undefined) return -1
+      if (bOrder !== undefined) return 1
+    }
+
+    return compareDefaultOrder(a, b)
   })
 
   return sorted.map((person) => {
@@ -650,12 +687,14 @@ export function buildPersonCardModels(
     const statusKey = isInactive ? 'cancelled' : 'active'
     const note = (person.notes || '').trim()
     const highlightTask = highlightTaskByPersonId[person.id]
+    const onLeaveToday = leavePersonIdsToday.has(person.id)
 
     return {
       genderLabel: getPersonGenderLabel(person.gender),
       id: person.id,
       isInactive,
-      isOnLeaveToday: leavePersonIdsToday.has(person.id),
+      isOnLeaveToday: onLeaveToday,
+      isPresent: !onLeaveToday && presenceByPersonId[person.id] === 'present',
       name: person.name || '未命名成员',
       notePreview: note ? `备注: ${note.slice(0, 15)}${note.length > 15 ? '…' : ''}` : '',
       skills: person.skills || [],

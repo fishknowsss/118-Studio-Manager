@@ -151,6 +151,40 @@ describe('store selectors', () => {
     })
   })
 
+  it('keeps present people at the front and leave people at the end regardless of custom order', () => {
+    const models = buildPersonCardModels(
+      [
+        { id: 'person-1', name: '阿青', gender: 'female', status: 'active', skills: ['排版'] },
+        { id: 'person-2', name: '白杨', gender: 'male', status: 'active', skills: ['拍摄'] },
+        { id: 'person-3', name: '程野', gender: 'other', status: 'active', skills: ['剪辑'] },
+      ],
+      [
+        { id: 'task-1', title: '棚拍现场执行', assigneeIds: ['person-2'], status: 'in-progress' },
+      ],
+      new Set(['person-2']),
+      {
+        order: ['person-2', 'person-3', 'person-1'],
+        presenceByPersonId: {
+          'person-1': 'present',
+          'person-2': 'present',
+        },
+      },
+    )
+
+    expect(models.map((item) => item.id)).toEqual(['person-1', 'person-3', 'person-2'])
+    expect(models[0]).toMatchObject({
+      id: 'person-1',
+      isOnLeaveToday: false,
+      isPresent: true,
+    })
+    expect(models[2]).toMatchObject({
+      id: 'person-2',
+      isOnLeaveToday: true,
+      isPresent: false,
+      topInProgressTaskLabel: '棚拍现场执行',
+    })
+  })
+
   it('builds dashboard mini calendar cells and event flags from one selector', () => {
     const model = buildDashboardMiniCalendarModel(
       new Date('2026-04-12T10:00:00+08:00'),

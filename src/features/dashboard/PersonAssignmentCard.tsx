@@ -1,6 +1,7 @@
-import type { DragEvent } from 'react'
+import { useRef, type DragEvent, type MouseEvent, type Ref } from 'react'
 import type { PersonCardModel } from '../../legacy/selectors'
 import { getPersonGenderSymbol, getPersonGenderTone } from '../../legacy/utils'
+import { PersonStatusMark } from './PersonStatusMark'
 
 function getSkillTagClassName(skill: string) {
   const charCount = Array.from(skill.trim()).length
@@ -9,6 +10,8 @@ function getSkillTagClassName(skill: string) {
 
 export function PersonAssignmentCard({
   isDropTarget,
+  isReorderTarget,
+  cardRef,
   model,
   onDragEnd,
   onDragLeave,
@@ -16,8 +19,11 @@ export function PersonAssignmentCard({
   onDragStart,
   onDrop,
   onPersonClick,
+  onPersonContextMenu,
 }: {
   isDropTarget: boolean
+  isReorderTarget: boolean
+  cardRef?: Ref<HTMLDivElement>
   model: PersonCardModel
   onDragEnd: () => void
   onDragLeave: () => void
@@ -25,7 +31,9 @@ export function PersonAssignmentCard({
   onDragStart: (event: DragEvent<HTMLDivElement>, personId: string) => void
   onDrop: (event: DragEvent<HTMLDivElement>, personId: string) => void
   onPersonClick: (personId: string, ox: number, oy: number) => void
+  onPersonContextMenu: (event: MouseEvent<HTMLDivElement>, person: PersonCardModel) => void
 }) {
+  const suppressClickUntilRef = useRef(0)
   const visibleSkills = model.skills.slice(0, 2)
   const hiddenSkillCount = Math.max(0, model.skills.length - visibleSkills.length)
   const isTaskLabelEmpty = model.topInProgressTaskLabel === '暂无进行中'
@@ -35,22 +43,44 @@ export function PersonAssignmentCard({
     : `${model.topInProgressTaskLabel}${hiddenTaskCount > 0 ? `+${hiddenTaskCount}` : ''}`
   const genderTone = getPersonGenderTone(model.genderLabel)
   const genderSymbol = getPersonGenderSymbol(model.genderLabel)
+  const statusKind = model.isOnLeaveToday ? 'leave' : model.isPresent ? 'present' : null
+  const isPresent = statusKind === 'present'
 
   return (
     <div
-      className={`person-assignment-card ${isDropTarget ? 'drop-target' : ''} ${model.isOnLeaveToday ? 'on-leave' : ''}`}
+      ref={cardRef}
+      className={`person-assignment-card ${isDropTarget ? 'drop-target' : ''} ${isReorderTarget ? 'reorder-target' : ''} ${isPresent ? 'is-present' : ''} ${model.isOnLeaveToday ? 'on-leave' : ''}`}
       draggable
+      data-person-id={model.id}
       onDragEnd={onDragEnd}
       onDragLeave={onDragLeave}
       onDragOver={(event) => onDragOver(event, model.id)}
       onDragStart={(event) => onDragStart(event, model.id)}
+      onMouseDown={(event) => {
+        if (event.button === 2 || event.ctrlKey) {
+          suppressClickUntilRef.current = Date.now() + 500
+          event.preventDefault()
+        }
+      }}
       onDrop={(event) => onDrop(event, model.id)}
-      onClick={(e) => { const r = e.currentTarget.getBoundingClientRect(); onPersonClick(model.id, r.left + r.width / 2, r.top + r.height / 2) }}
+      onContextMenu={(event) => {
+        suppressClickUntilRef.current = Date.now() + 500
+        onPersonContextMenu(event, model)
+      }}
+      onClick={(event) => {
+        if (event.ctrlKey || Date.now() < suppressClickUntilRef.current) {
+          event.preventDefault()
+          return
+        }
+
+        const r = event.currentTarget.getBoundingClientRect()
+        onPersonClick(model.id, r.left + r.width / 2, r.top + r.height / 2)
+      }}
     >
       <div className="person-assignment-main">
-        <div className="person-assignment-name">
-          {model.name}
-          {model.isOnLeaveToday && <span className="person-leave-badge" title="今日请假">假</span>}
+        <div className="person-assignment-name-row">
+          <div className="person-assignment-name">{model.name}</div>
+          {statusKind ? <PersonStatusMark kind={statusKind} /> : null}
         </div>
         <div className={`person-assignment-count ${isTaskLabelEmpty ? 'is-empty' : ''}`}>{taskLabel}</div>
       </div>

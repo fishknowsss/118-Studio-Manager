@@ -250,6 +250,81 @@ describe('current app regressions', () => {
     container.remove()
   })
 
+  it('keeps the shared context menu inside the viewport near the bottom-right corner', () => {
+    const onClose = vi.fn()
+    const originalInnerWidth = window.innerWidth
+    const originalInnerHeight = window.innerHeight
+    Object.defineProperty(window, 'innerWidth', { configurable: true, value: 300 })
+    Object.defineProperty(window, 'innerHeight', { configurable: true, value: 220 })
+
+    const rectSpy = vi.spyOn(HTMLElement.prototype, 'getBoundingClientRect').mockImplementation(function () {
+      const element = this as HTMLElement
+      if (element.classList.contains('context-menu')) {
+        return {
+          x: 0,
+          y: 0,
+          top: 0,
+          left: 0,
+          right: 168,
+          bottom: 136,
+          width: 168,
+          height: 136,
+          toJSON() {
+            return {}
+          },
+        } as DOMRect
+      }
+
+      return {
+        x: 0,
+        y: 0,
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        width: 0,
+        height: 0,
+        toJSON() {
+          return {}
+        },
+      } as DOMRect
+    })
+
+    const container = document.createElement('div')
+    document.body.appendChild(container)
+    const root = createRoot(container)
+
+    act(() => {
+      root.render(
+        <ContextMenu
+          open
+          x={288}
+          y={212}
+          title="快速更新"
+          items={[
+            { key: 'todo', label: '待处理', onSelect: () => {} },
+            { key: 'doing', label: '进行中', onSelect: () => {} },
+            { key: 'done', label: '已完成', onSelect: () => {} },
+          ]}
+          onClose={onClose}
+        />,
+      )
+    })
+
+    const menu = container.querySelector('.context-menu') as HTMLElement | null
+    expect(menu).not.toBeNull()
+    expect(menu?.style.getPropertyValue('--context-menu-x')).toBe('120px')
+    expect(menu?.style.getPropertyValue('--context-menu-y')).toBe('72px')
+
+    act(() => {
+      root.unmount()
+    })
+    container.remove()
+    rectSpy.mockRestore()
+    Object.defineProperty(window, 'innerWidth', { configurable: true, value: originalInnerWidth })
+    Object.defineProperty(window, 'innerHeight', { configurable: true, value: originalInnerHeight })
+  })
+
   it('avoids synchronously toggling the konami entry flash inside an effect body', () => {
     const appSource = readFileSync(join(process.cwd(), 'src/App.tsx'), 'utf8')
 

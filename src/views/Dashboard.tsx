@@ -1,10 +1,16 @@
-import { useMemo, useState, type DragEvent } from 'react'
+import { useMemo, useState, useSyncExternalStore, type DragEvent } from 'react'
 import { DashboardHeader } from '../features/dashboard/DashboardHeader'
 import { DashboardMiniCalendar } from '../features/dashboard/DashboardMiniCalendar'
 import { FocusPrimaryCard } from '../features/dashboard/FocusPrimaryCard'
 import { FocusSecondaryCards } from '../features/dashboard/FocusSecondaryCards'
 import { LeaveDialog } from '../features/dashboard/LeaveDialog'
 import { PeopleAssignmentPanel } from '../features/dashboard/PeopleAssignmentPanel'
+import {
+  readDashboardPersonPanelState,
+  subscribeDashboardPersonPanelState,
+  writeDashboardPersonOrder,
+  writeDashboardPersonPresence,
+} from '../features/dashboard/personPanelState'
 import { PersonDetailPanel } from '../features/dashboard/PersonDetailPanel'
 import { ProjectDetailPanel } from '../features/dashboard/ProjectDetailPanel'
 import { TaskPoolPanel } from '../features/dashboard/TaskPoolPanel'
@@ -60,6 +66,10 @@ export function Dashboard() {
   const store = useLegacyStoreSnapshot()
   const { projects, tasks, people } = store
   const { openPlanner } = usePlanner()
+  const dashboardPersonPanelState = useSyncExternalStore(
+    subscribeDashboardPersonPanelState,
+    readDashboardPersonPanelState,
+  )
 
   const [calDate, setCalDate] = useState(() => new Date())
   const [draggingPersonId, setDraggingPersonId] = useState<string | null>(null)
@@ -87,8 +97,8 @@ export function Dashboard() {
     [store.leaveRecords, todayStr],
   )
   const activePersonCards = useMemo(
-    () => buildPersonCardModels(activePeople, tasks, leavePersonIdsToday),
-    [activePeople, tasks, leavePersonIdsToday],
+    () => buildPersonCardModels(activePeople, tasks, leavePersonIdsToday, dashboardPersonPanelState),
+    [activePeople, tasks, leavePersonIdsToday, dashboardPersonPanelState],
   )
   const poolRows = useMemo(() => taskPool.map((task) => ({
     ...task,
@@ -118,7 +128,7 @@ export function Dashboard() {
   }
 
   const readTransferData = (event: DragEvent<HTMLDivElement>, type: string) => {
-    return event.dataTransfer.getData(type)
+    return event.dataTransfer?.getData(type) || ''
   }
 
   const handleTaskDragStart = (event: DragEvent<HTMLDivElement>, taskId: string) => {
@@ -185,6 +195,25 @@ export function Dashboard() {
     // 拖入时打开请假弹窗
     setLeaveDialogDate(dateKey)
     clearDragState()
+  }
+
+  const deleteTodayLeaveRecords = async (personId: string) => {
+    const records = store.leaveRecords.filter((record) => record.personId === personId && record.date === todayStr)
+    await Promise.all(records.map((record) => store.deleteLeaveRecord(record.id)))
+  }
+
+  const handlePersonStateChange = async (personId: string, nextState: 'present' | 'leave' | 'default') => {
+    if (nextState === 'leave') {
+      writeDashboardPersonPresence(personId, 'default')
+      const hasLeaveToday = store.leaveRecords.some((record) => record.personId === personId && record.date === todayStr)
+      if (!hasLeaveToday) {
+        await store.saveLeaveRecord({ id: crypto.randomUUID(), personId, date: todayStr, reason: '' })
+      }
+      return
+    }
+
+    await deleteTodayLeaveRecords(personId)
+    writeDashboardPersonPresence(personId, nextState === 'present' ? 'present' : 'default')
   }
 
   const handleOpenDate = (dateKey: string, ox: number, oy: number) => {
@@ -265,15 +294,18 @@ export function Dashboard() {
           tasks={poolRows}
         />
         <PeopleAssignmentPanel
+          draggingPersonId={draggingPersonId}
           dragOverPersonId={dropOverPersonId}
           draggingTaskId={draggingTaskId}
           onDragLeavePerson={() => setDropOverPersonId(null)}
           onDragOverPerson={handleDragOverPerson}
           onExpand={(ox, oy) => setExpandedPanel({ type: 'people', ox, oy })}
           onDropToPerson={handleDropToPerson}
+          onPersonStateChange={(personId, nextState) => { void handlePersonStateChange(personId, nextState) }}
           onPersonDragEnd={clearDragState}
           onPersonDragStart={handlePersonDragStart}
           onPersonClick={(personId, ox, oy) => setExpandedPanel({ type: 'person', personId, ox, oy })}
+          onReorderPeople={writeDashboardPersonOrder}
           people={activePersonCards}
         />
         <DashboardMiniCalendar
