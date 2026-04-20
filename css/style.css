@@ -2328,7 +2328,7 @@ html[data-easter-mode='konami'] .assignee-chip.selected:has(.assignee-chip-avata
   flex-shrink: 0;
   background: var(--c-surface);
   border-bottom: 1px solid var(--c-border-light);
-  height: 52px;
+  min-height: 52px;
 }
 .mat-col-head {
   flex: 1;
@@ -2337,7 +2337,7 @@ html[data-easter-mode='konami'] .assignee-chip.selected:has(.assignee-chip-avata
   align-items: center;
   justify-content: space-between;
   gap: 10px;
-  padding: 0 20px;
+  padding: 8px 20px;
 }
 .mat-top-sep {
   width: 1px;
@@ -2375,6 +2375,8 @@ html[data-easter-mode='konami'] .assignee-chip.selected:has(.assignee-chip-avata
   display: flex;
   align-items: center;
   gap: 8px;
+  justify-content: flex-end;
+  flex-wrap: wrap;
 }
 
 /* ── 双栏主体 ── */
@@ -2590,82 +2592,108 @@ html[data-easter-mode='konami'] .assignee-chip.selected:has(.assignee-chip-avata
 /* ── 平台卡片网格 ── */
 .acc-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(76px, max-content));
+  grid-template-columns: repeat(auto-fill, minmax(108px, max-content));
   justify-content: start;
-  gap: 9px 6px;
+  gap: 14px 10px;
 }
 
 /* 单个平台卡片（文件夹图标居中样式） */
 .acc-platform-card {
   position: relative;
-  cursor: pointer;
   background: transparent;
-  border: 1.5px solid transparent;
-  border-radius: var(--r-lg);
-  padding: 1px 0 1px;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 2px;
+  gap: 5px;
   transition: color .18s;
   user-select: none;
   text-align: center;
-  width: auto;
-  max-width: 76px;
+  width: 108px;
+  max-width: 108px;
   min-width: 0;
-}
-.acc-platform-card:hover,
-.acc-platform-card.is-open {
-  background: transparent;
-  border-color: transparent;
-  box-shadow: none;
-  transform: none;
 }
 .acc-platform-card.is-empty {
   opacity: 0.65;
 }
-.acc-platform-card.is-empty:hover,
 .acc-platform-card.is-empty.is-open {
   opacity: 1;
 }
-.acc-platform-card:focus-visible {
+
+.acc-platform-trigger-wrap {
+  width: 104px;
+  min-height: 92px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.acc-platform-trigger {
+  width: 68px;
+  min-height: 56px;
+  height: 56px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  position: relative;
+  overflow: visible;
+  background: transparent;
+  border: none;
+  border-radius: 20px;
+  cursor: pointer;
+  color: inherit;
+}
+.acc-platform-trigger:focus-visible {
   outline: 2px solid color-mix(in srgb, var(--acc-color, var(--c-primary)) 38%, transparent);
   outline-offset: 2px;
 }
 
 /* 文件夹图标容器 */
 .acc-platform-card-icon {
+  position: absolute;
+  top: 50%;
+  left: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
-  min-height: 62px;
+  width: 104px;
+  min-height: 92px;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
 }
 .acc-platform-card-icon svg {
   transition: transform .16s ease, opacity .16s ease;
 }
-.acc-platform-card:hover .acc-platform-card-icon svg,
+.acc-platform-trigger:hover .acc-platform-card-icon svg,
+.acc-platform-trigger:focus-visible .acc-platform-card-icon svg,
 .acc-platform-card.is-open .acc-platform-card-icon svg {
-  transform: translateY(-1px);
+  transform: translateY(-2px) scale(1.02);
+}
+
+.acc-platform-card-meta {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  min-width: 0;
 }
 
 .acc-platform-card-name {
-  font-size: 11.5px;
+  font-size: 12px;
   font-weight: 600;
   color: var(--c-text);
   letter-spacing: -.01em;
   line-height: 1.3;
   word-break: break-all;
-  max-width: 72px;
+  max-width: 100px;
   transition: color .15s;
 }
-.acc-platform-card:hover .acc-platform-card-name,
 .acc-platform-card.is-open .acc-platform-card-name {
   color: var(--acc-color, var(--c-primary));
 }
 
 .acc-platform-card-count {
-  font-size: 10.5px;
+  font-size: 11px;
   font-weight: 500;
   color: var(--c-text-3);
   background: none;
@@ -2675,9 +2703,12 @@ html[data-easter-mode='konami'] .assignee-chip.selected:has(.assignee-chip-avata
   line-height: 1.25;
   transition: color .15s;
 }
-.acc-platform-card:hover .acc-platform-card-count,
 .acc-platform-card.is-open .acc-platform-card-count {
   color: var(--acc-color, var(--c-primary));
+}
+
+.acc-folder-search {
+  min-width: 168px;
 }
 
 /* ── 扇形浮层面板 ── */

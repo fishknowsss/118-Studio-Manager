@@ -152,6 +152,36 @@ describe('syncable view state', () => {
     document.removeEventListener('syncableDataUpdated', handler)
   })
 
+  it('reloads materials folders from legacy object-shaped synced settings records', async () => {
+    dbGetMock.mockImplementation(async (_store: string, key: string) => {
+      if (key === 'materials:folders') {
+        return {
+          key,
+          value: {
+            items: ['Notion', 'Figma'],
+            sortMode: 'name-desc',
+          },
+        }
+      }
+
+      return undefined
+    })
+
+    await reloadMaterialsStateFromDB()
+
+    expect(readFolders()).toEqual(['Notion', 'Figma'])
+  })
+
+  it('returns a stable folders snapshot between writes', async () => {
+    writeFolders(['设计协作', '云盘归档'])
+    await flushMicrotasks()
+
+    const first = readFolders()
+    const second = readFolders()
+
+    expect(second).toBe(first)
+  })
+
   it('does not update local settings state or emit sync events before persistence succeeds', async () => {
     const handler = vi.fn()
     document.addEventListener('syncableDataUpdated', handler)

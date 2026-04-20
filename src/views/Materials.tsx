@@ -5,6 +5,7 @@ import { useToast } from '../components/feedback/ToastProvider'
 import { ClientBriefDialog } from '../features/materials/ClientBriefDialog'
 import { AccountDialog } from '../features/materials/AccountDialog'
 import {
+  orderFoldersByCount,
   readBriefs,
   writeBriefs,
   subscribeBriefs,
@@ -54,7 +55,7 @@ function getFolderColor(count: number, maxCount: number): string {
 function FolderIcon({ color, open }: { color: string; open: boolean }) {
   if (open) {
     return (
-      <svg viewBox="0 0 48 44" fill="none" width="82" height="76" aria-hidden="true">
+      <svg viewBox="0 0 48 44" fill="none" width="104" height="92" aria-hidden="true">
         <path
           d="M10 18v-6a4 4 0 0 1 4-4h9.4l3.58 3.45A4 4 0 0 0 29.76 12.6H34a4 4 0 0 1 4 4V18"
           stroke={color}
@@ -81,7 +82,7 @@ function FolderIcon({ color, open }: { color: string; open: boolean }) {
   }
 
   return (
-    <svg viewBox="0 0 48 44" fill="none" width="82" height="76" aria-hidden="true">
+    <svg viewBox="0 0 48 44" fill="none" width="104" height="92" aria-hidden="true">
       <path
         d="M10 16v-4a4 4 0 0 1 4-4h9.7l3.56 3.45a4 4 0 0 0 2.78 1.15H34a4 4 0 0 1 4 4v13a4 4 0 0 1-4 4H14a4 4 0 0 1-4-4V16z"
         stroke={color}
@@ -272,7 +273,7 @@ function PlatformCard({
   onDeleteFolder: (platform: string) => void
   onAddAccount: (platform: string) => void
 }) {
-  const cardRef = useRef<HTMLDivElement>(null)
+  const triggerRef = useRef<HTMLButtonElement>(null)
   const renameInputRef = useRef<HTMLInputElement>(null)
   const closeTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
   const isRenamingRef = useRef(false)
@@ -288,7 +289,7 @@ function PlatformCard({
 
   const openPanel = () => {
     if (closeTimer.current) clearTimeout(closeTimer.current)
-    const rect = cardRef.current?.getBoundingClientRect()
+    const rect = triggerRef.current?.getBoundingClientRect()
     if (!rect) return
     const spaceRight = window.innerWidth - rect.right
     const isLeft = spaceRight < 280
@@ -334,24 +335,31 @@ function PlatformCard({
   return (
     <>
       <div
-        ref={cardRef}
         className={`acc-platform-card${open ? ' is-open' : ''}${accounts.length === 0 ? ' is-empty' : ''}`}
         style={{ '--acc-color': color } as React.CSSProperties}
-        onMouseEnter={openPanel}
-        onMouseLeave={scheduleClose}
-        onFocus={openPanel}
-        onBlur={scheduleClose}
-        tabIndex={0}
-        role="button"
-        aria-label={`${platform}，${accounts.length} 个账号`}
-        aria-expanded={open}
       >
-        <div className="acc-platform-card-icon">
-          <FolderIcon color={color} open={open} />
+        <div className="acc-platform-trigger-wrap">
+          <button
+            ref={triggerRef}
+            className="acc-platform-trigger"
+            type="button"
+            onMouseEnter={openPanel}
+            onMouseLeave={scheduleClose}
+            onFocus={openPanel}
+            onBlur={scheduleClose}
+            aria-label={`${platform}，${accounts.length} 个账号`}
+            aria-expanded={open}
+          >
+            <div className="acc-platform-card-icon">
+              <FolderIcon color={color} open={open} />
+            </div>
+          </button>
         </div>
-        <div className="acc-platform-card-name">{platform}</div>
-        <div className="acc-platform-card-count">
-          {accounts.length === 0 ? '空文件夹' : `${accounts.length} 个账号`}
+        <div className="acc-platform-card-meta">
+          <div className="acc-platform-card-name">{platform}</div>
+          <div className="acc-platform-card-count">
+            {accounts.length === 0 ? '空文件夹' : `${accounts.length} 个账号`}
+          </div>
         </div>
       </div>
 
@@ -580,17 +588,27 @@ export function Materials() {
     )
   }, [briefs, briefProjectFilter])
 
+  const accountsByPlatform = useMemo(() => {
+    const map = new Map<string, AccountCredential[]>()
+    for (const a of accounts) {
+      const list = map.get(a.platform)
+      if (list) list.push(a)
+      else map.set(a.platform, [a])
+    }
+    return map
+  }, [accounts])
+
   // 按平台分组（搜索过滤后）
   const groupedAccounts = useMemo(() => {
-    let result = accounts
+    let filtered = accounts
     if (accSearch.trim()) {
       const q = accSearch.trim().toLowerCase()
-      result = result.filter(
+      filtered = filtered.filter(
         (a) => a.platform.toLowerCase().includes(q) || a.account.toLowerCase().includes(q),
       )
     }
     const map = new Map<string, AccountCredential[]>()
-    for (const a of result) {
+    for (const a of filtered) {
       const list = map.get(a.platform)
       if (list) list.push(a)
       else map.set(a.platform, [a])
@@ -598,22 +616,37 @@ export function Materials() {
     return map
   }, [accounts, accSearch])
 
-  // 合并显示的平台列表：folders 顺序优先，再补充账号中有但不在 folders 的平台
-  // 搜索时只显示有匹配账号的平台（不展示空文件夹）
-  const allPlatforms = useMemo(() => {
-    if (accSearch.trim()) {
-      return Array.from(groupedAccounts.keys())
-    }
+  const registeredPlatforms = useMemo(() => {
     const result: string[] = []
     const seen = new Set<string>()
     for (const f of folders) {
       if (!seen.has(f)) { result.push(f); seen.add(f) }
     }
-    for (const p of groupedAccounts.keys()) {
+    for (const p of accountsByPlatform.keys()) {
       if (!seen.has(p)) { result.push(p); seen.add(p) }
     }
     return result
-  }, [folders, groupedAccounts, accSearch])
+  }, [accountsByPlatform, folders])
+
+  // 合并显示的平台列表：固定按账号数降序
+  // 搜索时只显示有匹配账号的平台（不展示空文件夹）
+  const allPlatforms = useMemo(() => {
+    const visible = accSearch.trim()
+      ? registeredPlatforms.filter((platform) => groupedAccounts.has(platform))
+      : registeredPlatforms.slice()
+
+    const seen = new Set(visible)
+    for (const platform of groupedAccounts.keys()) {
+      if (!seen.has(platform)) visible.push(platform)
+    }
+
+    const counts = new Map<string, number>()
+    for (const platform of visible) {
+      counts.set(platform, (groupedAccounts.get(platform) ?? []).length)
+    }
+
+    return orderFoldersByCount(visible, counts)
+  }, [accSearch, groupedAccounts, registeredPlatforms])
 
   const totalFiltered = useMemo(
     () => Array.from(groupedAccounts.values()).reduce((s, a) => s + a.length, 0),
@@ -675,7 +708,7 @@ export function Materials() {
     e.preventDefault()
     const name = newFolderName.trim()
     if (!name) return
-    if (folders.includes(name)) {
+    if (registeredPlatforms.includes(name)) {
       toast(`文件夹「${name}」已存在`, 'error')
       return
     }
@@ -686,6 +719,11 @@ export function Materials() {
   }
 
   const renamePlatform = (oldName: string, newName: string) => {
+    if (oldName === newName) return
+    if (registeredPlatforms.includes(newName)) {
+      toast(`文件夹「${newName}」已存在`, 'error')
+      return
+    }
     writeAccounts(accounts.map((a) => a.platform === oldName ? { ...a, platform: newName } : a))
     if (folders.includes(oldName)) {
       writeFolders(folders.map((f) => f === oldName ? newName : f))
@@ -705,7 +743,7 @@ export function Materials() {
     )
     if (!ok) return
     writeAccounts(accounts.filter((a) => a.platform !== platform))
-    writeFolders(folders.filter((f) => f !== platform))
+    writeFolders(registeredPlatforms.filter((f) => f !== platform))
     toast('已删除', 'error')
   }
 
@@ -789,7 +827,7 @@ export function Materials() {
             ) : (
               <>
                 <input
-                  className="filter-input"
+                  className="filter-input acc-folder-search"
                   placeholder="搜索文件夹或账号…"
                   value={accSearch}
                   onChange={(e) => setAccSearch(e.target.value)}

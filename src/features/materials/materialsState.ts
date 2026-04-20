@@ -154,12 +154,27 @@ export function subscribeAccounts(listener: () => void) {
 // 仅存储文件夹名称数组，保证空文件夹可以存在
 const FOLDER_SETTINGS_KEY = 'materials:folders'
 
-function sanitizeFolders(raw: unknown): string[] {
+function sanitizeFolderItems(raw: unknown): string[] {
   if (!Array.isArray(raw)) return []
   return (raw as unknown[])
     .filter((item): item is string => typeof item === 'string' && item.trim().length > 0)
     .map((s) => s.trim())
     .filter((s, i, arr) => arr.indexOf(s) === i) // 去重
+}
+
+function sanitizeFolders(raw: unknown): string[] {
+  if (Array.isArray(raw)) {
+    return sanitizeFolderItems(raw)
+  }
+
+  if (!raw || typeof raw !== 'object') {
+    return []
+  }
+
+  const value = raw as {
+    items?: unknown
+  }
+  return sanitizeFolderItems(value.items)
 }
 
 const foldersStore = createSyncableSettingsStore<string[]>({
@@ -168,8 +183,28 @@ const foldersStore = createSyncableSettingsStore<string[]>({
   sanitize: sanitizeFolders,
 })
 
-export function readFolders(): string[]                { return foldersStore.read() }
-export function writeFolders(folders: string[])        { foldersStore.write(folders) }
+export function readFolders(): string[] {
+  return foldersStore.read()
+}
+
+export function writeFolders(folders: string[]) {
+  foldersStore.write(sanitizeFolderItems(folders))
+}
+
+export function orderFoldersByCount(
+  folders: string[],
+  counts: ReadonlyMap<string, number>,
+) {
+  return folders
+    .map((name, index) => ({
+    name,
+    index,
+    count: counts.get(name) ?? 0,
+    }))
+    .sort((a, b) => (b.count - a.count) || (a.index - b.index))
+    .map((item) => item.name)
+}
+
 export function subscribeFolders(listener: () => void) { return foldersStore.subscribe(listener) }
 
 export async function initializeMaterialsState() {
