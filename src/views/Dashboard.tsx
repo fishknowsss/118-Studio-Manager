@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, type DragEvent } from 'react'
+import { useMemo, useState, type DragEvent } from 'react'
 import { DashboardHeader } from '../features/dashboard/DashboardHeader'
 import { DashboardMiniCalendar } from '../features/dashboard/DashboardMiniCalendar'
 import { FocusPrimaryCard } from '../features/dashboard/FocusPrimaryCard'
@@ -28,6 +28,7 @@ import {
 import { type LegacyProject, type LegacyTask, getTaskAssigneeIds } from '../legacy/store'
 import { useLegacyStoreSnapshot } from '../legacy/useLegacyStore'
 import { formatLocalDateKey } from '../legacy/utils'
+import { useTodayDate } from '../legacy/useTodayDate'
 import { Tasks } from './Tasks'
 import { People } from './People'
 import { Calendar } from './Calendar'
@@ -68,16 +69,9 @@ export function Dashboard() {
   const [expandedPanel, setExpandedPanel] = useState<ExpandedPanel>(null)
   const [editingTask, setEditingTask] = useState<LegacyTask | null | undefined>(undefined)
   const [searchQuery, setSearchQuery] = useState('')
-  const [dateObj, setDateObj] = useState(() => new Date())
+  const dateObj = useTodayDate()
   const [leaveDialogDate, setLeaveDialogDate] = useState<string | null>(null)
   const todayStr = useMemo(() => formatLocalDateKey(dateObj), [dateObj])
-
-  useEffect(() => {
-    const now = new Date()
-    const midnight = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1, 0, 0, 0, 0)
-    const id = setTimeout(() => setDateObj(new Date()), midnight.getTime() - now.getTime())
-    return () => clearTimeout(id)
-  }, [dateObj])
 
   const entityMaps = useMemo(() => buildEntityMaps(projects, tasks, people), [people, projects, tasks])
   const topProjects = useMemo(() => getTopProjects(projects, 8, todayStr), [projects, todayStr])
@@ -101,7 +95,7 @@ export function Dashboard() {
     people: getTaskAssigneeIds(task).map((id) => entityMaps.peopleById[id]).filter(Boolean),
     project: task.projectId ? entityMaps.projectsById[task.projectId] : null,
   })), [entityMaps.peopleById, entityMaps.projectsById, taskPool])
-  const eventMap = useMemo(() => buildProjectEventSummaryMap(projects), [projects])
+  const eventMap = useMemo(() => buildProjectEventSummaryMap(projects, todayStr), [projects, todayStr])
   const headerModel = useMemo(() => buildDashboardHeaderModel(dateObj), [dateObj])
   const calendarModel = useMemo(
     () => buildDashboardMiniCalendarModel(calDate, eventMap, todayStr, leaveDates),

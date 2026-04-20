@@ -28,7 +28,7 @@ import {
   readPersistedCloudSyncState,
   writePersistedCloudSyncState,
 } from './syncClientState'
-import { reloadSyncableViewStateFromDB } from '../persistence/syncableViewState'
+import { flushSyncableViewStatePersistence, reloadSyncableViewStateFromDB } from '../persistence/syncableViewState'
 import { readAccounts, readBriefs, readFolders } from '../materials/materialsState'
 
 type SyncPhase = 'disabled' | 'checking' | 'ready' | 'syncing' | 'restoring' | 'error'
@@ -103,6 +103,7 @@ export function CloudSyncProvider({ children }: { children: ReactNode }) {
 
     suppressStoreEventsRef.current = true
     try {
+      await flushSyncableViewStatePersistence()
       await db.importAll(current.data)
       await reloadSyncableViewStateFromDB()
       await store.loadAll()
@@ -175,8 +176,12 @@ export function CloudSyncProvider({ children }: { children: ReactNode }) {
     }))
 
     try {
+      await flushSyncableViewStatePersistence()
       const payload = await db.exportAll()
-      const result = await pushCloudSyncData({ payload, source })
+      const result = await pushCloudSyncData({
+        payload,
+        source,
+      })
       pendingLocalChangesRef.current = false
       updatePersistedState({
         lastCompletedSyncAt: new Date().toISOString(),

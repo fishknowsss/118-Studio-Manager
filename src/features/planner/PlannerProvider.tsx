@@ -4,8 +4,9 @@ import { createContext, useContext, useMemo, useState, type ReactNode } from 're
 import { ExpandPanel } from '../../components/ui/ExpandPanel'
 import { buildProjectDeadlineToneMap, buildProjectEventSummaryMap, getActivePeople, getProjectEventsForDate, sortProjectsByDeadlineTone } from '../../legacy/selectors'
 import { type LegacyProject, getTaskAssigneeIds } from '../../legacy/store'
-import { ddlLabel, formatDate, shiftLocalDateKey, parseLocalDateKey, today, weekdayLabel, STATUS_LABELS } from '../../legacy/utils'
+import { ddlLabel, formatDate, shiftLocalDateKey, parseLocalDateKey, weekdayLabel, STATUS_LABELS } from '../../legacy/utils'
 import { useLegacyStoreSnapshot } from '../../legacy/useLegacyStore'
+import { useTodayKey } from '../../legacy/useTodayDate'
 import { LeaveDialog } from '../dashboard/LeaveDialog'
 
 type PlannerContextValue = {
@@ -65,11 +66,11 @@ function PlannerDrawer({
 }) {
   const storeSnapshot = useLegacyStoreSnapshot()
   const [leaveDialogOpen, setLeaveDialogOpen] = useState(false)
+  const todayStr = useTodayKey()
 
-  const todayStr = today()
   const dateLabel = `${formatDate(dateStr)} ${weekdayLabel(dateStr)}`
   const activePeople = getActivePeople(storeSnapshot.people)
-  const eventMap = buildProjectEventSummaryMap(storeSnapshot.projects)
+  const eventMap = buildProjectEventSummaryMap(storeSnapshot.projects, todayStr)
   const events = getProjectEventsForDate(eventMap, dateStr)
 
   // Tasks scheduled for this day, enriched with project + assignee

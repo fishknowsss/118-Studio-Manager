@@ -33,6 +33,8 @@ import {
   getNeedsBackup,
 } from '../legacy/selectors'
 import { useLegacyStoreSnapshot } from '../legacy/useLegacyStore'
+import { useTodayDate } from '../legacy/useTodayDate'
+import { flushSyncableViewStatePersistence } from '../features/persistence/syncableViewState'
 
 type TransferState = {
   action: 'clear' | 'export' | 'import'
@@ -59,6 +61,7 @@ export function Settings() {
   const briefs = useSyncExternalStore(subscribeBriefs, readBriefs)
   const accounts = useSyncExternalStore(subscribeAccounts, readAccounts)
   const folders = useSyncExternalStore(subscribeFolders, readFolders)
+  const todayDate = useTodayDate()
   const {
     state: cloudSyncState,
     statusLabel,
@@ -77,14 +80,15 @@ export function Settings() {
     leaveRecords,
   }))
   const entityMaps = useMemo(() => buildEntityMaps(projects, tasks, people), [people, projects, tasks])
-  const needsBackup = useMemo(() => getNeedsBackup(logs, projects), [logs, projects])
+  const needsBackup = useMemo(() => getNeedsBackup(logs, projects, todayDate), [logs, projects, todayDate])
   const recentLogs = useMemo(() => formatRecentLogs(logs), [logs])
   const undoState = getUndoHistoryState()
 
   useEffect(() => {
     let cancelled = false
 
-    void db.exportAll()
+    void flushSyncableViewStatePersistence()
+      .then(() => db.exportAll())
       .then((data) => {
         if (!cancelled) {
           setCurrentSummary(buildBackupSummary(data))

@@ -22,7 +22,7 @@ import type {
 import { store, getTaskAssigneeIds, syncTaskStatusWithAssignees } from './store'
 import { buildBackupSummary } from './selectors'
 import { formatFileDate, normalizeImportedBackup, now, uid } from './utils'
-import { reloadSyncableViewStateFromDB } from '../features/persistence/syncableViewState'
+import { flushSyncableViewStatePersistence, reloadSyncableViewStateFromDB } from '../features/persistence/syncableViewState'
 
 export type ProjectFormInput = {
   name: string | null
@@ -244,6 +244,7 @@ export async function assignTaskToPerson(taskId: string, personId: string) {
 }
 
 export async function exportBackupData() {
+  await flushSyncableViewStatePersistence()
   const data = await db.exportAll()
   await store.addLog('JSON 已导出')
   return {
@@ -256,6 +257,7 @@ export async function exportBackupData() {
 export async function importBackupText(text: string) {
   return await runWithUndo('导入备份', async () => {
     const parsed = normalizeImportedBackup(JSON.parse(text))
+    await flushSyncableViewStatePersistence()
     await db.importAll(parsed)
     await reloadSyncableViewStateFromDB()
     await store.loadAll()
@@ -268,6 +270,7 @@ export async function importBackupText(text: string) {
 
 export async function clearAllData() {
   return await runWithUndo('清空所有数据', async () => {
+    await flushSyncableViewStatePersistence()
     const current = await db.exportAll()
     const summary = buildBackupSummary(current)
     await db.clearAll()

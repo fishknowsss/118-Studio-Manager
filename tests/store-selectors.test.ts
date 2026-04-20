@@ -233,7 +233,7 @@ describe('store selectors', () => {
         status: 'active',
         ddl: '2026-04-10',
       },
-    ])
+    ], '2026-04-12')
 
     expect(eventMap['2026-04-18']).toEqual({
       ddls: [{ label: '毕业设计', toneKey: 'focus-critical' }],
@@ -254,7 +254,7 @@ describe('store selectors', () => {
         status: 'active',
         ddl: '2026-04-18',
       },
-    ])
+    ], '2026-04-12')
 
     expect(getProjectEventsForDate(eventMap, '2026-04-18')).toEqual([
       { label: 'DDL · 毕业设计', toneKey: 'focus-critical', type: 'ddl' },

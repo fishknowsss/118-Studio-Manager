@@ -443,7 +443,7 @@ export function buildProjectEventSummaryMap(
       const day = ensureDay(ddlKey)
       day.ddls.push({ label: project.name, toneKey })
       day.hasDdl = true
-      if (urgencyClass(ddlKey, project.status || 'active').includes('overdue')) {
+      if (toneKey === 'focus-overdue') {
         day.urgent = true
       }
       if (isToneMoreUrgent(toneKey, day.markerTone)) {

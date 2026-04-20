@@ -172,6 +172,10 @@ describe('cloud sync helpers', () => {
         'Content-Type': 'text/plain',
       },
     }))
+    expect(JSON.parse(fetchMock.mock.calls[0]?.[1]?.body as string)).toEqual({
+      payload: buildPayload('2026-04-17T14:00:00+08:00', 'manual'),
+      source: 'manual',
+    })
   })
 
   it('turns fetch failures into a Cloudflare Access hint', async () => {

@@ -12,8 +12,9 @@ import {
   type LegacyProject,
   type ProjectStatus,
 } from '../legacy/store'
-import { formatLocalDateKey, STATUS_LABELS } from '../legacy/utils'
+import { STATUS_LABELS } from '../legacy/utils'
 import { useLegacyStoreSnapshot } from '../legacy/useLegacyStore'
+import { useTodayKey } from '../legacy/useTodayDate'
 
 export function Projects() {
   const store = useLegacyStoreSnapshot()
@@ -26,7 +27,7 @@ export function Projects() {
   const [editingProject, setEditingProject] = useState<LegacyProject | null | undefined>(undefined)
   const { confirm } = useConfirm()
   const { toast } = useToast()
-  const todayStr = useMemo(() => formatLocalDateKey(new Date()), [])
+  const todayStr = useTodayKey()
   const filteredProjects = useMemo(() => getFilteredProjects(projects, statusFilter, prioFilter, todayStr) as LegacyProject[], [projects, prioFilter, statusFilter, todayStr])
   const projectCards = useMemo(() => buildProjectCardModels(filteredProjects, tasks, todayStr), [filteredProjects, tasks, todayStr])
   const timeline = useMemo(() => buildProjectTimelineModel(filteredProjects, 90, undefined, todayStr), [filteredProjects, todayStr])

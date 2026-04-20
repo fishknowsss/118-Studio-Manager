@@ -18,8 +18,9 @@ import {
   type TaskStatus,
   getTaskAssigneeIds,
 } from '../legacy/store'
-import { PRIORITY_LABELS, STATUS_LABELS, today } from '../legacy/utils'
+import { PRIORITY_LABELS, STATUS_LABELS } from '../legacy/utils'
 import { useLegacyStoreSnapshot } from '../legacy/useLegacyStore'
+import { useTodayKey } from '../legacy/useTodayDate'
 
 type TaskMenuState =
   | { taskId: string; type: 'assignee'; x: number; y: number }
@@ -39,7 +40,7 @@ export function Tasks() {
   const { confirm } = useConfirm()
   const { toast } = useToast()
   const activePeople = useMemo(() => getActivePeople(people), [people])
-  const todayStr = today()
+  const todayStr = useTodayKey()
   const filteredTasks = useMemo(() => getFilteredTasks(tasks, {
     assigneeFilter,
     projFilter,

@@ -1,7 +1,7 @@
 import { db } from './db'
 import { store } from './store'
 import type { BackupPayload } from './utils'
-import { reloadSyncableViewStateFromDB } from '../features/persistence/syncableViewState'
+import { flushSyncableViewStatePersistence, reloadSyncableViewStateFromDB } from '../features/persistence/syncableViewState'
 
 type UndoEntry = {
   id: string
@@ -44,6 +44,7 @@ export function getUndoHistoryState() {
 }
 
 export async function pushUndoCheckpoint(label: string) {
+  await flushSyncableViewStatePersistence()
   const snapshot = await db.exportAll()
   const id = crypto.randomUUID()
 
@@ -73,6 +74,7 @@ export async function undoLastEdit() {
   const entry = undoStack[0]
   if (!entry) return null
 
+  await flushSyncableViewStatePersistence()
   await db.importAll(entry.snapshot)
   await reloadSyncableViewStateFromDB()
   await store.loadAll()
@@ -94,6 +96,7 @@ export async function undoEditById(id: string) {
   const target = undoStack[index]
   if (!target) return null
 
+  await flushSyncableViewStatePersistence()
   await db.importAll(target.snapshot)
   await reloadSyncableViewStateFromDB()
   await store.loadAll()

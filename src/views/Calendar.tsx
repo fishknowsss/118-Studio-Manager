@@ -1,8 +1,9 @@
 import { useState } from 'react'
-import { dateToStr, getCalendarDays, today } from '../legacy/utils'
+import { dateToStr, getCalendarDays } from '../legacy/utils'
 import { buildProjectEventSummaryMap } from '../legacy/selectors'
 import { useLegacyStoreSnapshot } from '../legacy/useLegacyStore'
 import { usePlanner } from '../features/planner/PlannerProvider'
+import { useTodayKey } from '../legacy/useTodayDate'
 
 const MONTHS = ['一月', '二月', '三月', '四月', '五月', '六月', '七月', '八月', '九月', '十月', '十一月', '十二月']
 
@@ -10,9 +11,10 @@ export function Calendar() {
   const store = useLegacyStoreSnapshot()
   const [currentDate, setCurrentDate] = useState(() => new Date())
   const { openPlanner } = usePlanner()
+  const todayStr = useTodayKey()
 
   const days = getCalendarDays(currentDate.getFullYear(), currentDate.getMonth())
-  const eventMap = buildProjectEventSummaryMap(store.projects)
+  const eventMap = buildProjectEventSummaryMap(store.projects, todayStr)
 
   const leaveByDate = store.leaveRecords.reduce<Record<string, string[]>>((acc, r) => {
     const name = store.people.find((p) => p.id === r.personId)?.name || '未知'
@@ -61,7 +63,7 @@ export function Calendar() {
             const dateStr = dateToStr(date)
             const events = eventMap[dateStr]
             const ddlEvents = events?.ddls || []
-            const isToday = dateStr === today()
+            const isToday = dateStr === todayStr
             const leaveNames = leaveByDate[dateStr]
             const eventTotal = ddlEvents.length
             const eventSlots = leaveNames ? 3 : 4

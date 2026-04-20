@@ -52,15 +52,17 @@ export function TaskDialog({
   }))
 
   const activePeople = people.filter((person) => person.status === 'active')
-  // Also include inactive people already assigned (so they stay visible)
-  const assignedInactive = task
-    ? getTaskAssigneeIds(task)
-        .map((id) => people.find((p) => p.id === id))
-        .filter((p): p is LegacyPerson => !!p && p.status !== 'active')
-    : []
-  const displayPeople = assignedInactive.length > 0
-    ? [...activePeople, ...assignedInactive]
-    : activePeople
+  const displayPeople = useMemo(() => {
+    if (!task) return activePeople
+
+    const assignedInactive = getTaskAssigneeIds(task)
+      .map((id) => people.find((person) => person.id === id))
+      .filter((person): person is LegacyPerson => person !== undefined && person.status !== 'active')
+
+    return assignedInactive.length > 0
+      ? [...activePeople, ...assignedInactive]
+      : activePeople
+  }, [activePeople, people, task])
   const assigneeViewportRef = useRef<HTMLDivElement | null>(null)
   const [assigneeColumns, setAssigneeColumns] = useState(4)
   const [assigneePage, setAssigneePage] = useState(0)

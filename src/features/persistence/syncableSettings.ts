@@ -1,5 +1,7 @@
 import { db } from '../../legacy/db'
 
+const pendingWrites = new Map<string, Promise<void>>()
+
 type SyncableSettingsRecord<T> = {
   key: string
   value: T
@@ -32,6 +34,21 @@ async function persistValue<T>(key: string, value: T) {
   } satisfies SyncableSettingsRecord<T>)
 }
 
+function trackPendingWrite(key: string, promise: Promise<void>) {
+  pendingWrites.set(key, promise)
+  void promise.finally(() => {
+    if (pendingWrites.get(key) === promise) {
+      pendingWrites.delete(key)
+    }
+  })
+}
+
+export async function waitForSyncableSettingsWrites() {
+  while (pendingWrites.size > 0) {
+    await Promise.all([...new Set(pendingWrites.values())])
+  }
+}
+
 export function createSyncableSettingsStore<T>({
   key,
   legacyKey,
@@ -40,6 +57,7 @@ export function createSyncableSettingsStore<T>({
 }: SyncableStoreOptions<T>) {
   let currentValue = sanitize(emptyValue)
   const listeners = new Set<() => void>()
+  let writeChain = Promise.resolve()
 
   const notify = () => {
     listeners.forEach((listener) => listener())
@@ -80,11 +98,18 @@ export function createSyncableSettingsStore<T>({
     },
 
     write(nextValue: T) {
-      const sanitized = setCurrentValue(nextValue)
-      void persistValue(key, sanitized).catch((error) => {
-        console.error(`[syncable-settings] 保存 ${key} 失败`, error)
-      })
-      emitSyncableDataUpdated(key)
+      const sanitized = sanitize(nextValue)
+      writeChain = writeChain
+        .catch(() => undefined)
+        .then(async () => {
+          await persistValue(key, sanitized)
+          setCurrentValue(sanitized)
+          emitSyncableDataUpdated(key)
+        })
+        .catch((error) => {
+          console.error(`[syncable-settings] 保存 ${key} 失败`, error)
+        })
+      trackPendingWrite(key, writeChain)
     },
 
     async initialize() {
@@ -97,11 +122,13 @@ export function createSyncableSettingsStore<T>({
       const legacyValue = readLegacyValue()
       if (legacyValue !== null) {
         const sanitized = setCurrentValue(legacyValue)
-        void persistValue(key, sanitized).catch((error) => {
+        try {
+          await persistValue(key, sanitized)
+          if (legacyKey && canUseLocalStorage()) {
+            window.localStorage.removeItem(legacyKey)
+          }
+        } catch (error) {
           console.error(`[syncable-settings] 迁移 ${key} 失败`, error)
-        })
-        if (legacyKey && canUseLocalStorage()) {
-          window.localStorage.removeItem(legacyKey)
         }
         return
       }
@@ -120,6 +147,8 @@ export function createSyncableSettingsStore<T>({
     },
 
     resetForTests() {
+      pendingWrites.delete(key)
+      writeChain = Promise.resolve()
       currentValue = sanitize(emptyValue)
     },
   }

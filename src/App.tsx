@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useRef, useState } from 'react'
 import { ConfirmProvider } from './components/feedback/ConfirmProvider'
 import { ToastProvider } from './components/feedback/ToastProvider'
 import { PlannerProvider } from './features/planner/PlannerProvider'
@@ -23,6 +23,22 @@ const LEGACY_VIEW_ALIASES: Record<string, string> = {
   calendar: 'dashboard',
 }
 
+const KONAMI_SEQUENCE = ['arrowup', 'arrowup', 'arrowdown', 'arrowdown', 'arrowleft', 'arrowright', 'arrowleft', 'arrowright', 'b', 'a'] as const
+
+function normalizeKonamiKey(key: string) {
+  const normalized = key.toLowerCase()
+  if (normalized.startsWith('arrow')) return normalized
+  if (normalized.length === 1) return normalized
+  return null
+}
+
+function isEditableTarget(target: EventTarget | null) {
+  if (!(target instanceof HTMLElement)) return false
+  if (target.isContentEditable) return true
+  if (target.closest('[contenteditable="true"]')) return true
+  return ['INPUT', 'TEXTAREA', 'SELECT'].includes(target.tagName)
+}
+
 function getHashView() {
   const raw = window.location.hash.slice(1)
   const normalized = LEGACY_VIEW_ALIASES[raw] || raw
@@ -32,8 +48,12 @@ function getHashView() {
 export default function App() {
   const [view, setView] = useState(getHashView)
   const [theme, setTheme] = useState(() => localStorage.getItem('theme') || 'light')
+  const [easterMode, setEasterMode] = useState(false)
+  const [entryFlashVisible, setEntryFlashVisible] = useState(false)
   const [ready, setReady] = useState(false)
   const [initError, setInitError] = useState<string | null>(null)
+  const konamiIndexRef = useRef(0)
+  const entryFlashTimerRef = useRef<number | null>(null)
 
   useEffect(() => {
     async function init() {
@@ -59,6 +79,87 @@ export default function App() {
     return () => window.removeEventListener('hashchange', onHash)
   }, [])
 
+  useEffect(() => {
+    const nextValue = easterMode ? 'konami' : null
+    const targets = [document.documentElement, document.body]
+
+    for (const target of targets) {
+      if (nextValue) {
+        target.setAttribute('data-easter-mode', nextValue)
+      } else {
+        target.removeAttribute('data-easter-mode')
+      }
+    }
+
+    return () => {
+      for (const target of targets) {
+        target.removeAttribute('data-easter-mode')
+      }
+    }
+  }, [easterMode])
+
+  useEffect(() => {
+    if (view !== 'dashboard' || easterMode) {
+      konamiIndexRef.current = 0
+      return
+    }
+
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (isEditableTarget(event.target)) {
+        konamiIndexRef.current = 0
+        return
+      }
+
+      const key = normalizeKonamiKey(event.key)
+      if (!key) {
+        konamiIndexRef.current = 0
+        return
+      }
+
+      const nextIndex = konamiIndexRef.current
+      if (key === KONAMI_SEQUENCE[nextIndex]) {
+        if (nextIndex === KONAMI_SEQUENCE.length - 1) {
+          konamiIndexRef.current = 0
+          setEasterMode(true)
+          return
+        }
+
+        konamiIndexRef.current = nextIndex + 1
+        return
+      }
+
+      konamiIndexRef.current = key === KONAMI_SEQUENCE[0] ? 1 : 0
+    }
+
+    window.addEventListener('keydown', onKeyDown, true)
+    return () => window.removeEventListener('keydown', onKeyDown, true)
+  }, [easterMode, view])
+
+  useEffect(() => {
+    if (entryFlashTimerRef.current) {
+      window.clearTimeout(entryFlashTimerRef.current)
+      entryFlashTimerRef.current = null
+    }
+
+    if (!easterMode) {
+      setEntryFlashVisible(false)
+      return
+    }
+
+    setEntryFlashVisible(true)
+    entryFlashTimerRef.current = window.setTimeout(() => {
+      setEntryFlashVisible(false)
+      entryFlashTimerRef.current = null
+    }, 2400)
+
+    return () => {
+      if (entryFlashTimerRef.current) {
+        window.clearTimeout(entryFlashTimerRef.current)
+        entryFlashTimerRef.current = null
+      }
+    }
+  }, [easterMode])
+
   if (initError) {
     return (
       <div className="app-init-error">
@@ -78,12 +179,19 @@ export default function App() {
       <ConfirmProvider>
         <CloudSyncProvider>
           <PlannerProvider>
-            <div id="app" className="app-shell">
-              <nav className="sidebar">
-                <div className="sidebar-brand">
-                  <img src="/favicon.svg" className="brand-icon" alt="" />
-                  <span className="brand-sub">Studio</span>
+            <div id="app" className="app-shell" data-easter-mode={easterMode ? 'konami' : undefined}>
+              {entryFlashVisible ? (
+                <div className="konami-entry-flash" aria-live="polite">
+                  <div className="konami-entry-flash-backdrop" />
+                  <div className="konami-entry-flash-stage">
+                    <span className="konami-entry-flash-text" data-text="Noclipping into the Backrooms">
+                      Noclipping into the Backrooms
+                    </span>
+                  </div>
                 </div>
+              ) : null}
+              <nav className="sidebar">
+                <SidebarBrand easterMode={easterMode} />
 
                 <ul className="nav-list">
                   <NavItem label="首页" active={view === 'dashboard'} onClick={() => window.location.hash = '#dashboard'}>
@@ -111,13 +219,12 @@ export default function App() {
                 </ul>
 
                 <div className="sidebar-footer">
-                  <button className="nav-item nav-button" type="button" onClick={() => setTheme((current) => current === 'dark' ? 'light' : 'dark')}>
-                    <svg className="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                      <circle cx="12" cy="12" r="5" />
-                      <path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42" />
-                    </svg>
-                    <span className="nav-label">{theme === 'dark' ? '浅色模式' : '深色模式'}</span>
-                  </button>
+                  <FooterModeButton
+                    easterMode={easterMode}
+                    theme={theme}
+                    onExitEasterMode={() => setEasterMode(false)}
+                    onToggleTheme={() => setTheme((current) => current === 'dark' ? 'light' : 'dark')}
+                  />
                   <NavItem label="设置" active={view === 'settings'} onClick={() => window.location.hash = '#settings'}>
                     <circle cx="12" cy="12" r="3" />
                     <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" />
@@ -135,6 +242,54 @@ export default function App() {
         </CloudSyncProvider>
       </ConfirmProvider>
     </ToastProvider>
+  )
+}
+
+function SidebarBrand({ easterMode }: { easterMode: boolean }) {
+  return (
+    <div className={`sidebar-brand${easterMode ? ' is-easter' : ''}`}>
+      {easterMode ? (
+        <span className="brand-chaos" data-text="烧粥幺幺捌">
+          烧粥幺幺捌
+        </span>
+      ) : (
+        <>
+          <img src="/favicon.svg" className="brand-icon" alt="" />
+          <span className="brand-sub">Studio</span>
+        </>
+      )}
+    </div>
+  )
+}
+
+function FooterModeButton({
+  easterMode,
+  theme,
+  onExitEasterMode,
+  onToggleTheme,
+}: {
+  easterMode: boolean
+  theme: string
+  onExitEasterMode: () => void
+  onToggleTheme: () => void
+}) {
+  return (
+    <button className={`nav-item nav-button${easterMode ? ' is-easter-toggle' : ''}`} type="button" onClick={easterMode ? onExitEasterMode : onToggleTheme}>
+      <svg className="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+        {easterMode ? (
+          <>
+            <path d="M5 5l14 14" />
+            <path d="M19 5L5 19" />
+          </>
+        ) : (
+          <>
+            <circle cx="12" cy="12" r="5" />
+            <path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42" />
+          </>
+        )}
+      </svg>
+      <span className="nav-label">{easterMode ? '退出异象' : theme === 'dark' ? '浅色模式' : '深色模式'}</span>
+    </button>
   )
 }
 

@@ -193,6 +193,534 @@ svg { display: block; flex-shrink: 0; }
   grid-template-columns: var(--sidebar-w) 1fr;
   height: 100vh;
   overflow: hidden;
+  position: relative;
+  isolation: isolate;
+}
+
+html[data-easter-mode='konami'], body[data-easter-mode='konami'] {
+  color-scheme: light;
+  --c-primary: #967420;
+  --c-primary-light: rgba(150, 116, 32, 0.16);
+  --c-primary-dark: #705511;
+  --c-teal: #a07d25;
+  --c-teal-light: rgba(160, 125, 37, 0.12);
+  --c-sage: #8b6b18;
+  --c-sage-light: rgba(139, 107, 24, 0.14);
+  --c-overdue: #a66916;
+  --c-overdue-bg: rgba(166, 105, 22, 0.12);
+  --c-rose: #b18421;
+  --c-rose-bg: rgba(177, 132, 33, 0.14);
+  --c-today: #c0911c;
+  --c-today-bg: rgba(192, 145, 28, 0.14);
+  --c-soon: #ab8426;
+  --c-soon-bg: rgba(171, 132, 38, 0.14);
+  --c-near: #8a6f22;
+  --c-near-bg: rgba(138, 111, 34, 0.14);
+  --c-bg: #efe5c1;
+  --c-surface: rgba(250, 244, 216, 0.92);
+  --c-surface-1: #f3eccd;
+  --c-surface-3: #e9ddb0;
+  --c-border: #d8c68e;
+  --c-border-light: #e7ddb8;
+  --c-text: #4f421a;
+  --c-text-1: #4f421a;
+  --c-text-2: #695729;
+  --c-text-3: #8c7a45;
+  --c-done: #7d6a21;
+  --c-blocked: #a66c1d;
+  --shadow-sm: 0 1px 3px rgba(117, 91, 18, .08), 0 0 10px rgba(179, 150, 58, .06);
+  --shadow-md: 0 8px 24px rgba(117, 91, 18, .10), 0 0 20px rgba(184, 156, 68, .08);
+  --shadow-lg: 0 16px 42px rgba(117, 91, 18, .16), 0 0 38px rgba(201, 172, 84, .10);
+}
+
+body[data-easter-mode='konami'] {
+  position: relative;
+  background: linear-gradient(180deg, #fbf7e4 0%, #efe5c1 45%, #e7d9aa 100%);
+}
+
+#app[data-easter-mode='konami'] {
+  z-index: 0;
+  background:
+    linear-gradient(180deg, rgba(248, 241, 213, 0.86), rgba(235, 224, 185, 0.88)),
+    radial-gradient(circle at 16% 12%, rgba(255, 247, 206, 0.36), transparent 18%),
+    radial-gradient(circle at 80% 16%, rgba(248, 232, 177, 0.24), transparent 22%);
+}
+
+#app[data-easter-mode='konami']::before,
+#app[data-easter-mode='konami']::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+#app[data-easter-mode='konami']::before {
+  background:
+    radial-gradient(circle at 14% 12%, rgba(255, 249, 219, 0.48), transparent 16%),
+    radial-gradient(circle at 82% 18%, rgba(255, 239, 184, 0.28), transparent 20%),
+    radial-gradient(circle at 48% 84%, rgba(246, 224, 152, 0.16), transparent 24%);
+  mix-blend-mode: screen;
+  filter: blur(12px);
+  opacity: 0.95;
+  animation: konamiBreath 9s ease-in-out infinite;
+}
+
+#app[data-easter-mode='konami']::after {
+  background-image:
+    radial-gradient(circle at 12% 18%, rgba(146, 104, 30, .16) 0 0.8px, transparent 1.3px),
+    radial-gradient(circle at 68% 62%, rgba(161, 93, 43, .14) 0 0.9px, transparent 1.4px),
+    radial-gradient(circle at 84% 28%, rgba(255, 250, 226, .16) 0 0.8px, transparent 1.2px),
+    repeating-linear-gradient(180deg, rgba(166, 126, 46, .085) 0 1px, transparent 1px 4px),
+    linear-gradient(180deg, rgba(193, 122, 56, .06), transparent 22%, transparent 76%, rgba(150, 106, 35, .08));
+  background-size: 140px 140px, 180px 180px, 160px 160px, 100% 4px, 100% 100%;
+  z-index: 2;
+  opacity: 0.24;
+  mix-blend-mode: multiply;
+  filter: blur(.55px);
+  animation: konamiNoise 180ms steps(2, end) infinite, konamiFlicker 6.4s steps(1, end) infinite;
+}
+
+#app[data-easter-mode='konami'] .sidebar,
+#app[data-easter-mode='konami'] .main-content {
+  position: relative;
+  z-index: 1;
+}
+
+html[data-easter-mode='konami'] #app .sidebar > *,
+html[data-easter-mode='konami'] #app .main-content > * {
+  position: relative;
+  z-index: 1;
+}
+
+html[data-easter-mode='konami'] #app .sidebar::before,
+html[data-easter-mode='konami'] #app .main-content::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  mix-blend-mode: multiply;
+  opacity: .22;
+  filter: none;
+  animation: konamiFlicker 8.4s steps(1, end) infinite;
+}
+
+html[data-easter-mode='konami'] #app .sidebar::before {
+  background:
+    linear-gradient(180deg, rgba(150, 112, 29, 0.08), transparent 18%, transparent 82%, rgba(140, 104, 28, 0.06)),
+    repeating-linear-gradient(180deg, rgba(156, 119, 37, 0.05) 0 1px, transparent 1px 5px);
+}
+
+html[data-easter-mode='konami'] #app .main-content::before {
+  background:
+    linear-gradient(180deg, rgba(255, 248, 224, 0.12), transparent 18%, transparent 78%, rgba(148, 108, 24, 0.08)),
+    repeating-linear-gradient(180deg, rgba(159, 121, 36, 0.045) 0 1px, transparent 1px 5px);
+}
+
+.sidebar-brand.is-easter {
+  justify-content: center;
+  padding: 0 10px;
+  overflow: visible;
+}
+
+.brand-chaos {
+  position: relative;
+  display: inline-block;
+  max-width: 100%;
+  font-family: 'Iowan Old Style', 'Palatino Linotype', 'Book Antiqua', Georgia, serif;
+  font-size: clamp(24px, 2vw, 30px);
+  font-weight: 700;
+  line-height: 1;
+  white-space: nowrap;
+  letter-spacing: .024em;
+  text-align: center;
+  color: #43300d;
+  text-shadow: 0 0 14px rgba(255, 240, 170, 0.22), 0 0 36px rgba(124, 90, 18, 0.16), 1px 0 0 rgba(46, 33, 8, 0.34);
+  animation: konamiBrandFlicker 4.4s steps(1, end) infinite, konamiBreath 7.2s ease-in-out infinite, konamiWeight 6s steps(1, end) infinite;
+}
+
+.brand-chaos::before,
+.brand-chaos::after {
+  content: attr(data-text);
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.brand-chaos::before {
+  color: rgba(255, 248, 228, 0.82);
+  transform: translate(-1.8px, 0.35px);
+  filter: blur(.45px);
+  opacity: 0.88;
+}
+
+.brand-chaos::after {
+  color: rgba(100, 71, 14, 0.78);
+  transform: translate(2.6px, -0.5px) skewX(-5deg);
+  filter: blur(1.25px);
+  opacity: 0.84;
+}
+
+html[data-easter-mode='konami'] #app .nav-icon,
+html[data-easter-mode='konami'] #app .nav-label,
+html[data-easter-mode='konami'] #app .dash-date-big,
+html[data-easter-mode='konami'] #app .dash-date-weekday,
+html[data-easter-mode='konami'] #app .focus-label,
+html[data-easter-mode='konami'] #app .panel-title,
+html[data-easter-mode='konami'] #app .panel-action,
+html[data-easter-mode='konami'] #app .panel-header,
+html[data-easter-mode='konami'] #app .focus-section-header,
+html[data-easter-mode='konami'] .expand-panel-title,
+html[data-easter-mode='konami'] .modal-title,
+html[data-easter-mode='konami'] .context-menu-title,
+html[data-easter-mode='konami'] .acc-fan-panel-title,
+html[data-easter-mode='konami'] .leave-dialog-title {
+  text-shadow: -0.03em 0 0 rgba(255, 244, 196, 0.34), 0.04em 0 0 rgba(187, 159, 84, 0.28);
+}
+
+html[data-easter-mode='konami'] #app .sidebar,
+html[data-easter-mode='konami'] #app .dash-header,
+html[data-easter-mode='konami'] #app .today-focus,
+html[data-easter-mode='konami'] #app .panel,
+html[data-easter-mode='konami'] #app .focus-card,
+html[data-easter-mode='konami'] #app .focus-highlight,
+html[data-easter-mode='konami'] #app .task-row,
+html[data-easter-mode='konami'] #app .people-assignment-card,
+html[data-easter-mode='konami'] #app .people-assignment-placeholder,
+html[data-easter-mode='konami'] #app .mini-cal-grid-wrap,
+html[data-easter-mode='konami'] .context-menu,
+html[data-easter-mode='konami'] .app-modal,
+html[data-easter-mode='konami'] .modal-inner,
+html[data-easter-mode='konami'] .expand-panel-box,
+html[data-easter-mode='konami'] .leave-dialog,
+html[data-easter-mode='konami'] .acc-fan-panel,
+html[data-easter-mode='konami'] .brief-card,
+html[data-easter-mode='konami'] .graph-tooltip,
+html[data-easter-mode='konami'] .confirm-modal {
+  box-shadow: inset 0 0 0 1px rgba(255, 245, 198, 0.44), 0 0 0 1px rgba(188, 156, 63, 0.18), 0 0 36px rgba(223, 197, 117, 0.12);
+}
+
+html[data-easter-mode='konami'] #app .sidebar,
+html[data-easter-mode='konami'] #app .dash-header,
+html[data-easter-mode='konami'] #app .today-focus,
+html[data-easter-mode='konami'] #app .panel,
+html[data-easter-mode='konami'] .modal-inner,
+html[data-easter-mode='konami'] .leave-dialog,
+html[data-easter-mode='konami'] .expand-panel-box,
+html[data-easter-mode='konami'] .acc-fan-panel {
+  position: relative;
+  overflow: hidden;
+}
+
+html[data-easter-mode='konami'] #app .sidebar::after,
+html[data-easter-mode='konami'] #app .dash-header::after,
+html[data-easter-mode='konami'] #app .today-focus::after,
+html[data-easter-mode='konami'] #app .panel::after,
+html[data-easter-mode='konami'] .expand-panel-box::after,
+html[data-easter-mode='konami'] .acc-fan-panel::after,
+html[data-easter-mode='konami'] .modal-inner::after,
+html[data-easter-mode='konami'] .leave-dialog::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  border-radius: inherit;
+  background:
+    linear-gradient(180deg, rgba(255, 248, 220, 0.08), transparent 18%, transparent 82%, rgba(160, 123, 38, 0.08)),
+    repeating-linear-gradient(180deg, rgba(166, 126, 46, 0.035) 0 1px, transparent 1px 6px),
+    linear-gradient(90deg, transparent, rgba(255, 248, 218, 0.1), transparent);
+  mix-blend-mode: multiply;
+  filter: blur(.35px);
+  opacity: .22;
+  animation: konamiFlicker 7.4s steps(1, end) infinite;
+}
+
+html[data-easter-mode='konami'] #app .nav-item:hover,
+html[data-easter-mode='konami'] #app .nav-item.active,
+html[data-easter-mode='konami'] #app .sidebar-footer .is-easter-toggle,
+html[data-easter-mode='konami'] .panel-header--expandable:hover,
+html[data-easter-mode='konami'] .focus-section-header:hover,
+html[data-easter-mode='konami'] .mini-cal-btn:hover,
+html[data-easter-mode='konami'] .mini-cal-expand-btn:hover,
+html[data-easter-mode='konami'] .context-menu-item:hover,
+html[data-easter-mode='konami'] .acc-entry:hover,
+html[data-easter-mode='konami'] .acc-copy-row:hover {
+  background: rgba(192, 154, 48, 0.12);
+}
+
+html[data-easter-mode='konami'] .panel:has(.panel-header--expandable:hover),
+html[data-easter-mode='konami'] .dash-right:has(.panel-header--expandable:hover),
+html[data-easter-mode='konami'] .today-focus:has(.focus-section-header:hover) {
+  background: rgba(249, 243, 216, 0.96);
+}
+
+html[data-easter-mode='konami'] #app .main-content {
+  background: linear-gradient(180deg, rgba(247, 241, 214, 0.54), rgba(232, 220, 178, 0.46)), radial-gradient(circle at 50% -10%, rgba(251, 240, 177, 0.22), transparent 50%);
+}
+
+html[data-easter-mode='konami'] .expand-panel-overlay,
+html[data-easter-mode='konami'] .dialog-backdrop,
+html[data-easter-mode='konami'] .leave-dialog-overlay {
+  background: rgba(226, 213, 164, 0.42);
+  backdrop-filter: blur(12px) sepia(.18) saturate(122%);
+}
+
+html[data-easter-mode='konami'] .expand-panel-box,
+html[data-easter-mode='konami'] .acc-fan-panel,
+html[data-easter-mode='konami'] .leave-dialog,
+html[data-easter-mode='konami'] .app-modal,
+html[data-easter-mode='konami'] .confirm-modal,
+html[data-easter-mode='konami'] .context-menu,
+html[data-easter-mode='konami'] .mini-cal-grid-wrap,
+html[data-easter-mode='konami'] .focus-card,
+html[data-easter-mode='konami'] .focus-highlight,
+html[data-easter-mode='konami'] .task-row,
+html[data-easter-mode='konami'] .acc-entry,
+html[data-easter-mode='konami'] .brief-card,
+html[data-easter-mode='konami'] .planner-due-row,
+html[data-easter-mode='konami'] .planner-ddl-card,
+html[data-easter-mode='konami'] .planner-event-row,
+html[data-easter-mode='konami'] .planner-stat {
+  border-color: rgba(164, 126, 26, 0.22);
+  background: rgba(250, 245, 220, 0.94);
+}
+
+html[data-easter-mode='konami'] .konami-entry-flash {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+  z-index: 80;
+  overflow: hidden;
+}
+
+html[data-easter-mode='konami'] .konami-entry-flash-backdrop {
+  position: absolute;
+  inset: 0;
+  will-change: opacity, transform;
+  backface-visibility: hidden;
+  background:
+    radial-gradient(circle at 50% 44%, rgba(255, 248, 218, 0.84), rgba(247, 236, 194, 0.8) 24%, rgba(231, 216, 168, 0.72) 54%, rgba(189, 167, 107, 0.38) 78%, rgba(126, 101, 47, 0.12) 100%),
+    radial-gradient(circle at 24% 36%, rgba(255, 247, 215, 0.16), transparent 26%),
+    radial-gradient(circle at 76% 58%, rgba(225, 209, 154, 0.14), transparent 24%),
+    linear-gradient(180deg, rgba(250, 244, 217, 0.96), rgba(233, 221, 181, 0.9));
+  animation: konamiEntryBackdropDissolve 2.4s cubic-bezier(0.2, 0.72, 0.2, 1) both;
+}
+
+html[data-easter-mode='konami'] .konami-entry-flash-backdrop::before,
+html[data-easter-mode='konami'] .konami-entry-flash-backdrop::after {
+  content: '';
+  position: absolute;
+  inset: -4%;
+  pointer-events: none;
+  will-change: opacity, transform;
+  backface-visibility: hidden;
+}
+
+html[data-easter-mode='konami'] .konami-entry-flash-backdrop::before {
+  background:
+    radial-gradient(circle at 48% 42%, rgba(255, 249, 228, 0.34), rgba(251, 239, 197, 0.16) 28%, transparent 58%),
+    radial-gradient(circle at 30% 58%, rgba(244, 231, 187, 0.14), transparent 24%),
+    radial-gradient(circle at 70% 34%, rgba(241, 227, 182, 0.12), transparent 22%);
+  mix-blend-mode: screen;
+  filter: blur(10px);
+  opacity: .82;
+  animation: konamiEntryDataScatter 2.4s cubic-bezier(0.2, 0.72, 0.2, 1) both;
+}
+
+html[data-easter-mode='konami'] .konami-entry-flash-backdrop::after {
+  background:
+    radial-gradient(circle at 18% 66%, rgba(120, 88, 24, 0.12), transparent 18%),
+    radial-gradient(circle at 78% 28%, rgba(101, 73, 18, 0.11), transparent 18%),
+    linear-gradient(180deg, rgba(134, 97, 26, 0.08), transparent 18%, transparent 80%, rgba(108, 77, 18, 0.08)),
+    radial-gradient(circle at 50% 50%, transparent 42%, rgba(85, 60, 14, 0.06) 78%, transparent 100%);
+  mix-blend-mode: multiply;
+  filter: blur(7px);
+  opacity: .72;
+  animation: konamiEntryDataScatter 2.4s cubic-bezier(0.2, 0.72, 0.2, 1) both reverse;
+}
+
+html[data-easter-mode='konami'] .konami-entry-flash-stage {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  padding: 24px;
+  isolation: isolate;
+}
+
+html[data-easter-mode='konami'] .konami-entry-flash-stage::before {
+  content: '';
+  position: absolute;
+  inset: 18% 16%;
+  pointer-events: none;
+  background:
+    radial-gradient(circle at 50% 50%, rgba(255, 246, 210, 0.42), rgba(246, 232, 184, 0.22) 40%, transparent 72%),
+    radial-gradient(circle at 40% 52%, rgba(255, 251, 231, 0.16), transparent 18%),
+    radial-gradient(circle at 62% 44%, rgba(255, 240, 192, 0.12), transparent 16%);
+  mix-blend-mode: screen;
+  filter: blur(22px);
+  opacity: .72;
+  will-change: opacity, transform;
+  backface-visibility: hidden;
+  animation: konamiEntryDataScatter 2.4s cubic-bezier(0.2, 0.72, 0.2, 1) both;
+}
+
+html[data-easter-mode='konami'] .konami-entry-flash-text {
+  position: relative;
+  display: inline-block;
+  padding: 18px 26px;
+  font-family: 'Iowan Old Style', 'Palatino Linotype', 'Book Antiqua', Georgia, serif;
+  font-size: clamp(28px, 4.8vw, 64px);
+  line-height: 1.04;
+  letter-spacing: .04em;
+  white-space: nowrap;
+  color: #5f4c1d;
+  text-shadow: 0 0 28px rgba(255, 240, 175, 0.46), 0 0 46px rgba(201, 164, 61, 0.22);
+  will-change: opacity, transform;
+  backface-visibility: hidden;
+  animation: konamiEntryTextDissolve 2.4s cubic-bezier(0.2, 0.72, 0.2, 1) both;
+}
+
+html[data-easter-mode='konami'] .konami-entry-flash-text::before,
+html[data-easter-mode='konami'] .konami-entry-flash-text::after {
+  content: attr(data-text);
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  will-change: opacity, transform;
+  backface-visibility: hidden;
+}
+
+html[data-easter-mode='konami'] .konami-entry-flash-text::before {
+  color: rgba(255, 250, 230, 0.96);
+  transform: translate(-1px, 0.3px);
+  filter: blur(.35px);
+  animation: konamiEntryGlyphSplit 2.4s cubic-bezier(0.2, 0.72, 0.2, 1) both;
+}
+
+html[data-easter-mode='konami'] .konami-entry-flash-text::after {
+  color: rgba(168, 132, 36, 0.48);
+  transform: translate(2px, -0.5px);
+  filter: blur(1px);
+  animation: konamiEntryGlyphSplitFar 2.4s cubic-bezier(0.2, 0.72, 0.2, 1) both;
+}
+
+html[data-easter-mode='konami'] .person-gender-avatar.male,
+html[data-easter-mode='konami'] .person-gender-avatar.female,
+html[data-easter-mode='konami'] .person-gender-avatar.neutral {
+  background: rgba(191, 157, 53, 0.14);
+  box-shadow: inset 0 0 0 1px rgba(191, 157, 53, 0.18);
+  color: var(--c-text-2);
+}
+
+html[data-easter-mode='konami'] .assignee-chip:hover:has(.assignee-chip-avatar.male),
+html[data-easter-mode='konami'] .assignee-chip:hover:has(.assignee-chip-avatar.female),
+html[data-easter-mode='konami'] .assignee-chip.selected:has(.assignee-chip-avatar.male),
+html[data-easter-mode='konami'] .assignee-chip.selected:has(.assignee-chip-avatar.female) {
+  border-color: rgba(176, 142, 46, 0.38);
+  background: rgba(191, 157, 53, 0.14);
+  color: var(--c-primary);
+}
+
+@keyframes konamiBreath {
+  0%, 100% { opacity: .94; filter: saturate(100%) brightness(1); }
+  50% { opacity: 1; filter: saturate(106%) brightness(1.04); }
+}
+
+@keyframes konamiGhost {
+  0%, 100% { transform: translateX(0); opacity: 1; }
+  11% { transform: translateX(-0.35px); opacity: 0.98; }
+  12% { transform: translateX(0.55px); opacity: 0.92; }
+  16% { transform: translateX(0); opacity: 1; }
+  62% { transform: translateX(0); opacity: 1; }
+  63% { transform: translateX(0.7px); opacity: 0.88; }
+  66% { transform: translateX(-0.45px); opacity: 0.96; }
+  70% { transform: translateX(0); opacity: 1; }
+}
+
+@keyframes konamiWeight {
+  0%, 100% { font-weight: 540; }
+  28% { font-weight: 680; }
+  47% { font-weight: 420; }
+  76% { font-weight: 640; }
+}
+
+@keyframes konamiFlicker {
+  0%, 100% { opacity: 1; }
+  8% { opacity: .98; }
+  9% { opacity: .92; }
+  10% { opacity: 1; }
+  54% { opacity: 1; }
+  55% { opacity: .94; }
+  56% { opacity: 1; }
+  78% { opacity: .98; }
+  79% { opacity: .9; }
+  80% { opacity: 1; }
+}
+
+@keyframes konamiNoise {
+  0%, 100% { transform: translate3d(0, 0, 0) scale(1); }
+  18% { transform: translate3d(-1.6px, 1px, 0) scale(1.018); }
+  42% { transform: translate3d(1.4px, -1.3px, 0) scale(1.012); }
+  68% { transform: translate3d(0.8px, 1.8px, 0) scale(1.022); }
+  84% { transform: translate3d(-1px, -1.1px, 0) scale(1.014); }
+}
+
+@keyframes konamiDataBlocks {
+  0%, 100% { opacity: .18; transform: translate3d(0, 0, 0) scale(1); }
+  18% { opacity: .34; transform: translate3d(-22px, 8px, 0) scale(1.04); }
+  37% { opacity: .26; transform: translate3d(15px, -12px, 0) scale(.98); }
+  58% { opacity: .38; transform: translate3d(-12px, 16px, 0) scale(1.06); }
+  79% { opacity: .22; transform: translate3d(18px, -8px, 0) scale(1.02); }
+}
+
+@keyframes konamiSmearDrift {
+  0%, 100% { transform: translate3d(0, 0, 0) scale(1); opacity: .5; }
+  32% { transform: translate3d(-10px, 6px, 0) scale(1.03); opacity: .62; }
+  68% { transform: translate3d(12px, -8px, 0) scale(1.02); opacity: .44; }
+}
+
+@keyframes konamiBrandFlicker {
+  0%, 100% { opacity: 1; letter-spacing: .03em; }
+  16% { opacity: .84; letter-spacing: .05em; }
+  17% { opacity: 1; letter-spacing: .03em; }
+  58% { opacity: .94; letter-spacing: .01em; }
+  59% { opacity: 1; letter-spacing: .04em; }
+}
+
+@keyframes konamiEntryTextDissolve {
+  0% { opacity: 0; transform: translate3d(0, 12px, 0) scale(1.012); }
+  22% { opacity: 1; transform: translate3d(0, 0, 0) scale(1); }
+  74% { opacity: .98; transform: translate3d(0, 0, 0) scale(1); }
+  100% { opacity: 0; transform: translate3d(0, -6px, 0) scale(1.008); }
+}
+
+@keyframes konamiEntryBackdropDissolve {
+  0% { opacity: 0; transform: scale(1.028); }
+  20% { opacity: 1; transform: scale(1); }
+  76% { opacity: .94; transform: scale(1); }
+  100% { opacity: 0; transform: scale(1.014); }
+}
+
+@keyframes konamiEntryDataScatter {
+  0% { opacity: 0; transform: translate3d(0, 10px, 0) scale(.99); }
+  24% { opacity: .84; transform: translate3d(0, 0, 0) scale(1); }
+  78% { opacity: .44; transform: translate3d(0, 0, 0) scale(1.004); }
+  100% { opacity: 0; transform: translate3d(0, -8px, 0) scale(1.016); }
+}
+
+@keyframes konamiEntryGlyphSplit {
+  0%, 30%, 76% { opacity: .88; transform: translate(-1px, 0.3px); }
+  100% { opacity: 0; transform: translate(-4px, 1.2px); }
+}
+
+@keyframes konamiEntryGlyphSplitFar {
+  0%, 30%, 76% { opacity: .74; transform: translate(2px, -0.5px); }
+  100% { opacity: 0; transform: translate(6px, -1.8px); }
 }
 
 /* ─── Sidebar ────────────────────────────────────────── */
