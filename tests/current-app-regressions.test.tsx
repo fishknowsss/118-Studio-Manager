@@ -250,6 +250,12 @@ describe('current app regressions', () => {
     container.remove()
   })
 
+  it('avoids synchronously toggling the konami entry flash inside an effect body', () => {
+    const appSource = readFileSync(join(process.cwd(), 'src/App.tsx'), 'utf8')
+
+    expect(appSource).not.toMatch(/if \(!easterMode\) \{\s*setEntryFlashVisible\(false\)\s*return\s*\}/)
+  })
+
   it('keeps planner assignment list limited to unscheduled actionable tasks', () => {
     const tasks = [
       { id: 'task-open', title: '正常任务', status: 'todo', scheduledDate: null },

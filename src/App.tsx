@@ -120,6 +120,15 @@ export default function App() {
       if (key === KONAMI_SEQUENCE[nextIndex]) {
         if (nextIndex === KONAMI_SEQUENCE.length - 1) {
           konamiIndexRef.current = 0
+          if (entryFlashTimerRef.current) {
+            window.clearTimeout(entryFlashTimerRef.current)
+            entryFlashTimerRef.current = null
+          }
+          setEntryFlashVisible(true)
+          entryFlashTimerRef.current = window.setTimeout(() => {
+            setEntryFlashVisible(false)
+            entryFlashTimerRef.current = null
+          }, 2400)
           setEasterMode(true)
           return
         }
@@ -136,29 +145,13 @@ export default function App() {
   }, [easterMode, view])
 
   useEffect(() => {
-    if (entryFlashTimerRef.current) {
-      window.clearTimeout(entryFlashTimerRef.current)
-      entryFlashTimerRef.current = null
-    }
-
-    if (!easterMode) {
-      setEntryFlashVisible(false)
-      return
-    }
-
-    setEntryFlashVisible(true)
-    entryFlashTimerRef.current = window.setTimeout(() => {
-      setEntryFlashVisible(false)
-      entryFlashTimerRef.current = null
-    }, 2400)
-
     return () => {
       if (entryFlashTimerRef.current) {
         window.clearTimeout(entryFlashTimerRef.current)
         entryFlashTimerRef.current = null
       }
     }
-  }, [easterMode])
+  }, [])
 
   if (initError) {
     return (
@@ -222,7 +215,14 @@ export default function App() {
                   <FooterModeButton
                     easterMode={easterMode}
                     theme={theme}
-                    onExitEasterMode={() => setEasterMode(false)}
+                    onExitEasterMode={() => {
+                      if (entryFlashTimerRef.current) {
+                        window.clearTimeout(entryFlashTimerRef.current)
+                        entryFlashTimerRef.current = null
+                      }
+                      setEntryFlashVisible(false)
+                      setEasterMode(false)
+                    }}
                     onToggleTheme={() => setTheme((current) => current === 'dark' ? 'light' : 'dark')}
                   />
                   <NavItem label="设置" active={view === 'settings'} onClick={() => window.location.hash = '#settings'}>
