@@ -98,7 +98,7 @@ describe('current app regressions', () => {
       )
     })
 
-    const backdrop = container.querySelector('.dialog-backdrop')
+    const backdrop = document.body.querySelector('.dialog-backdrop')
     expect(backdrop).not.toBeNull()
 
     act(() => {
@@ -122,14 +122,15 @@ describe('current app regressions', () => {
     expect(taskDialogSource).toMatch(/截止日期/)
     expect(taskDialogSource).toMatch(/预计工时\(h\)/)
     expect(taskDialogSource).toMatch(/backdropScrollable=\{false\}/)
-    expect(taskDialogSource).toMatch(/bodyScrollable=\{false\}/)
+    expect(taskDialogSource).not.toMatch(/bodyScrollable=\{false\}/)
     expect(taskDialogSource).toMatch(/task-assignee-picker/)
     expect(taskDialogSource).toMatch(/if \(width >= 650\) return 6/)
 
     expect(styleSource).toMatch(/\.dialog-backdrop\s*\{[\s\S]*padding:\s*24px 16px;[\s\S]*overflow-y:\s*auto;/)
     expect(styleSource).toMatch(/\.dialog-backdrop\.no-scroll\s*\{[\s\S]*overflow-y:\s*hidden;/)
     expect(styleSource).toMatch(/\.app-modal\s*\{[\s\S]*max-height:\s*calc\(100dvh - 48px\);/)
-    expect(styleSource).toMatch(/\.modal-inner\s*\{[\s\S]*min-height:\s*0;[\s\S]*max-height:\s*calc\(100dvh - 48px\);/)
+    expect(styleSource).toMatch(/\.app-modal-react\s*\{[\s\S]*display:\s*flex;[\s\S]*flex-direction:\s*column;/)
+    expect(styleSource).toMatch(/\.modal-inner\s*\{[\s\S]*flex:\s*1;[\s\S]*min-height:\s*0;[\s\S]*max-height:\s*calc\(100dvh - 48px\);/)
     expect(styleSource).toMatch(/\.modal-body\s*\{[\s\S]*min-height:\s*0;/)
     expect(styleSource).toMatch(/\.modal-body\.no-scroll\s*\{[\s\S]*overflow:\s*hidden;/)
     expect(styleSource).toMatch(/\.task-assignee-page\s*\{[\s\S]*min-height:\s*114px;/)
@@ -163,11 +164,11 @@ describe('current app regressions', () => {
       )
     })
 
-    expect(container.querySelectorAll('.assignee-chip')).toHaveLength(6)
-    expect(container.querySelector('.modal-body')?.className).toContain('no-scroll')
-    expect(container.textContent).toContain('1 / 3')
+    expect(document.body.querySelectorAll('.assignee-chip')).toHaveLength(6)
+    expect(document.body.querySelector('.modal-body')?.className).not.toContain('no-scroll')
+    expect(document.body.textContent).toContain('1 / 3')
 
-    const nextButton = container.querySelector('[aria-label="负责人下一页"]') as HTMLButtonElement | null
+    const nextButton = document.body.querySelector('[aria-label="负责人下一页"]') as HTMLButtonElement | null
     expect(nextButton?.disabled).toBe(false)
 
     act(() => {
@@ -178,10 +179,10 @@ describe('current app regressions', () => {
       nextButton?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
     })
 
-    expect(container.querySelectorAll('.assignee-chip')).toHaveLength(1)
-    expect(container.textContent).toContain('成员13')
-    expect(container.textContent).toContain('3 / 3')
-    expect(container.querySelector('.assignee-chip-avatar')?.textContent).toBe('♂')
+    expect(document.body.querySelectorAll('.assignee-chip')).toHaveLength(1)
+    expect(document.body.textContent).toContain('成员13')
+    expect(document.body.textContent).toContain('3 / 3')
+    expect(document.body.querySelector('.assignee-chip-avatar')?.textContent).toBe('♂')
 
     act(() => {
       root.unmount()

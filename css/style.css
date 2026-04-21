@@ -4492,7 +4492,8 @@ html[data-easter-mode='konami'] .assignee-chip.selected:has(.assignee-chip-avata
   margin: auto;
 }
 .app-modal-react {
-  display: block;
+  display: flex;
+  flex-direction: column;
 }
 .app-modal-react.wide {
   max-width: 760px;
@@ -4504,6 +4505,7 @@ html[data-easter-mode='konami'] .assignee-chip.selected:has(.assignee-chip-avata
 .modal-inner {
   display: flex;
   flex-direction: column;
+  flex: 1;
   min-height: 0;
   max-height: calc(100dvh - 48px);
 }

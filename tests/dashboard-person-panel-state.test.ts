@@ -127,12 +127,12 @@ describe('dashboard person panel state', () => {
     document.removeEventListener('syncableDataUpdated', handler)
   })
 
-  it('reorders dashboard people ids by moving the dragged id before the drop target', () => {
+  it('reorders dashboard people ids by swapping the dragged and target positions', () => {
     expect(reorderDashboardPersonIds(['person-1', 'person-2', 'person-3'], 'person-3', 'person-1'))
-      .toEqual(['person-3', 'person-1', 'person-2'])
+      .toEqual(['person-3', 'person-2', 'person-1'])
 
     expect(reorderDashboardPersonIds(['person-1', 'person-2', 'person-3'], 'person-1', 'person-3'))
-      .toEqual(['person-2', 'person-1', 'person-3'])
+      .toEqual(['person-3', 'person-2', 'person-1'])
 
     expect(reorderDashboardPersonIds(['person-1', 'person-2'], 'person-1', 'person-2'))
       .toEqual(['person-2', 'person-1'])

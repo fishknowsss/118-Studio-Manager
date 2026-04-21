@@ -103,21 +103,9 @@ export function reorderDashboardPersonIds(order: string[], draggedId: string, ta
   const targetIndex = sanitized.indexOf(targetId)
   if (draggedIndex === -1 || targetIndex === -1) return sanitized
 
-  const move = (placement: 'before' | 'after') => {
-    const next = [...sanitized]
-    next.splice(draggedIndex, 1)
-    const anchorIndex = next.indexOf(targetId)
-    if (anchorIndex === -1) return sanitized
-    next.splice(anchorIndex + (placement === 'after' ? 1 : 0), 0, draggedId)
-    return next
-  }
-
-  const next = move('before')
-  const isUnchanged = next.length === sanitized.length && next.every((personId, index) => personId === sanitized[index])
-  if (isUnchanged && draggedIndex < targetIndex) {
-    return move('after')
-  }
-
+  const next = [...sanitized]
+  next[draggedIndex] = sanitized[targetIndex]
+  next[targetIndex] = sanitized[draggedIndex]
   return next
 }
 

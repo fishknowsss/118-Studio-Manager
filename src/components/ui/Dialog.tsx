@@ -1,4 +1,5 @@
 import { useEffect, type ReactNode } from 'react'
+import { createPortal } from 'react-dom'
 
 type DialogProps = {
   open: boolean
@@ -41,7 +42,7 @@ export function Dialog({
 
   if (!open) return null
 
-  return (
+  return createPortal(
     <div className={`dialog-backdrop ${backdropScrollable ? '' : 'no-scroll'}`.trim()} onClick={onClose} role="presentation">
       <div
         className={`app-modal app-modal-react ${width === 'wide' ? 'wide' : ''} ${className || ''}`.trim()}
@@ -64,6 +65,7 @@ export function Dialog({
           {footer ? <div className="modal-footer">{footer}</div> : null}
         </div>
       </div>
-    </div>
+    </div>,
+    document.body,
   )
 }

@@ -92,7 +92,7 @@ describe('dashboard panels', () => {
     view.cleanup()
   })
 
-  it('shows person shortcut menu and keeps adjacent people reorder working in the dashboard people panel', () => {
+  it('shows person shortcut menu and swaps people on reorder drop in the dashboard people panel', () => {
     const onPersonStateChange = vi.fn()
     const onReorderPeople = vi.fn()
     const onPersonClick = vi.fn()
@@ -159,7 +159,7 @@ describe('dashboard panels', () => {
 
     const cards = view.container.querySelectorAll('.person-assignment-card')
     const firstCard = cards[0] as HTMLElement | null
-    const secondCard = cards[1] as HTMLElement | null
+    const thirdCard = cards[2] as HTMLElement | null
 
     expect(view.container.querySelector('.person-status-mark--present')).not.toBeNull()
 
@@ -178,11 +178,11 @@ describe('dashboard panels', () => {
     expect(onPersonStateChange).toHaveBeenCalledWith('person-1', 'leave')
 
     act(() => {
-      secondCard?.dispatchEvent(new Event('dragover', { bubbles: true, cancelable: true }))
-      secondCard?.dispatchEvent(new Event('drop', { bubbles: true, cancelable: true }))
+      thirdCard?.dispatchEvent(new Event('dragover', { bubbles: true, cancelable: true }))
+      thirdCard?.dispatchEvent(new Event('drop', { bubbles: true, cancelable: true }))
     })
 
-    expect(onReorderPeople).toHaveBeenCalledWith(['person-2', 'person-1', 'person-3'])
+    expect(onReorderPeople).toHaveBeenCalledWith(['person-3', 'person-2', 'person-1'])
 
     view.cleanup()
   })

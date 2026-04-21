@@ -127,7 +127,6 @@ export function TaskDialog({
       title={isNew ? '新建任务' : '编辑任务'}
       onClose={onClose}
       backdropScrollable={false}
-      bodyScrollable={false}
       className="task-dialog"
       footer={(
         <>
