@@ -5579,6 +5579,13 @@ select.form-input { cursor: pointer; }
   gap: 6px;
 }
 
+.pdp-side-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
 .pdp-name {
   font-size: 17px;
   font-weight: 700;
@@ -5595,6 +5602,47 @@ select.form-input { cursor: pointer; }
 .pdp-gender {
   font-size: var(--fs-sm);
   color: var(--c-text-3);
+}
+
+.pdp-presence-controls {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  padding: 3px;
+  border-radius: 999px;
+  border: 1px solid var(--c-border-light);
+  background: var(--c-bg);
+}
+
+.pdp-presence-button {
+  min-width: 42px;
+  padding: 5px 10px;
+  border-radius: 999px;
+  color: var(--c-text-3);
+  font-size: var(--fs-sm);
+  font-weight: 700;
+  line-height: 1;
+  cursor: pointer;
+  transition: background .12s, color .12s, box-shadow .12s;
+}
+
+.pdp-presence-button:hover {
+  background: var(--c-surface);
+  color: var(--c-text);
+}
+
+.pdp-presence-button.is-active {
+  background: var(--c-surface);
+  color: var(--c-text);
+  box-shadow: var(--shadow-sm);
+}
+
+.pdp-presence-button--present.is-active {
+  color: var(--c-teal);
+}
+
+.pdp-presence-button--leave.is-active {
+  color: var(--c-overdue);
 }
 
 .pdp-skills {

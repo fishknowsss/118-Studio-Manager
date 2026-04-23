@@ -10,6 +10,7 @@ import {
   subscribeDashboardPersonPanelState,
   writeDashboardPersonOrder,
   writeDashboardPersonPresence,
+  type DashboardPersonStatusAction,
 } from '../features/dashboard/personPanelState'
 import { PersonDetailPanel } from '../features/dashboard/PersonDetailPanel'
 import { ProjectDetailPanel } from '../features/dashboard/ProjectDetailPanel'
@@ -202,7 +203,7 @@ export function Dashboard() {
     await Promise.all(records.map((record) => store.deleteLeaveRecord(record.id)))
   }
 
-  const handlePersonStateChange = async (personId: string, nextState: 'present' | 'leave' | 'default') => {
+  const handlePersonStateChange = async (personId: string, nextState: DashboardPersonStatusAction) => {
     if (nextState === 'leave') {
       writeDashboardPersonPresence(personId, 'default')
       const hasLeaveToday = store.leaveRecords.some((record) => record.personId === personId && record.date === todayStr)
@@ -335,7 +336,11 @@ export function Dashboard() {
             <ProjectDetailPanel projectId={expandedPanel.projectId} />
           )}
           {expandedPanel.type === 'person' && (
-            <PersonDetailPanel personId={expandedPanel.personId} />
+            <PersonDetailPanel
+              personId={expandedPanel.personId}
+              personPanelState={dashboardPersonPanelState}
+              onPersonStateChange={(personId, nextState) => { void handlePersonStateChange(personId, nextState) }}
+            />
           )}
         </ExpandPanel>
       ) : null}

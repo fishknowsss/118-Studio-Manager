@@ -11,13 +11,52 @@ import { getPersonGenderLabel, today, STATUS_LABELS, PRIORITY_LABELS } from '../
 import { TASK_STATUSES, PROJECT_PRIORITIES, type LegacyTask, type TaskStatus, type TaskPriority, getTaskAssigneeIds } from '../../legacy/store'
 import { TaskItem } from '../tasks/TaskItem'
 import { TaskDialog } from '../tasks/TaskDialog'
+import type { DashboardPersonPanelState, DashboardPersonStatusAction } from './personPanelState'
 
 type TaskMenuState =
   | { taskId: string; type: 'status'; x: number; y: number }
   | { taskId: string; type: 'priority'; x: number; y: number }
   | { taskId: string; type: 'assignee'; x: number; y: number }
 
-export function PersonDetailPanel({ personId }: { personId: string }) {
+function PersonPresenceControls({
+  currentState,
+  onChange,
+}: {
+  currentState: DashboardPersonStatusAction
+  onChange: (nextState: DashboardPersonStatusAction) => void
+}) {
+  const options: Array<{ key: DashboardPersonStatusAction; label: string }> = [
+    { key: 'present', label: '在岗' },
+    { key: 'default', label: '默认' },
+    { key: 'leave', label: '请假' },
+  ]
+
+  return (
+    <div className="pdp-presence-controls" role="group" aria-label="今日状态">
+      {options.map((option) => (
+        <button
+          key={option.key}
+          className={`pdp-presence-button pdp-presence-button--${option.key}${currentState === option.key ? ' is-active' : ''}`}
+          type="button"
+          aria-pressed={currentState === option.key}
+          onClick={() => onChange(option.key)}
+        >
+          {option.label}
+        </button>
+      ))}
+    </div>
+  )
+}
+
+export function PersonDetailPanel({
+  personId,
+  personPanelState,
+  onPersonStateChange,
+}: {
+  personId: string
+  personPanelState: DashboardPersonPanelState
+  onPersonStateChange: (personId: string, nextState: DashboardPersonStatusAction) => void
+}) {
   const snap = useLegacyStoreSnapshot()
   const { confirm } = useConfirm()
   const { toast } = useToast()
@@ -66,6 +105,12 @@ export function PersonDetailPanel({ personId }: { personId: string }) {
   const skills = person.skills || []
   const genderLabel = getPersonGenderLabel(person.gender)
   const statusLabel = person.status === 'inactive' ? '已停用' : '在职'
+  const isOnLeaveToday = snap.leaveRecords.some((record) => record.personId === personId && record.date === todayStr)
+  const currentPresenceState: DashboardPersonStatusAction = isOnLeaveToday
+    ? 'leave'
+    : personPanelState.presenceByPersonId[personId] === 'present'
+      ? 'present'
+      : 'default'
 
   const doneTasks = taskItems.filter((t) => t.isDone)
   const activeTasks = taskItems.filter((t) => !t.isDone)
@@ -88,7 +133,13 @@ export function PersonDetailPanel({ personId }: { personId: string }) {
           ) : null}
           {person.notes ? <div className="pdp-notes">{person.notes}</div> : null}
         </div>
-        <button className="btn btn-secondary btn-sm" type="button" onClick={() => setShowEdit(true)}>编辑</button>
+        <div className="pdp-side-actions">
+          <PersonPresenceControls
+            currentState={currentPresenceState}
+            onChange={(nextState) => onPersonStateChange(personId, nextState)}
+          />
+          <button className="btn btn-secondary btn-sm" type="button" onClick={() => setShowEdit(true)}>编辑</button>
+        </div>
       </div>
 
       {/* 任务列表 */}

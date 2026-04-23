@@ -2,7 +2,7 @@ import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import type { DragEvent, MouseEvent } from 'react'
 import type { PersonCardModel } from '../../legacy/selectors'
 import { ContextMenu, type ContextMenuItem } from '../../components/ui/ContextMenu'
-import { reorderDashboardPersonIds } from './personPanelState'
+import { reorderDashboardPersonIds, type DashboardPersonStatusAction } from './personPanelState'
 import { PersonAssignmentCard } from './PersonAssignmentCard'
 
 const PAGE_SIZE = 16
@@ -35,7 +35,7 @@ export function PeopleAssignmentPanel({
   onDragOverPerson: (event: DragEvent<HTMLDivElement>, personId: string) => void
   onExpand: (x: number, y: number) => void
   onDropToPerson: (event: DragEvent<HTMLDivElement>, personId: string) => void
-  onPersonStateChange: (personId: string, nextState: 'present' | 'leave' | 'default') => void
+  onPersonStateChange: (personId: string, nextState: DashboardPersonStatusAction) => void
   onPersonDragEnd: () => void
   onPersonDragStart: (event: DragEvent<HTMLDivElement>, personId: string) => void
   onPersonClick: (personId: string, ox: number, oy: number) => void

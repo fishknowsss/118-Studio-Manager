@@ -1,6 +1,7 @@
 import { createSyncableSettingsStore } from '../persistence/syncableSettings'
 
 export type DashboardPersonPresence = 'default' | 'present'
+export type DashboardPersonStatusAction = DashboardPersonPresence | 'leave'
 
 export type DashboardPersonPanelState = {
   order: string[]

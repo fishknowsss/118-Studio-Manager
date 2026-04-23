@@ -6,10 +6,14 @@ import type { ReactNode } from 'react'
 import { act } from 'react'
 import { createRoot } from 'react-dom/client'
 import { describe, expect, it, vi } from 'vitest'
+import { ConfirmProvider } from '../src/components/feedback/ConfirmProvider'
+import { ToastProvider } from '../src/components/feedback/ToastProvider'
 import { PeopleAssignmentPanel } from '../src/features/dashboard/PeopleAssignmentPanel'
+import { PersonDetailPanel } from '../src/features/dashboard/PersonDetailPanel'
 import { TaskPoolPanel } from '../src/features/dashboard/TaskPoolPanel'
 import { buildPersonCardModels } from '../src/legacy/selectors'
-import type { LegacyPerson, LegacyProject, LegacyTask } from '../src/legacy/store'
+import { store, type LegacyLog, type LegacyPerson, type LegacyProject, type LegacyTask, type LeaveRecord } from '../src/legacy/store'
+import { today } from '../src/legacy/utils'
 
 function renderNode(node: ReactNode) {
   const container = document.createElement('div')
@@ -185,6 +189,106 @@ describe('dashboard panels', () => {
     expect(onReorderPeople).toHaveBeenCalledWith(['person-3', 'person-2', 'person-1'])
 
     view.cleanup()
+  })
+
+  it('renders the same person status actions in the left-click detail panel', () => {
+    const previousStore = {
+      projects: store.projects,
+      tasks: store.tasks,
+      people: store.people,
+      logs: store.logs,
+      leaveRecords: store.leaveRecords,
+    }
+    const onPersonStateChange = vi.fn()
+
+    store.projects = []
+    store.tasks = []
+    store.people = [
+      { id: 'person-1', name: '佳宁', gender: 'female', status: 'active', skills: ['After Effects'] },
+    ]
+    store.logs = [] as LegacyLog[]
+    store.leaveRecords = [] as LeaveRecord[]
+
+    const view = renderNode(
+      <ConfirmProvider>
+        <ToastProvider>
+          <PersonDetailPanel
+            personId="person-1"
+            personPanelState={{
+              order: [],
+              presenceByPersonId: {
+                'person-1': 'present',
+              },
+            }}
+            onPersonStateChange={onPersonStateChange}
+          />
+        </ToastProvider>
+      </ConfirmProvider>,
+    )
+
+    const statusButtons = Array.from(view.container.querySelectorAll('.pdp-presence-button')) as HTMLButtonElement[]
+    expect(statusButtons.map((button) => button.textContent)).toEqual(['在岗', '默认', '请假'])
+    expect(statusButtons[0]?.getAttribute('aria-pressed')).toBe('true')
+
+    act(() => {
+      statusButtons[2]?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+    })
+
+    expect(onPersonStateChange).toHaveBeenCalledWith('person-1', 'leave')
+
+    view.cleanup()
+    store.projects = previousStore.projects
+    store.tasks = previousStore.tasks
+    store.people = previousStore.people
+    store.logs = previousStore.logs
+    store.leaveRecords = previousStore.leaveRecords
+  })
+
+  it('marks leave as active in the person detail status controls when there is a leave record today', () => {
+    const previousStore = {
+      projects: store.projects,
+      tasks: store.tasks,
+      people: store.people,
+      logs: store.logs,
+      leaveRecords: store.leaveRecords,
+    }
+
+    store.projects = []
+    store.tasks = []
+    store.people = [
+      { id: 'person-1', name: '佳宁', gender: 'female', status: 'active', skills: [] },
+    ]
+    store.logs = [] as LegacyLog[]
+    store.leaveRecords = [{ id: 'leave-1', personId: 'person-1', date: today(), reason: '' }]
+
+    const view = renderNode(
+      <ConfirmProvider>
+        <ToastProvider>
+          <PersonDetailPanel
+            personId="person-1"
+            personPanelState={{
+              order: [],
+              presenceByPersonId: {
+                'person-1': 'present',
+              },
+            }}
+            onPersonStateChange={() => {}}
+          />
+        </ToastProvider>
+      </ConfirmProvider>,
+    )
+
+    const leaveButton = view.container.querySelector('.pdp-presence-button--leave') as HTMLButtonElement | null
+    const presentButton = view.container.querySelector('.pdp-presence-button--present') as HTMLButtonElement | null
+    expect(leaveButton?.getAttribute('aria-pressed')).toBe('true')
+    expect(presentButton?.getAttribute('aria-pressed')).toBe('false')
+
+    view.cleanup()
+    store.projects = previousStore.projects
+    store.tasks = previousStore.tasks
+    store.people = previousStore.people
+    store.logs = previousStore.logs
+    store.leaveRecords = previousStore.leaveRecords
   })
 
   it('does not trigger person click when opening a card context menu', () => {
