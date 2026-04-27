@@ -500,27 +500,29 @@ function ProductivityCardsView({
               type="button"
               onClick={() => onFlip(person.id)}
             >
-              <span className="productivity-card-face productivity-card-front">
-                <span className="productivity-card-top">
-                  <strong>{person.name}</strong>
-                  <span>{person.className}</span>
+              <span className="productivity-card-inner">
+                <span className="productivity-card-face productivity-card-front">
+                  <span className="productivity-card-top">
+                    <strong>{person.name}</strong>
+                    <span>{person.className}</span>
+                  </span>
+                  <span className="productivity-load-row">
+                    <span>{person.loadLabel}</span>
+                    <strong>{person.loadScore}</strong>
+                  </span>
+                  <span className="productivity-card-metrics">
+                    <span><b>{person.openTaskCount}</b>任务</span>
+                    <span><b>{person.urgentTaskCount}</b>紧急</span>
+                  </span>
                 </span>
-                <span className="productivity-load-row">
-                  <span>{person.loadLabel}</span>
-                  <strong>{person.loadScore}</strong>
-                </span>
-                <span className="productivity-card-metrics">
-                  <span><b>{person.openTaskCount}</b>任务</span>
-                  <span><b>{person.urgentTaskCount}</b>紧急</span>
-                </span>
-              </span>
-              <span className="productivity-card-face productivity-card-back">
-                <span className="productivity-detail-list">
-                  <span><b>姓名</b>{person.name}</span>
-                  <span><b>班级</b>{person.className}</span>
-                  <span><b>学号</b>{person.studentNo}</span>
-                  <span><b>邮箱</b>{person.email}</span>
-                  <span><b>技能</b>{person.skills.length ? person.skills.slice(0, 4).join('、') : '未填'}</span>
+                <span className="productivity-card-face productivity-card-back">
+                  <span className="productivity-detail-list">
+                    <span><b>姓名</b>{person.name}</span>
+                    <span><b>班级</b>{person.className}</span>
+                    <span><b>学号</b>{person.studentNo}</span>
+                    <span><b>邮箱</b>{person.email}</span>
+                    <span><b>技能</b>{person.skills.length ? person.skills.slice(0, 4).join('、') : '未填'}</span>
+                  </span>
                 </span>
               </span>
             </button>
