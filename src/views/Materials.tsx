@@ -286,6 +286,7 @@ function PlatformCard({
   const [dragReady, setDragReady] = useState(false)
   const isDragging = draggingPlatform === platform
   const isDragTarget = dragOverPlatform === platform && draggingPlatform !== platform
+  const effectiveOpen = open && !dragReady && !draggingPlatform
 
   useEffect(() => { isRenamingRef.current = isRenaming }, [isRenaming])
 
@@ -346,10 +347,6 @@ function PlatformCard({
     setIsRenaming(false)
   }
 
-  useEffect(() => {
-    if (draggingPlatform) setOpen(false)
-  }, [draggingPlatform])
-
   useEffect(() => () => {
     if (closeTimer.current) clearTimeout(closeTimer.current)
     clearLongPress()
@@ -358,7 +355,7 @@ function PlatformCard({
   return (
     <>
       <div
-        className={`acc-platform-card${open ? ' is-open' : ''}${accounts.length === 0 ? ' is-empty' : ''}${dragReady || isDragging ? ' is-drag-ready' : ''}${isDragTarget ? ' is-drag-target' : ''}`}
+        className={`acc-platform-card${effectiveOpen ? ' is-open' : ''}${accounts.length === 0 ? ' is-empty' : ''}${dragReady || isDragging ? ' is-drag-ready' : ''}${isDragTarget ? ' is-drag-target' : ''}`}
         style={{ '--acc-color': color } as React.CSSProperties}
         draggable={dragReady}
         onDragStart={(e) => {
@@ -396,10 +393,10 @@ function PlatformCard({
             onPointerCancel={clearLongPress}
             onPointerLeave={clearLongPress}
             aria-label={`${platform}，${accounts.length} 个账号`}
-            aria-expanded={open}
+            aria-expanded={effectiveOpen}
           >
             <div className="acc-platform-card-icon">
-              <FolderIcon color={color} open={open && !dragReady && !draggingPlatform} />
+              <FolderIcon color={color} open={effectiveOpen} />
             </div>
           </button>
         </div>
@@ -411,7 +408,7 @@ function PlatformCard({
         </div>
       </div>
 
-      {open && createPortal(
+      {effectiveOpen && createPortal(
         <div
           className={`acc-fan-panel${panelLeft ? ' panel-left' : ''}`}
           style={{ ...panelStyle, position: 'fixed', '--acc-panel-color': color } as React.CSSProperties}
