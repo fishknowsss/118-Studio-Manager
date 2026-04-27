@@ -30,6 +30,7 @@ type TaskFilters = {
 }
 
 type BackupSummary = {
+  classScheduleCount: number
   leaveRecordCount: number
   logCount: number
   personCount: number
@@ -931,6 +932,7 @@ export function buildBackupSummary(data: Partial<BackupPayload> | Record<string,
   const payload = data as Partial<BackupPayload>
 
   return {
+    classScheduleCount: Array.isArray(payload.classSchedules) ? payload.classSchedules.length : 0,
     leaveRecordCount: Array.isArray(payload.leaveRecords) ? payload.leaveRecords.length : 0,
     logCount: Array.isArray(payload.logs) ? payload.logs.length : 0,
     personCount: Array.isArray(payload.people) ? payload.people.length : 0,

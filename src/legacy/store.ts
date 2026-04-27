@@ -73,6 +73,9 @@ export function syncTaskStatusWithAssignees(
 
 export type LegacyPerson = LegacyEntity & {
   name?: string
+  className?: string
+  studentNo?: string
+  email?: string
   gender?: PersonGender | ''
   status?: PersonStatus
   skills?: string[]
@@ -90,6 +93,54 @@ export type LeaveRecord = {
   personId: string
   date: string   // 'YYYY-MM-DD'
   reason?: string
+}
+
+export type ClassScheduleEntry = LegacyEntity & {
+  personId: string
+  personName: string
+  studentNo?: string
+  className?: string
+  courseName: string
+  dayOfWeek: number
+  startSection: number
+  endSection: number
+  weeksText: string
+  location?: string
+  teacher?: string
+  sourceFileName?: string
+}
+
+export function buildPersonDeletionPatch(
+  personId: string,
+  tasks: LegacyTask[],
+  leaveRecords: LeaveRecord[],
+  classSchedules: ClassScheduleEntry[],
+) {
+  const updatedTasks: LegacyTask[] = []
+  const nextTasks = tasks.map((task) => {
+    const ids = getTaskAssigneeIds(task)
+    if (!ids.includes(personId)) return task
+    const updated = syncTaskStatusWithAssignees(task, {
+      ...task,
+      assigneeIds: ids.filter((assigneeId) => assigneeId !== personId),
+      updatedAt: now(),
+    })
+    updatedTasks.push(updated)
+    return updated
+  })
+  const leaveRecordIds = leaveRecords
+    .filter((record) => record.personId === personId)
+    .map((record) => record.id)
+  const classScheduleIds = classSchedules
+    .filter((entry) => entry.personId === personId)
+    .map((entry) => entry.id)
+
+  return {
+    classScheduleIds,
+    leaveRecordIds,
+    nextTasks,
+    updatedTasks,
+  }
 }
 
 type ProjectRecord = LegacyProject & Record<string, unknown>
@@ -120,6 +171,7 @@ export const store = {
   people: [] as LegacyPerson[],
   logs: [] as LegacyLog[],
   leaveRecords: [] as LeaveRecord[],
+  classSchedules: [] as ClassScheduleEntry[],
   version: 0,
 
   subscribe(listener: () => void) {
@@ -132,12 +184,13 @@ export const store = {
   },
 
   async loadAll() {
-    const [rawProjects, rawTasks, people, logs, leaveRecords] = await Promise.all([
+    const [rawProjects, rawTasks, people, logs, leaveRecords, classSchedules] = await Promise.all([
       db.getAll('projects') as Promise<ProjectRecord[]>,
       db.getAll('tasks') as Promise<LegacyTask[]>,
       db.getAll('people') as Promise<LegacyPerson[]>,
       db.getAll('logs') as Promise<LegacyLog[]>,
       db.getAll('leaveRecords') as Promise<LeaveRecord[]>,
+      db.getAll('classSchedules') as Promise<ClassScheduleEntry[]>,
     ])
     const projects = rawProjects.map((project) => sanitizeProjectRecord(project))
     const projectsNeedCleanup = rawProjects.some((project) => projectNeedsNormalization(project))
@@ -155,6 +208,7 @@ export const store = {
     this.people = people
     this.logs = logs
     this.leaveRecords = leaveRecords
+    this.classSchedules = classSchedules
     emitStoreUpdated()
   },
 
@@ -236,24 +290,17 @@ export const store = {
   },
 
   async deletePerson(id: string) {
-    const updatedTasks: LegacyTask[] = []
-    const nextTasks = this.tasks.map(t => {
-      const ids = getTaskAssigneeIds(t)
-      if (!ids.includes(id)) return t
-      const updated = syncTaskStatusWithAssignees(t, {
-        ...t,
-        assigneeIds: ids.filter(aid => aid !== id),
-        updatedAt: now(),
-      })
-      updatedTasks.push(updated)
-      return updated
-    })
-    await db.runTransaction(['people', 'tasks'], 'readwrite', (stores) => {
+    const patch = buildPersonDeletionPatch(id, this.tasks, this.leaveRecords, this.classSchedules)
+    await db.runTransaction(['people', 'tasks', 'leaveRecords', 'classSchedules'], 'readwrite', (stores) => {
       stores.people.delete(id)
-      for (const task of updatedTasks) stores.tasks.put(task)
+      for (const task of patch.updatedTasks) stores.tasks.put(task)
+      for (const leaveId of patch.leaveRecordIds) stores.leaveRecords.delete(leaveId)
+      for (const scheduleId of patch.classScheduleIds) stores.classSchedules.delete(scheduleId)
     })
-    this.tasks = nextTasks
+    this.tasks = patch.nextTasks
     this.people = this.people.filter(person => person.id !== id)
+    this.leaveRecords = this.leaveRecords.filter((record) => record.personId !== id)
+    this.classSchedules = this.classSchedules.filter((entry) => entry.personId !== id)
     emitStoreUpdated({ type: 'person', action: 'delete', id })
   },
 
@@ -299,5 +346,54 @@ export const store = {
 
   leaveRecordsForDate(date: string) {
     return this.leaveRecords.filter((r) => r.date === date)
+  },
+
+  async replaceClassSchedulesForPerson(personId: string, entries: ClassScheduleEntry[]) {
+    const staleIds = this.classSchedules
+      .filter((entry) => entry.personId === personId)
+      .map((entry) => entry.id)
+
+    await db.runTransaction(['classSchedules'], 'readwrite', (stores) => {
+      for (const id of staleIds) stores.classSchedules.delete(id)
+      for (const entry of entries) stores.classSchedules.put(entry)
+    })
+
+    this.classSchedules = [
+      ...this.classSchedules.filter((entry) => entry.personId !== personId),
+      ...entries,
+    ]
+    emitStoreUpdated({ type: 'classSchedule', action: 'replace', id: personId })
+  },
+
+  async saveClassScheduleEntry(entry: ClassScheduleEntry) {
+    await db.put('classSchedules', entry)
+    const index = this.classSchedules.findIndex((item) => item.id === entry.id)
+    if (index >= 0) {
+      const next = [...this.classSchedules]
+      next[index] = entry
+      this.classSchedules = next
+    } else {
+      this.classSchedules = [...this.classSchedules, entry]
+    }
+    emitStoreUpdated({ type: 'classSchedule', action: 'save', id: entry.id })
+  },
+
+  async deleteClassSchedule(id: string) {
+    await db.delete('classSchedules', id)
+    this.classSchedules = this.classSchedules.filter((entry) => entry.id !== id)
+    emitStoreUpdated({ type: 'classSchedule', action: 'delete', id })
+  },
+
+  async deleteClassSchedulesForPerson(personId: string) {
+    const staleIds = this.classSchedules
+      .filter((entry) => entry.personId === personId)
+      .map((entry) => entry.id)
+
+    await db.runTransaction(['classSchedules'], 'readwrite', (stores) => {
+      for (const id of staleIds) stores.classSchedules.delete(id)
+    })
+
+    this.classSchedules = this.classSchedules.filter((entry) => entry.personId !== personId)
+    emitStoreUpdated({ type: 'classSchedule', action: 'delete-person', id: personId })
   },
 }

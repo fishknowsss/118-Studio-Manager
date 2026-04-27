@@ -22,14 +22,18 @@ function calcOrigin(ox: number, oy: number, variant: Variant): string {
 }
 
 export function ExpandPanel({
+  boxClassName,
   children,
+  overlayClassName,
   variant = 'default',
   originX,
   originY,
   onClose,
   title,
 }: {
+  boxClassName?: string
   children: ReactNode
+  overlayClassName?: string
   variant?: Variant
   originX: number
   originY: number
@@ -62,13 +66,13 @@ export function ExpandPanel({
   return (
     <div
       ref={overlayRef}
-      className={`expand-panel-overlay${closing ? ' is-closing' : ''}`}
+      className={`expand-panel-overlay${overlayClassName ? ` ${overlayClassName}` : ''}${closing ? ' is-closing' : ''}`}
       onClick={triggerClose}
       onAnimationEnd={handleAnimationEnd}
       role="presentation"
     >
       <div
-        className={`expand-panel-box${variant === 'slim' ? ' slim' : variant === 'wide' ? ' wide' : ''}`}
+        className={`expand-panel-box${variant === 'slim' ? ' slim' : variant === 'wide' ? ' wide' : ''}${boxClassName ? ` ${boxClassName}` : ''}`}
         style={{ transformOrigin }}
         role="dialog"
         aria-modal="true"

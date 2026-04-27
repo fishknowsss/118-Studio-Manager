@@ -27,6 +27,9 @@ export function PersonDialog({
   const [skillInput, setSkillInput] = useState('')
   const [form, setForm] = useState<PersonFormInput>(() => ({
     name: person?.name || '',
+    className: person?.className || '',
+    studentNo: person?.studentNo || '',
+    email: person?.email || '',
     gender: person?.gender || '',
     status: person?.status || 'active',
     skills: [...(person?.skills || [])],
@@ -82,6 +85,18 @@ export function PersonDialog({
         <div className="form-field">
           <label className="form-label" htmlFor="person-name">姓名 *</label>
           <input id="person-name" className="form-input" value={form.name || ''} onChange={(event) => setForm((current) => ({ ...current, name: event.target.value }))} />
+        </div>
+        <div className="form-field">
+          <label className="form-label" htmlFor="person-class">班级</label>
+          <input id="person-class" className="form-input" value={form.className || ''} onChange={(event) => setForm((current) => ({ ...current, className: event.target.value }))} />
+        </div>
+        <div className="form-field">
+          <label className="form-label" htmlFor="person-student-no">学号</label>
+          <input id="person-student-no" className="form-input" value={form.studentNo || ''} onChange={(event) => setForm((current) => ({ ...current, studentNo: event.target.value }))} />
+        </div>
+        <div className="form-field">
+          <label className="form-label" htmlFor="person-email">邮箱</label>
+          <input id="person-email" className="form-input" value={form.email || ''} onChange={(event) => setForm((current) => ({ ...current, email: event.target.value }))} />
         </div>
         <div className="form-field">
           <label className="form-label" htmlFor="person-gender">性别</label>

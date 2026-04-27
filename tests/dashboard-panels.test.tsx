@@ -352,10 +352,10 @@ describe('dashboard panels', () => {
     expect(cardHoverRule).toMatch(/translateY\(-2px\)/)
     expect(styleSource).toMatch(/@keyframes person-status-pulse/)
     expect(cardSource).toMatch(/event\.button === 2[\s\S]*preventDefault\(\)/)
-    expect(panelSource).toMatch(/const pagePeopleKey = pagePeople\.map\(\(person\) => person\.id\)\.join\('\|'\)/)
+    expect(panelSource).toMatch(/const pagePeople = useMemo/)
     expect(panelSource).toMatch(/useLayoutEffect/)
-    expect(panelSource).toMatch(/\}, \[page,\s*pagePeopleKey\]\)/)
-    expect(panelSource).not.toMatch(/\}, \[page,\s*pagePeople\]\)/)
+    expect(panelSource).toMatch(/\}, \[page,\s*pagePeople\]\)/)
+    expect(panelSource).not.toMatch(/pagePeopleKey/)
     expect(panelSource).toMatch(/\.animate\(\[/)
   })
 

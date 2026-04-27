@@ -6,6 +6,7 @@ import { CloudSyncProvider } from './features/sync/SyncProvider'
 import { initializeAppData } from './legacy/bootstrap'
 import { Dashboard } from './views/Dashboard'
 import { Materials } from './views/Materials'
+import { Productivity } from './views/Productivity'
 import { Graph } from './views/Graph'
 import { Tools } from './views/Tools'
 import { Settings } from './views/Settings'
@@ -13,6 +14,7 @@ import { Settings } from './views/Settings'
 const VIEWS: Record<string, React.ComponentType> = {
   dashboard: Dashboard,
   materials: Materials,
+  productivity: Productivity,
   graph: Graph,
   tools: Tools,
   settings: Settings,
@@ -195,6 +197,10 @@ export default function App() {
                   </NavItem>
                   <NavItem label="资料" active={view === 'materials'} onClick={() => window.location.hash = '#materials'}>
                     <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z" />
+                  </NavItem>
+                  <NavItem label="工效" active={view === 'productivity'} onClick={() => window.location.hash = '#productivity'}>
+                    <path d="M3 19l7-7 3 3 7-8" />
+                    <path d="M14 7h6v6" />
                   </NavItem>
                   <NavItem label="图谱" active={view === 'graph'} onClick={() => window.location.hash = '#graph'}>
                     <circle cx="5" cy="12" r="2" />

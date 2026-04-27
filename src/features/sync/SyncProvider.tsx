@@ -64,6 +64,7 @@ function hasLocalData() {
     store.people.length > 0 ||
     store.logs.length > 0 ||
     store.leaveRecords.length > 0 ||
+    store.classSchedules.length > 0 ||
     readBriefs().length > 0 ||
     readAccounts().length > 0 ||
     readFolders().length > 0

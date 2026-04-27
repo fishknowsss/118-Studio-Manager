@@ -34,6 +34,12 @@ tsconfig.*.tsbuildinfo
 coverage/
 .nyc_output/
 
+# Playwright
+test-results/
+playwright-report/
+blob-report/
+playwright/.cache/
+
 # Wrangler (Cloudflare Worker dev artifacts)
 cloudflare/sync-worker/.wrangler/
 wrangler.lock

@@ -1,9 +1,18 @@
 import { buildBackupPayload, BACKUP_COLLECTION_NAMES, normalizeImportedBackup, type BackupPayload } from './utils'
 
 const DB_NAME = 'studio118db'
-const DB_VERSION = 3
+const DB_VERSION = 5
 
 let dbInstance: IDBDatabase | null = null
+
+export function ensureClassSchedulesStore(db: IDBDatabase) {
+  if (db.objectStoreNames.contains('classSchedules')) return null
+
+  const scheduleStore = db.createObjectStore('classSchedules', { keyPath: 'id' })
+  scheduleStore.createIndex('personId', 'personId', { unique: false })
+  scheduleStore.createIndex('dayOfWeek', 'dayOfWeek', { unique: false })
+  return scheduleStore
+}
 
 export async function openDB() {
   if (dbInstance) return dbInstance
@@ -49,6 +58,12 @@ export async function openDB() {
         const leaveStore = db.createObjectStore('leaveRecords', { keyPath: 'id' })
         leaveStore.createIndex('date', 'date', { unique: false })
         leaveStore.createIndex('personId', 'personId', { unique: false })
+      }
+
+      ensureClassSchedulesStore(db)
+
+      if (oldVersion >= 4 && oldVersion < 5 && db.objectStoreNames.contains('productivityRecords')) {
+        db.deleteObjectStore('productivityRecords')
       }
     }
 

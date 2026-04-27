@@ -39,6 +39,7 @@ describe('settings transfer state persistence', () => {
         logCount: 8,
         settingsCount: 0,
         leaveRecordCount: 0,
+        classScheduleCount: 14,
       },
     })
 
@@ -51,6 +52,7 @@ describe('settings transfer state persistence', () => {
         logCount: 8,
         settingsCount: 0,
         leaveRecordCount: 0,
+        classScheduleCount: 14,
       },
     })
   })

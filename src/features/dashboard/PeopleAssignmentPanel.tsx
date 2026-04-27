@@ -1,4 +1,4 @@
-import { useEffect, useLayoutEffect, useRef, useState } from 'react'
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import type { DragEvent, MouseEvent } from 'react'
 import type { PersonCardModel } from '../../legacy/selectors'
 import { ContextMenu, type ContextMenuItem } from '../../components/ui/ContextMenu'
@@ -82,8 +82,7 @@ export function PeopleAssignmentPanel({
   }, [totalPages])
 
   const start = page * PAGE_SIZE
-  const pagePeople = people.slice(start, start + PAGE_SIZE)
-  const pagePeopleKey = pagePeople.map((person) => person.id).join('|')
+  const pagePeople = useMemo(() => people.slice(start, start + PAGE_SIZE), [people, start])
   const placeholders = Math.max(0, PAGE_SIZE - pagePeople.length)
 
   const gridClass = slideDir
@@ -122,7 +121,7 @@ export function PeopleAssignmentPanel({
 
     previousRectsRef.current = nextRects
     previousPageRef.current = page
-  }, [page, pagePeopleKey])
+  }, [page, pagePeople])
 
   const readTransferData = (event: DragEvent<HTMLDivElement>, type: string) => {
     return event.dataTransfer?.getData(type) || ''

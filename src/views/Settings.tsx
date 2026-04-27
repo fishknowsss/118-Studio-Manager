@@ -49,12 +49,13 @@ function formatTransferSummary(summary: ReturnType<typeof buildBackupSummary>) {
     `${summary.logCount} 日志`,
     `${summary.settingsCount} 设置`,
     `${summary.leaveRecordCount} 请假`,
+    `${summary.classScheduleCount} 课表`,
   ].join(' · ')
 }
 
 export function Settings() {
   const store = useLegacyStoreSnapshot()
-  const { projects, tasks, people, logs, leaveRecords } = store
+  const { projects, tasks, people, logs, leaveRecords, classSchedules } = store
   const { toast } = useToast()
   const { confirm } = useConfirm()
   useSyncExternalStore(subscribeUndoHistory, getUndoHistorySnapshot)
@@ -78,6 +79,7 @@ export function Settings() {
     logs,
     settings: [],
     leaveRecords,
+    classSchedules,
   }))
   const entityMaps = useMemo(() => buildEntityMaps(projects, tasks, people), [people, projects, tasks])
   const needsBackup = useMemo(() => getNeedsBackup(logs, projects, todayDate), [logs, projects, todayDate])
@@ -103,6 +105,7 @@ export function Settings() {
             logs,
             settings: [],
             leaveRecords,
+            classSchedules,
           }))
         }
       })
@@ -110,7 +113,7 @@ export function Settings() {
     return () => {
       cancelled = true
     }
-  }, [accounts, briefs, folders, leaveRecords, logs, people, projects, tasks])
+  }, [accounts, briefs, classSchedules, folders, leaveRecords, logs, people, projects, tasks])
 
   const formatUndoTime = (value: string) => {
     const date = new Date(value)
@@ -157,7 +160,7 @@ export function Settings() {
       const target = event.target as HTMLInputElement
       const file = target.files?.[0]
       if (!file) return
-      const ok = await confirm('确认导入', '导入会用备份内容覆盖当前项目、任务、人员、日志、请假记录和同步设置。建议先导出一份当前备份。')
+      const ok = await confirm('确认导入', '导入会用备份内容覆盖当前数据。建议先导出一份当前备份。')
       if (!ok) return
 
       try {
@@ -174,7 +177,7 @@ export function Settings() {
   }
 
   const handleClearAll = async () => {
-    const ok = await confirm('清空数据', '将清除所有项目、任务、人员、日志、请假记录和同步设置，且无法撤销。建议先导出 JSON 备份。')
+    const ok = await confirm('清空数据', '将清除所有数据，且无法撤销。建议先导出 JSON 备份。')
     if (!ok) return
     const summary = await clearAllData()
     const nextState = { action: 'clear' as const, summary }
@@ -278,7 +281,7 @@ export function Settings() {
               <div className="settings-row">
                 <div className="settings-row-info">
                   <div className="settings-row-label">导出 JSON</div>
-                  <div className="settings-row-desc">完整备份项目、任务、人员、日志、请假记录和同步设置。</div>
+                  <div className="settings-row-desc">完整备份当前数据。</div>
                 </div>
                 <div className="settings-row-action">
                   <button className="btn btn-primary" type="button" onClick={() => void handleExportJSON()}>导出 JSON</button>
@@ -346,7 +349,7 @@ export function Settings() {
               <div className="settings-row">
                 <div className="settings-row-info">
                   <div className="settings-row-label danger-text">清空所有数据</div>
-                  <div className="settings-row-desc">删除全部项目、任务、人员、日志、请假记录和同步设置。建议先备份。</div>
+                  <div className="settings-row-desc">删除全部数据。建议先备份。</div>
                 </div>
                 <div className="settings-row-action">
                   <button className="btn btn-danger" type="button" onClick={() => void handleClearAll()}>清空</button>
@@ -363,6 +366,7 @@ export function Settings() {
                 <div className="settings-summary-item"><span>日志</span><strong>{currentSummary.logCount}</strong></div>
                 <div className="settings-summary-item"><span>设置</span><strong>{currentSummary.settingsCount}</strong></div>
                 <div className="settings-summary-item"><span>请假</span><strong>{currentSummary.leaveRecordCount}</strong></div>
+                <div className="settings-summary-item"><span>课表</span><strong>{currentSummary.classScheduleCount}</strong></div>
               </div>
               {transferState ? (
                 <div className="settings-transfer-note">

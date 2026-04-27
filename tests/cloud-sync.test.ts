@@ -22,6 +22,7 @@ function buildPayload(exportedAt: string, suffix: string): BackupPayload {
     logs: [],
     settings: [],
     leaveRecords: [],
+    classSchedules: [],
   }
 }
 

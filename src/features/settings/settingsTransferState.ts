@@ -9,6 +9,7 @@ export type PersistedTransferState = {
     logCount: number
     settingsCount: number
     leaveRecordCount: number
+    classScheduleCount: number
   }
 }
 
@@ -39,6 +40,7 @@ export function readPersistedTransferState(): PersistedTransferState | null {
         logCount: Number(parsed.summary?.logCount) || 0,
         settingsCount: Number(parsed.summary?.settingsCount) || 0,
         leaveRecordCount: Number(parsed.summary?.leaveRecordCount) || 0,
+        classScheduleCount: Number(parsed.summary?.classScheduleCount) || 0,
       },
     }
   } catch {

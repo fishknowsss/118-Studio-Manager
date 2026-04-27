@@ -479,6 +479,14 @@ describe('current app regressions', () => {
     expect(dashboardSource).toMatch(/PeopleAssignmentPanel/)
   })
 
+  it('keeps dashboard people panel layout effect dependencies lint-clean', () => {
+    const source = readFileSync(join(process.cwd(), 'src/features/dashboard/PeopleAssignmentPanel.tsx'), 'utf8')
+
+    expect(source).toMatch(/const pagePeople = useMemo/)
+    expect(source).toMatch(/}, \[page, pagePeople\]\)/)
+    expect(source).not.toMatch(/pagePeopleKey/)
+  })
+
   it('keeps dashboard secondary focus cards driven by a selector instead of inline task math', () => {
     const dashboardSource = readFileSync(join(process.cwd(), 'src/views/Dashboard.tsx'), 'utf8')
 
@@ -498,20 +506,21 @@ describe('current app regressions', () => {
     expect(dashboardSource).not.toMatch(/mini-cal-header/)
   })
 
-  it('treats settings and leave records as first-class backup data across bootstrap and settings UI', () => {
+  it('treats synced support records as first-class backup data across bootstrap and settings UI', () => {
     const bootstrapSource = readFileSync(join(process.cwd(), 'src/legacy/bootstrap.ts'), 'utf8')
     const syncProviderSource = readFileSync(join(process.cwd(), 'src/features/sync/SyncProvider.tsx'), 'utf8')
     const syncSharedSource = readFileSync(join(process.cwd(), 'src/features/sync/syncShared.ts'), 'utf8')
     const settingsSource = readFileSync(join(process.cwd(), 'src/views/Settings.tsx'), 'utf8')
 
     expect(syncSharedSource).toMatch(/payload\.leaveRecords\.length > 0/)
+    expect(syncSharedSource).toMatch(/payload\.classSchedules\?\.length/)
     expect(syncProviderSource).toMatch(/store\.leaveRecords\.length > 0/)
+    expect(syncProviderSource).toMatch(/store\.classSchedules\.length > 0/)
     expect(bootstrapSource).toMatch(/const localBackup = await db\.exportAll\(\)/)
     expect(bootstrapSource).toMatch(/if \(!hasBackupContent\(localBackup\)\)/)
     expect(settingsSource).toMatch(/currentSummary\.settingsCount/)
     expect(settingsSource).toMatch(/currentSummary\.leaveRecordCount/)
-    expect(settingsSource).toMatch(/同步设置/)
-    expect(settingsSource).toMatch(/请假记录/)
+    expect(settingsSource).toMatch(/currentSummary\.classScheduleCount/)
   })
 
   it('uses node24-compatible GitHub Pages actions in deploy workflow', () => {

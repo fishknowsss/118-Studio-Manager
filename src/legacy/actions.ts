@@ -47,6 +47,9 @@ export type TaskFormInput = {
 
 export type PersonFormInput = {
   name: string | null
+  className: string | null
+  studentNo: string | null
+  email: string | null
   gender: PersonGender | '' | null
   status: PersonStatus | null
   skills: string[]
@@ -117,6 +120,9 @@ export function buildPersonRecord(
   return {
     id: person?.id || uid(),
     name: form.name?.trim() || '',
+    className: form.className?.trim() || '',
+    studentNo: form.studentNo?.trim() || '',
+    email: form.email?.trim() || '',
     gender: form.gender || '',
     status: form.status || 'active',
     skills: form.skills,

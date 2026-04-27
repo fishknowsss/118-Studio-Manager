@@ -19,7 +19,7 @@ import {
   getTaskPool,
 } from '../src/legacy/selectors'
 import { buildTaskRecord } from '../src/legacy/actions'
-import { syncTaskStatusWithAssignees } from '../src/legacy/store'
+import { buildPersonDeletionPatch, syncTaskStatusWithAssignees } from '../src/legacy/store'
 
 describe('store selectors', () => {
   it('builds fast lookup maps and open task counts', () => {
@@ -473,9 +473,11 @@ describe('store selectors', () => {
       logs: [{ id: 'log-1' }, { id: 'log-2' }, { id: 'log-3' }],
       settings: [{ key: 'theme', value: 'light' }],
       leaveRecords: [{ id: 'leave-1' }],
+      classSchedules: [{ id: 'schedule-1' }],
     })
 
     expect(summary).toEqual({
+      classScheduleCount: 1,
       projectCount: 1,
       taskCount: 2,
       personCount: 1,
@@ -580,5 +582,32 @@ describe('store selectors', () => {
     }, '2026-04-12T10:00:00+08:00')
 
     expect(task.status).toBe('in-progress')
+  })
+
+  it('plans person deletion cleanup across tasks, leave records, and class schedules', () => {
+    const patch = buildPersonDeletionPatch(
+      'person-1',
+      [
+        { id: 'task-1', title: '剪辑', status: 'in-progress', assigneeIds: ['person-1', 'person-2'] },
+        { id: 'task-2', title: '排版', status: 'in-progress', assigneeIds: ['person-1'] },
+        { id: 'task-3', title: '拍摄', status: 'todo', assigneeIds: ['person-2'] },
+      ],
+      [
+        { id: 'leave-1', personId: 'person-1', date: '2026-04-24' },
+        { id: 'leave-2', personId: 'person-2', date: '2026-04-24' },
+      ],
+      [
+        { id: 'schedule-1', personId: 'person-1', personName: '陈怡盈', courseName: '动画基础', dayOfWeek: 1, startSection: 1, endSection: 2, weeksText: '1-8周' },
+        { id: 'schedule-2', personId: 'person-2', personName: '李知行', courseName: '摄影', dayOfWeek: 2, startSection: 3, endSection: 4, weeksText: '1-16周' },
+      ],
+    )
+
+    expect(patch.updatedTasks).toEqual([
+      expect.objectContaining({ id: 'task-1', assigneeIds: ['person-2'], status: 'in-progress' }),
+      expect.objectContaining({ id: 'task-2', assigneeIds: [], status: 'todo' }),
+    ])
+    expect(patch.nextTasks.find((task) => task.id === 'task-2')).toMatchObject({ assigneeIds: [], status: 'todo' })
+    expect(patch.leaveRecordIds).toEqual(['leave-1'])
+    expect(patch.classScheduleIds).toEqual(['schedule-1'])
   })
 })
