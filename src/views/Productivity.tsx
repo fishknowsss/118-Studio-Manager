@@ -105,6 +105,8 @@ function getScheduleConflictDetail(
   endSection: number,
 ): SelectedScheduleDetail {
   const summary = getScheduleConflictSummary(courses)
+  const courseText = summary.courseNames.join('、')
+  const memberText = summary.memberNames.join('、')
 
   return {
     id,
@@ -112,8 +114,8 @@ function getScheduleConflictDetail(
     title: summary.title,
     subtitle: `${startSection}–${endSection} 节`,
     rows: [
-      { label: '课程', value: summary.courseText },
-      { label: '成员', value: summary.memberText },
+      { label: '课程', value: courseText },
+      { label: '成员', value: memberText },
       { label: '节次', value: `${startSection}–${endSection} 节` },
     ],
     courses: courses.map((course) => ({
@@ -828,11 +830,15 @@ function getScheduleConflictSummary(courses: ScheduleVisualCourse[]) {
       course.courseGroup.entries.map((entry) => entry.personName || '未命名成员'),
     ),
   ))
+  const fullCourseText = courseNames.join('、')
+  const fullMemberText = memberNames.join('、')
 
   return {
     courseNames,
     memberNames,
     title: `${courseNames.length} 门课`,
+    fullCourseText,
+    fullMemberText,
     courseText: courseNames.slice(0, 3).join('、') + (courseNames.length > 3 ? ` +${courseNames.length - 3}` : ''),
     memberText: memberNames.slice(0, 4).join('、') + (memberNames.length > 4 ? ` +${memberNames.length - 4}` : ''),
   }
@@ -1005,6 +1011,7 @@ function ProductivityScheduleView({
                   aria-label={`${conflictSummary.memberText}，${conflictSummary.title}，${cluster.startSection} 至 ${cluster.endSection} 节`}
                   aria-pressed={selectedState?.detail.id === cluster.id}
                   data-selected={selectedState?.detail.id === cluster.id ? 'true' : 'false'}
+                  data-span={span}
                   data-detail-side={getScheduleDetailSide(cluster.startSection)}
                   data-detail-align={getScheduleDetailAlign(dayIndex, visibleWeekdays.length)}
                   style={buildScheduleConflictStyle()}
@@ -1026,8 +1033,8 @@ function ProductivityScheduleView({
                 >
                   <span className="schedule-stack-face schedule-conflict-face">
                     <span className="schedule-conflict-count">{conflictSummary.title}</span>
-                    <strong className="schedule-conflict-title">{conflictSummary.courseText}</strong>
-                    <span className="schedule-conflict-members">{conflictSummary.memberText}</span>
+                    <strong className="schedule-conflict-title" data-short-text={conflictSummary.courseText}>{conflictSummary.fullCourseText}</strong>
+                    <span className="schedule-conflict-members" data-short-text={conflictSummary.memberText}>{conflictSummary.fullMemberText}</span>
                   </span>
                 </div>
               ) : null}

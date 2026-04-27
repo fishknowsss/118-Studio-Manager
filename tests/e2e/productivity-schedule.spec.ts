@@ -38,6 +38,8 @@ async function seedScheduleData(page: Page) {
         { id: 'schedule-f', personId: 'person-c', personName: '陈怡盈', courseName: '海报设计', dayOfWeek: 3, startSection: 10, endSection: 12, weeksText: '1-16周', location: 'E501', teacher: '测试教师', createdAt: timestamp, updatedAt: timestamp },
         { id: 'schedule-g', personId: 'person-a', personName: '刘永元', courseName: '社会性别学', dayOfWeek: 4, startSection: 6, endSection: 8, weeksText: '1-10周', location: 'F601', teacher: '测试教师', createdAt: timestamp, updatedAt: timestamp },
         { id: 'schedule-h', personId: 'person-b', personName: '孔云丽', courseName: '大学生音乐素质拓展', dayOfWeek: 4, startSection: 6, endSection: 8, weeksText: '2-10周', location: 'F602', teacher: '测试教师', createdAt: timestamp, updatedAt: timestamp },
+        { id: 'schedule-i', personId: 'person-c', personName: '陈怡盈', courseName: '导论', dayOfWeek: 4, startSection: 6, endSection: 8, weeksText: '3-10周', location: 'F603', teacher: '测试教师', createdAt: timestamp, updatedAt: timestamp },
+        { id: 'schedule-j', personId: 'person-a', personName: '刘永元', courseName: '中级乒乓球', dayOfWeek: 4, startSection: 6, endSection: 8, weeksText: '4-12周', location: 'F604', teacher: '测试教师', createdAt: timestamp, updatedAt: timestamp },
       ]
 
       const peopleStore = transaction.objectStore('people')
@@ -172,6 +174,17 @@ test.describe('工效课表', () => {
     await middleConflictCard.click()
     await expect(selectionDetail).toBeVisible()
     await expect(selectionDetail).toHaveAttribute('data-side', 'top')
+    await expect(middleConflictCard.locator('.schedule-conflict-title')).toContainText('大学生音乐素质拓展')
+    await expect(middleConflictCard.locator('.schedule-conflict-title')).toContainText('中级乒乓球')
+    await expect(middleConflictCard.locator('.schedule-conflict-members')).toContainText('陈怡盈')
+    await expect(middleConflictCard.locator('.schedule-conflict-title')).not.toContainText('+')
+    await expect(middleConflictCard.locator('.schedule-conflict-members')).not.toContainText('+')
+    await expect(selectionDetail).toContainText('大学生音乐素质拓展')
+    await expect(selectionDetail).toContainText('社会性别学')
+    await expect(selectionDetail).toContainText('导论')
+    await expect(selectionDetail).toContainText('中级乒乓球')
+    await expect(selectionDetail).toContainText('陈怡盈')
+    await expect(selectionDetail).not.toContainText('+1')
     const middleDetailBounds = await page.locator('.productivity-schedule-shell').evaluate((shell) => {
       const detail = document.querySelector<HTMLElement>('.schedule-selection-detail')
       if (!detail) return null
