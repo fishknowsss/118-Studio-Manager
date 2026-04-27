@@ -5,7 +5,6 @@ import { useToast } from '../components/feedback/ToastProvider'
 import { ClientBriefDialog } from '../features/materials/ClientBriefDialog'
 import { AccountDialog } from '../features/materials/AccountDialog'
 import {
-  orderFoldersByCount,
   readBriefs,
   writeBriefs,
   subscribeBriefs,
@@ -13,7 +12,12 @@ import {
   writeAccounts,
   subscribeAccounts,
   readFolders,
+  readFolderSettings,
   writeFolders,
+  writeFolderSettings,
+  getFolderCustomColor,
+  setFolderCustomColor,
+  insertFolderBefore,
   subscribeFolders,
   type ClientBrief,
   type AccountCredential,
@@ -30,26 +34,7 @@ async function copyToClipboard(text: string): Promise<boolean> {
   }
 }
 
-// ─── 文件夹色彩映射（按项目DDL紧急度色阶递减）────────────────────────
-const FOLDER_TONE_COLORS = [
-  '#E54D4D', // overdue / focus-critical
-  '#E8840F', // today / focus-strong
-  '#CA8A04', // soon / focus-medium
-  '#4166F5', // near / focus-calm
-  '#E4E8F0', // neutral / border
-]
-
-function getFolderColor(count: number, maxCount: number): string {
-  if (maxCount <= 0 || count <= 0) {
-    return FOLDER_TONE_COLORS[4]
-  }
-  const ratio = count / maxCount
-  if (ratio >= 0.8) return FOLDER_TONE_COLORS[0]
-  if (ratio >= 0.6) return FOLDER_TONE_COLORS[1]
-  if (ratio >= 0.4) return FOLDER_TONE_COLORS[2]
-  if (ratio >= 0.2) return FOLDER_TONE_COLORS[3]
-  return FOLDER_TONE_COLORS[4]
-}
+const FOLDER_COLOR_SWATCHES = ['#4166F5', '#0F9F6E', '#E8840F', '#E54D4D', '#7C3AED', '#64748B']
 
 // ─── 文件夹图标 SVG（近方形、极简线稿双态）──────────
 function FolderIcon({ color, open }: { color: string; open: boolean }) {
@@ -254,28 +239,43 @@ function PlatformCard({
   platform,
   accounts,
   folders,
-  maxCount,
+  color,
+  draggingPlatform,
+  dragOverPlatform,
   onEdit,
   onDelete,
   onMoveToFolder,
   onRenameFolder,
   onDeleteFolder,
   onAddAccount,
+  onColorChange,
+  onDragStart,
+  onDragOver,
+  onDragEnd,
+  onDrop,
 }: {
   platform: string
   accounts: AccountCredential[]
   folders: string[]
-  maxCount: number
+  color: string
+  draggingPlatform: string | null
+  dragOverPlatform: string | null
   onEdit: (account: AccountCredential) => void
   onDelete: (account: AccountCredential) => void
   onMoveToFolder: (account: AccountCredential, targetFolder: string) => void
   onRenameFolder: (oldName: string, newName: string) => void
   onDeleteFolder: (platform: string) => void
   onAddAccount: (platform: string) => void
+  onColorChange: (platform: string, color: string) => void
+  onDragStart: (platform: string) => void
+  onDragOver: (platform: string) => void
+  onDragEnd: () => void
+  onDrop: (platform: string) => void
 }) {
   const triggerRef = useRef<HTMLButtonElement>(null)
   const renameInputRef = useRef<HTMLInputElement>(null)
   const closeTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const longPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
   const isRenamingRef = useRef(false)
   const isMovingRef = useRef(false)
   const [open, setOpen] = useState(false)
@@ -283,11 +283,14 @@ function PlatformCard({
   const [panelLeft, setPanelLeft] = useState(false)
   const [isRenaming, setIsRenaming] = useState(false)
   const [renameValue, setRenameValue] = useState(platform)
-  const color = getFolderColor(accounts.length, maxCount)
+  const [dragReady, setDragReady] = useState(false)
+  const isDragging = draggingPlatform === platform
+  const isDragTarget = dragOverPlatform === platform && draggingPlatform !== platform
 
   useEffect(() => { isRenamingRef.current = isRenaming }, [isRenaming])
 
   const openPanel = () => {
+    if (dragReady || draggingPlatform) return
     if (closeTimer.current) clearTimeout(closeTimer.current)
     const rect = triggerRef.current?.getBoundingClientRect()
     if (!rect) return
@@ -312,6 +315,19 @@ function PlatformCard({
     if (closeTimer.current) clearTimeout(closeTimer.current)
   }
 
+  const clearLongPress = () => {
+    if (longPressTimer.current) clearTimeout(longPressTimer.current)
+    longPressTimer.current = null
+  }
+
+  const beginLongPress = () => {
+    clearLongPress()
+    longPressTimer.current = setTimeout(() => {
+      setOpen(false)
+      setDragReady(true)
+    }, 360)
+  }
+
   const startRename = (e: React.MouseEvent) => {
     e.stopPropagation()
     setRenameValue(platform)
@@ -330,13 +346,41 @@ function PlatformCard({
     setIsRenaming(false)
   }
 
-  useEffect(() => () => { if (closeTimer.current) clearTimeout(closeTimer.current) }, [])
+  useEffect(() => {
+    if (draggingPlatform) setOpen(false)
+  }, [draggingPlatform])
+
+  useEffect(() => () => {
+    if (closeTimer.current) clearTimeout(closeTimer.current)
+    clearLongPress()
+  }, [])
 
   return (
     <>
       <div
-        className={`acc-platform-card${open ? ' is-open' : ''}${accounts.length === 0 ? ' is-empty' : ''}`}
+        className={`acc-platform-card${open ? ' is-open' : ''}${accounts.length === 0 ? ' is-empty' : ''}${dragReady || isDragging ? ' is-drag-ready' : ''}${isDragTarget ? ' is-drag-target' : ''}`}
         style={{ '--acc-color': color } as React.CSSProperties}
+        draggable={dragReady}
+        onDragStart={(e) => {
+          e.dataTransfer.effectAllowed = 'move'
+          e.dataTransfer.setData('text/plain', platform)
+          setOpen(false)
+          onDragStart(platform)
+        }}
+        onDragOver={(e) => {
+          if (!draggingPlatform || draggingPlatform === platform) return
+          e.preventDefault()
+          onDragOver(platform)
+        }}
+        onDrop={(e) => {
+          e.preventDefault()
+          setDragReady(false)
+          onDrop(platform)
+        }}
+        onDragEnd={() => {
+          setDragReady(false)
+          onDragEnd()
+        }}
       >
         <div className="acc-platform-trigger-wrap">
           <button
@@ -347,11 +391,15 @@ function PlatformCard({
             onMouseLeave={scheduleClose}
             onFocus={openPanel}
             onBlur={scheduleClose}
+            onPointerDown={beginLongPress}
+            onPointerUp={clearLongPress}
+            onPointerCancel={clearLongPress}
+            onPointerLeave={clearLongPress}
             aria-label={`${platform}，${accounts.length} 个账号`}
             aria-expanded={open}
           >
             <div className="acc-platform-card-icon">
-              <FolderIcon color={color} open={open} />
+              <FolderIcon color={color} open={open && !dragReady && !draggingPlatform} />
             </div>
           </button>
         </div>
@@ -402,6 +450,18 @@ function PlatformCard({
               <>
                 <span className="acc-fan-panel-title" style={{ color }}>{platform}</span>
                 <span className="acc-fan-panel-count">{accounts.length} 个账号</span>
+                <div className="acc-color-picker" aria-label="文件夹颜色">
+                  {FOLDER_COLOR_SWATCHES.map((swatch) => (
+                    <button
+                      key={swatch}
+                      className={`acc-color-swatch${swatch.toLowerCase() === color.toLowerCase() ? ' is-active' : ''}`}
+                      type="button"
+                      style={{ '--swatch-color': swatch } as React.CSSProperties}
+                      onClick={() => onColorChange(platform, swatch)}
+                      aria-label="换色"
+                    />
+                  ))}
+                </div>
                 <button className="acc-fan-action-btn" type="button" title="重命名文件夹" onClick={startRename}>
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" width="13" height="13" aria-hidden="true">
                     <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
@@ -567,11 +627,14 @@ export function Materials() {
   // 账号密码
   const accounts  = useSyncExternalStore(subscribeAccounts, readAccounts)
   const folders   = useSyncExternalStore(subscribeFolders, readFolders)
+  const folderSettings = useSyncExternalStore(subscribeFolders, readFolderSettings)
   const [editingAccount, setEditingAccount]     = useState<AccountCredential | null | undefined>(undefined)
   const [defaultPlatform, setDefaultPlatform]   = useState('')
   const [accSearch, setAccSearch]               = useState('')
   const [newFolderMode, setNewFolderMode]        = useState(false)
   const [newFolderName, setNewFolderName]        = useState('')
+  const [draggingPlatform, setDraggingPlatform]  = useState<string | null>(null)
+  const [dragOverPlatform, setDragOverPlatform]  = useState<string | null>(null)
   const newFolderInputRef                        = useRef<HTMLInputElement>(null)
 
   // 关联项目下拉选项
@@ -628,7 +691,7 @@ export function Materials() {
     return result
   }, [accountsByPlatform, folders])
 
-  // 合并显示的平台列表：固定按账号数降序
+  // 合并显示的平台列表：按用户自定义顺序
   // 搜索时只显示有匹配账号的平台（不展示空文件夹）
   const allPlatforms = useMemo(() => {
     const visible = accSearch.trim()
@@ -640,22 +703,13 @@ export function Materials() {
       if (!seen.has(platform)) visible.push(platform)
     }
 
-    const counts = new Map<string, number>()
-    for (const platform of visible) {
-      counts.set(platform, (groupedAccounts.get(platform) ?? []).length)
-    }
-
-    return orderFoldersByCount(visible, counts)
+    return visible
   }, [accSearch, groupedAccounts, registeredPlatforms])
 
   const totalFiltered = useMemo(
     () => Array.from(groupedAccounts.values()).reduce((s, a) => s + a.length, 0),
     [groupedAccounts],
   )
-
-  const maxFolderCount = useMemo(() => {
-    return Math.max(0, ...Array.from(groupedAccounts.values()).map((accounts) => accounts.length))
-  }, [groupedAccounts])
 
   // 新建文件夹时自动聚焦
   useEffect(() => {
@@ -726,7 +780,13 @@ export function Materials() {
     }
     writeAccounts(accounts.map((a) => a.platform === oldName ? { ...a, platform: newName } : a))
     if (folders.includes(oldName)) {
-      writeFolders(folders.map((f) => f === oldName ? newName : f))
+      const colors = { ...folderSettings.colors }
+      if (colors[oldName] && !colors[newName]) colors[newName] = colors[oldName]
+      delete colors[oldName]
+      writeFolderSettings({
+        items: folders.map((f) => f === oldName ? newName : f),
+        colors,
+      })
     } else if (!folders.includes(newName)) {
       writeFolders([...folders, newName])
     }
@@ -756,6 +816,22 @@ export function Materials() {
     const updated = { ...account, platform: targetFolder, updatedAt: new Date().toISOString() }
     writeAccounts(accounts.map((a) => (a.id === account.id ? updated : a)))
     toast(`已移至「${targetFolder}」`, 'success')
+  }
+
+  const changeFolderColor = (platform: string, color: string) => {
+    writeFolderSettings(setFolderCustomColor(folderSettings, platform, color))
+  }
+
+  const dropFolderOn = (targetPlatform: string) => {
+    if (!draggingPlatform || draggingPlatform === targetPlatform) {
+      setDraggingPlatform(null)
+      setDragOverPlatform(null)
+      return
+    }
+    const next = insertFolderBefore(registeredPlatforms, draggingPlatform, targetPlatform)
+    writeFolderSettings({ items: next, colors: folderSettings.colors })
+    setDraggingPlatform(null)
+    setDragOverPlatform(null)
   }
 
   // 是否有任何内容可展示（文件夹 + 账号）
@@ -946,13 +1022,20 @@ export function Materials() {
                     platform={platform}
                     accounts={groupedAccounts.get(platform) ?? []}
                     folders={allPlatforms}
-                    maxCount={maxFolderCount}
+                    color={getFolderCustomColor(folderSettings, platform)}
+                    draggingPlatform={draggingPlatform}
+                    dragOverPlatform={dragOverPlatform}
                     onEdit={(account) => setEditingAccount(account)}
                     onDelete={(account) => void deleteAccount(account)}
                     onMoveToFolder={moveAccountToFolder}
                     onRenameFolder={renamePlatform}
                     onDeleteFolder={(p) => void deletePlatform(p)}
                     onAddAccount={openAddAccountInFolder}
+                    onColorChange={changeFolderColor}
+                    onDragStart={setDraggingPlatform}
+                    onDragOver={setDragOverPlatform}
+                    onDragEnd={() => { setDraggingPlatform(null); setDragOverPlatform(null) }}
+                    onDrop={dropFolderOn}
                   />
                 ))}
               </div>

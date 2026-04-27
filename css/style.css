@@ -2660,12 +2660,31 @@ html[data-easter-mode='konami'] .assignee-chip.selected:has(.assignee-chip-avata
   width: 108px;
   max-width: 108px;
   min-width: 0;
+  border-radius: var(--r-lg);
 }
 .acc-platform-card.is-empty {
   opacity: 0.65;
 }
 .acc-platform-card.is-empty.is-open {
   opacity: 1;
+}
+.acc-platform-card.is-drag-ready {
+  cursor: grabbing;
+}
+.acc-platform-card.is-drag-ready .acc-platform-trigger-wrap {
+  border: 1.5px dashed color-mix(in srgb, var(--acc-color, var(--c-primary)) 64%, transparent);
+  border-radius: 18px;
+  background: color-mix(in srgb, var(--acc-color, var(--c-primary)) 8%, transparent);
+}
+.acc-platform-card.is-drag-target::before {
+  content: "";
+  position: absolute;
+  top: 12px;
+  bottom: 26px;
+  left: -7px;
+  width: 2px;
+  border-radius: 999px;
+  background: var(--acc-color, var(--c-primary));
 }
 
 .acc-platform-trigger-wrap {
@@ -2689,6 +2708,7 @@ html[data-easter-mode='konami'] .assignee-chip.selected:has(.assignee-chip-avata
   border: none;
   border-radius: 20px;
   cursor: pointer;
+  touch-action: none;
   color: inherit;
 }
 .acc-platform-trigger:focus-visible {
@@ -2758,6 +2778,26 @@ html[data-easter-mode='konami'] .assignee-chip.selected:has(.assignee-chip-avata
 
 .acc-folder-search {
   min-width: 168px;
+}
+
+.acc-color-picker {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+}
+.acc-color-swatch {
+  width: 16px;
+  height: 16px;
+  border: 1px solid color-mix(in srgb, var(--swatch-color) 70%, var(--c-border));
+  border-radius: 50%;
+  background: var(--swatch-color);
+  cursor: pointer;
+  padding: 0;
+}
+.acc-color-swatch.is-active {
+  outline: 2px solid color-mix(in srgb, var(--swatch-color) 34%, transparent);
+  outline-offset: 2px;
 }
 
 /* ── 扇形浮层面板 ── */

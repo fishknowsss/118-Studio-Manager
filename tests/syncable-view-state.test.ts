@@ -18,8 +18,10 @@ import {
   __resetMaterialsStateForTests,
   initializeMaterialsState,
   readBriefs,
+  readFolderSettings,
   readFolders,
   reloadMaterialsStateFromDB,
+  writeFolderSettings,
   writeFolders,
 } from '../src/features/materials/materialsState'
 import { flushSyncableViewStatePersistence } from '../src/features/persistence/syncableViewState'
@@ -144,7 +146,7 @@ describe('syncable view state', () => {
     expect(readFolders()).toEqual(['设计协作', '云盘归档'])
     expect(dbPutMock).toHaveBeenCalledWith('settings', expect.objectContaining({
       key: 'materials:folders',
-      value: ['设计协作', '云盘归档'],
+      value: { items: ['设计协作', '云盘归档'], colors: {} },
     }))
     expect(handler).toHaveBeenCalledTimes(1)
     expect((handler.mock.calls[0]?.[0] as CustomEvent).detail).toEqual({ key: 'materials:folders' })
@@ -170,6 +172,27 @@ describe('syncable view state', () => {
     await reloadMaterialsStateFromDB()
 
     expect(readFolders()).toEqual(['Notion', 'Figma'])
+  })
+
+  it('persists materials folder colors and manual order through syncable settings', async () => {
+    writeFolderSettings({
+      items: ['Figma', 'Notion'],
+      colors: { Figma: '#0F9F6E' },
+    })
+    await flushMicrotasks()
+
+    expect(readFolders()).toEqual(['Figma', 'Notion'])
+    expect(readFolderSettings()).toEqual({
+      items: ['Figma', 'Notion'],
+      colors: { Figma: '#0F9F6E' },
+    })
+    expect(dbPutMock).toHaveBeenCalledWith('settings', expect.objectContaining({
+      key: 'materials:folders',
+      value: {
+        items: ['Figma', 'Notion'],
+        colors: { Figma: '#0F9F6E' },
+      },
+    }))
   })
 
   it('returns a stable folders snapshot between writes', async () => {

@@ -151,8 +151,17 @@ export function subscribeAccounts(listener: () => void) {
 }
 
 // ─── 文件夹列表 ───────────────────────────────────────
-// 仅存储文件夹名称数组，保证空文件夹可以存在
 const FOLDER_SETTINGS_KEY = 'materials:folders'
+const DEFAULT_FOLDER_COLOR = '#4166F5'
+
+export type MaterialFolderSettings = {
+  items: string[]
+  colors: Record<string, string>
+}
+
+function isValidFolderColor(value: unknown): value is string {
+  return typeof value === 'string' && /^#[0-9a-f]{6}$/i.test(value.trim())
+}
 
 function sanitizeFolderItems(raw: unknown): string[] {
   if (!Array.isArray(raw)) return []
@@ -162,47 +171,97 @@ function sanitizeFolderItems(raw: unknown): string[] {
     .filter((s, i, arr) => arr.indexOf(s) === i) // 去重
 }
 
-function sanitizeFolders(raw: unknown): string[] {
+function sanitizeFolderSettings(raw: unknown): MaterialFolderSettings {
   if (Array.isArray(raw)) {
-    return sanitizeFolderItems(raw)
+    return {
+      items: sanitizeFolderItems(raw),
+      colors: {},
+    }
   }
 
   if (!raw || typeof raw !== 'object') {
-    return []
+    return { items: [], colors: {} }
   }
 
   const value = raw as {
     items?: unknown
+    colors?: unknown
   }
-  return sanitizeFolderItems(value.items)
+  const items = sanitizeFolderItems(value.items)
+  const colors: Record<string, string> = {}
+  if (value.colors && typeof value.colors === 'object') {
+    for (const [name, color] of Object.entries(value.colors as Record<string, unknown>)) {
+      const trimmedName = name.trim()
+      if (items.includes(trimmedName) && isValidFolderColor(color)) {
+        colors[trimmedName] = color.trim()
+      }
+    }
+  }
+  return { items, colors }
 }
 
-const foldersStore = createSyncableSettingsStore<string[]>({
+const foldersStore = createSyncableSettingsStore<MaterialFolderSettings>({
   key: FOLDER_SETTINGS_KEY,
-  emptyValue: [],
-  sanitize: sanitizeFolders,
+  emptyValue: { items: [], colors: {} },
+  sanitize: sanitizeFolderSettings,
 })
 
+let cachedFolderSettings: MaterialFolderSettings | null = null
+let cachedFolderNames: string[] = []
+
 export function readFolders(): string[] {
+  const settings = foldersStore.read()
+  if (cachedFolderSettings !== settings) {
+    cachedFolderSettings = settings
+    cachedFolderNames = settings.items
+  }
+  return cachedFolderNames
+}
+
+export function readFolderSettings(): MaterialFolderSettings {
   return foldersStore.read()
 }
 
 export function writeFolders(folders: string[]) {
-  foldersStore.write(sanitizeFolderItems(folders))
+  const items = sanitizeFolderItems(folders)
+  const current = foldersStore.read()
+  const colors: Record<string, string> = {}
+  for (const item of items) {
+    if (isValidFolderColor(current.colors[item])) {
+      colors[item] = current.colors[item]
+    }
+  }
+  foldersStore.write({ items, colors })
 }
 
-export function orderFoldersByCount(
-  folders: string[],
-  counts: ReadonlyMap<string, number>,
-) {
-  return folders
-    .map((name, index) => ({
-    name,
-    index,
-    count: counts.get(name) ?? 0,
-    }))
-    .sort((a, b) => (b.count - a.count) || (a.index - b.index))
-    .map((item) => item.name)
+export function writeFolderSettings(settings: MaterialFolderSettings) {
+  const next = sanitizeFolderSettings(settings)
+  foldersStore.write(next)
+}
+
+export function getFolderCustomColor(settings: MaterialFolderSettings, folder: string) {
+  return settings.colors[folder] || DEFAULT_FOLDER_COLOR
+}
+
+export function setFolderCustomColor(settings: MaterialFolderSettings, folder: string, color: string) {
+  if (!settings.items.includes(folder) || !isValidFolderColor(color)) return settings
+  return {
+    items: settings.items,
+    colors: {
+      ...settings.colors,
+      [folder]: color.trim(),
+    },
+  }
+}
+
+export function insertFolderBefore(folders: string[], movingFolder: string, targetFolder: string) {
+  if (movingFolder === targetFolder) return folders
+  const withoutMoving = folders.filter((folder) => folder !== movingFolder)
+  const targetIndex = withoutMoving.indexOf(targetFolder)
+  if (targetIndex < 0) return folders
+  const next = withoutMoving.slice()
+  next.splice(targetIndex, 0, movingFolder)
+  return next
 }
 
 export function subscribeFolders(listener: () => void) { return foldersStore.subscribe(listener) }
@@ -227,6 +286,8 @@ export function __resetMaterialsStateForTests() {
   briefsStore.resetForTests()
   accountsStore.resetForTests()
   foldersStore.resetForTests()
+  cachedFolderSettings = null
+  cachedFolderNames = []
 }
 
 export function normalizeMaterialUrl(value: string): string {

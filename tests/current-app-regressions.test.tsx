@@ -332,23 +332,28 @@ describe('current app regressions', () => {
     expect(appSource).not.toMatch(/if \(!easterMode\) \{\s*setEntryFlashVisible\(false\)\s*return\s*\}/)
   })
 
-  it('keeps materials folders fixed to count-based ordering and a tighter hover hotspot', () => {
+  it('keeps materials folder ordering and color metadata syncable with long-press drag UI', () => {
     const materialsSource = readFileSync(join(process.cwd(), 'src/views/Materials.tsx'), 'utf8')
     const materialsStateSource = readFileSync(join(process.cwd(), 'src/features/materials/materialsState.ts'), 'utf8')
     const styleSource = readFileSync(join(process.cwd(), 'css/style.css'), 'utf8')
 
-    expect(materialsSource).toMatch(/orderFoldersByCount/)
+    expect(materialsSource).toMatch(/readFolderSettings/)
+    expect(materialsSource).toMatch(/setFolderCustomColor/)
+    expect(materialsSource).toMatch(/insertFolderBefore/)
+    expect(materialsSource).toMatch(/onPointerDown=\{beginLongPress\}/)
+    expect(materialsSource).toMatch(/onDrop=\{dropFolderOn\}/)
     expect(materialsSource).not.toMatch(/文件夹排序/)
-    expect(materialsSource).not.toMatch(/调序/)
     expect(materialsSource).not.toMatch(/manualSortMode/)
 
-    expect(materialsStateSource).toMatch(/export function orderFoldersByCount/)
-    expect(materialsStateSource).not.toMatch(/export type FolderSortMode/)
-    expect(materialsStateSource).not.toMatch(/writeFolderSortMode/)
-    expect(materialsStateSource).not.toMatch(/moveFolderInOrder/)
+    expect(materialsStateSource).toMatch(/export type MaterialFolderSettings/)
+    expect(materialsStateSource).toMatch(/export function writeFolderSettings/)
+    expect(materialsStateSource).toMatch(/export function insertFolderBefore/)
+    expect(materialsStateSource).toMatch(/colors: Record<string, string>/)
 
     expect(styleSource).toMatch(/\.acc-platform-trigger\s*\{[\s\S]*width:\s*68px;[\s\S]*min-height:\s*56px;/)
     expect(styleSource).toMatch(/\.acc-platform-card-icon\s*\{[\s\S]*min-height:\s*92px;/)
+    expect(styleSource).toMatch(/\.acc-platform-card\.is-drag-ready/)
+    expect(styleSource).toMatch(/\.acc-color-swatch/)
   })
 
   it('keeps planner assignment list limited to unscheduled actionable tasks', () => {
