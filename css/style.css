@@ -3745,38 +3745,48 @@ html[data-easter-mode='konami'] .assignee-chip.selected:has(.assignee-chip-avata
 
 /* Tools */
 .tools-view-body {
+  --tools-section-pad: clamp(10px, 1.45vh, 14px);
+  --tools-section-gap: clamp(10px, 1.7vh, 16px);
+  --tools-title-gap: clamp(7px, 1vh, 10px);
+  --tools-card-gap: clamp(7px, 1.1vh, 10px);
+  --tools-title-line: 17px;
+  --tools-body-pad-y: 40px;
+  --tools-row-height: calc(
+    (100dvh - var(--header-h) - var(--tools-body-pad-y) - var(--tools-section-gap) - (var(--tools-section-pad) * 4) - ((var(--tools-title-line) + var(--tools-title-gap)) * 2) - (var(--tools-card-gap) * 4) - 4px) / 6
+  );
   display: grid;
-  grid-template-rows: minmax(0, 1fr) minmax(0, 2fr);
-  gap: clamp(10px, 1.7vh, 16px);
-  height: 100%;
+  grid-template-rows: auto auto;
+  gap: var(--tools-section-gap);
+  height: calc(100dvh - var(--header-h) - var(--tools-body-pad-y));
   overflow: hidden;
 }
 .tools-section {
   border: 1px solid var(--c-border-light);
   background: var(--c-surface);
   border-radius: var(--r-lg);
-  padding: clamp(10px, 1.45vh, 14px);
+  padding: var(--tools-section-pad);
   min-height: 0;
   display: grid;
-  grid-template-rows: auto minmax(0, 1fr);
+  grid-template-rows: auto auto;
 }
 .tools-section-title {
   font-size: 14px;
   font-weight: 700;
   color: var(--c-text);
-  margin-bottom: clamp(7px, 1vh, 10px);
+  line-height: var(--tools-title-line);
+  margin-bottom: var(--tools-title-gap);
 }
 .tools-grid {
   display: grid;
   grid-template-columns: repeat(4, minmax(220px, 1fr));
-  gap: clamp(7px, 1.1vh, 10px);
+  gap: var(--tools-card-gap);
   min-height: 0;
 }
 .tools-section:first-child .tools-grid {
-  grid-template-rows: repeat(2, minmax(0, 1fr));
+  grid-template-rows: repeat(2, minmax(0, var(--tools-row-height)));
 }
 .tools-section:nth-child(2) .tools-grid {
-  grid-template-rows: repeat(4, minmax(0, 1fr));
+  grid-template-rows: repeat(4, minmax(0, var(--tools-row-height)));
 }
 .tool-card {
   border: 1px solid var(--c-border-light);
@@ -3784,6 +3794,7 @@ html[data-easter-mode='konami'] .assignee-chip.selected:has(.assignee-chip-avata
   background: var(--c-bg);
   padding: clamp(8px, 1.05vh, 10px);
   min-height: 0;
+  height: var(--tools-row-height);
   display: grid;
   grid-template-rows: auto 1fr auto;
   gap: clamp(4px, 0.7vh, 6px);
