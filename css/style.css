@@ -1447,6 +1447,10 @@ html[data-easter-mode='konami'] .assignee-chip.selected:has(.assignee-chip-avata
   cursor: default;
   animation: task-detail-layer-in .16s ease-out both;
 }
+[data-theme='dark'] .task-detail-float-layer {
+  background: rgba(2, 6, 23, 0.42);
+  backdrop-filter: blur(1px);
+}
 .task-detail-card {
   --task-detail-accent: var(--c-primary);
   position: fixed;
@@ -3643,8 +3647,7 @@ html[data-easter-mode='konami'] .assignee-chip.selected:has(.assignee-chip-avata
   height: 100%;
   cursor: grab;
   background:
-    radial-gradient(circle at 20% 20%, rgba(65,102,245,.08), transparent 32%),
-    radial-gradient(circle at 80% 80%, rgba(57,197,187,.08), transparent 30%),
+    linear-gradient(90deg, rgba(65, 102, 245, .07), transparent 25%, transparent 75%, rgba(57, 197, 187, .08)),
     var(--c-bg);
 }
 .graph-stage:active {
@@ -3655,9 +3658,13 @@ html[data-easter-mode='konami'] .assignee-chip.selected:has(.assignee-chip-avata
 }
 .graph-edge {
   fill: none;
-  stroke-width: 1.4;
-  opacity: .55;
+  stroke-width: 1.7;
+  opacity: .68;
   transition: opacity .14s, stroke-width .14s;
+}
+.graph-edge.lanes {
+  stroke-width: 1.8;
+  opacity: .62;
 }
 .graph-edge.project-task {
   stroke: var(--c-near);
@@ -3669,23 +3676,67 @@ html[data-easter-mode='konami'] .assignee-chip.selected:has(.assignee-chip-avata
   stroke-width: 2.4;
   opacity: .95;
 }
+.graph-edge.lanes.focused {
+  stroke-width: 2.2;
+  opacity: .88;
+}
 .graph-edge.matched {
   opacity: .8;
 }
 .graph-edge.dimmed {
-  opacity: .12;
+  opacity: .18;
 }
 
 .graph-node-group {
   cursor: pointer;
 }
+.graph-lane-guide {
+  pointer-events: none;
+}
+.graph-lane-guide-mark {
+  stroke: var(--c-border);
+  stroke-width: 4;
+  stroke-linecap: round;
+}
+.graph-lane-guide-rule {
+  stroke: rgba(100, 116, 139, .28);
+  stroke-width: 1.4;
+  stroke-linecap: round;
+  stroke-dasharray: 6 8;
+}
+.graph-lane-guide.project .graph-lane-guide-mark,
+.graph-lane-guide.project .graph-lane-guide-rule {
+  stroke: rgba(65, 102, 245, .58);
+}
+.graph-lane-guide.task .graph-lane-guide-mark,
+.graph-lane-guide.task .graph-lane-guide-rule {
+  stroke: rgba(232, 132, 15, .62);
+}
+.graph-lane-guide.person .graph-lane-guide-mark,
+.graph-lane-guide.person .graph-lane-guide-rule {
+  stroke: rgba(57, 197, 187, .64);
+}
+.graph-lane-guide-title {
+  font-size: 19px;
+  font-weight: 800;
+  fill: var(--c-text);
+}
+.graph-lane-guide-meta {
+  font-size: 13px;
+  font-weight: 700;
+  fill: var(--c-text-2);
+}
 .graph-node-core {
-  stroke-width: 1.8;
+  stroke-width: 2.2;
   transition: transform .16s, opacity .16s, stroke-width .16s;
 }
 .graph-node-label {
-  font-size: var(--fs-xs);
+  font-size: 13px;
+  font-weight: 740;
   fill: var(--c-text);
+  stroke: rgba(255, 255, 255, .88);
+  stroke-width: 3px;
+  paint-order: stroke;
   pointer-events: none;
 }
 .graph-node-group.project .graph-node-core {
@@ -3721,6 +3772,57 @@ html[data-easter-mode='konami'] .assignee-chip.selected:has(.assignee-chip-avata
 }
 .graph-node-group.dimmed .graph-node-label {
   opacity: .32;
+}
+.graph-node-group.card-node {
+  cursor: pointer;
+}
+.graph-node-card-bg {
+  fill: rgba(255, 255, 255, .98);
+  stroke: rgba(148, 163, 184, .34);
+  stroke-width: 1.35;
+  transition: stroke-width .14s, stroke .14s, fill .14s, filter .14s;
+  filter: drop-shadow(0 8px 16px rgba(15, 23, 42, .12));
+}
+.graph-node-card-accent {
+  fill: var(--c-border);
+}
+.graph-node-group.project .graph-node-card-bg {
+  stroke: rgba(65, 102, 245, .46);
+}
+.graph-node-group.project .graph-node-card-accent {
+  fill: var(--c-near);
+}
+.graph-node-group.task .graph-node-card-bg {
+  stroke: rgba(232, 132, 15, .48);
+}
+.graph-node-group.task .graph-node-card-accent {
+  fill: var(--c-today);
+}
+.graph-node-group.person .graph-node-card-bg {
+  stroke: rgba(57, 197, 187, .52);
+}
+.graph-node-group.person .graph-node-card-accent {
+  fill: var(--c-teal);
+}
+.graph-node-group.card-node.focused .graph-node-card-bg {
+  stroke-width: 2;
+  stroke: var(--c-primary);
+  filter: drop-shadow(0 10px 18px rgba(65, 102, 245, .18));
+}
+.graph-node-group.card-node.related .graph-node-card-bg {
+  stroke-width: 1.6;
+}
+.graph-node-card-title {
+  font-size: 17px;
+  font-weight: 790;
+  fill: var(--c-text);
+  pointer-events: none;
+}
+.graph-node-card-meta {
+  font-size: 13px;
+  font-weight: 620;
+  fill: var(--c-text-2);
+  pointer-events: none;
 }
 .graph-node-pin {
   fill: var(--c-overdue);

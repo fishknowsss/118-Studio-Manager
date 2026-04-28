@@ -42,6 +42,50 @@ export function cloneNodeMap(nodes: Record<string, SimNode>) {
   ) as Record<string, SimNode>
 }
 
+const urgencyOrder: Record<string, number> = {
+  'urg-blocked': 0,
+  'urg-overdue': 1,
+  'urg-today': 2,
+  'urg-soon': 3,
+  'urg-near': 4,
+  'urg-active': 5,
+  '': 6,
+  'urg-done': 7,
+}
+
+function nodeUrgencyRank(node: GraphNode) {
+  return urgencyOrder[node.urgency] ?? 6
+}
+
+export function compareGraphNodesForCanvas(left: GraphNode, right: GraphNode) {
+  if (left.kind === 'person' && right.kind === 'person') {
+    return right.sortValue - left.sortValue
+      || nodeUrgencyRank(left) - nodeUrgencyRank(right)
+      || right.size - left.size
+      || left.label.localeCompare(right.label)
+  }
+
+  return nodeUrgencyRank(left) - nodeUrgencyRank(right)
+    || right.sortValue - left.sortValue
+    || right.size - left.size
+    || left.label.localeCompare(right.label)
+}
+
+function rankedY(node: GraphNode, top = 116, bottom = SCENE_HEIGHT - 92) {
+  const rankCount = Math.max(1, node.rankCount || 1)
+  const rankIndex = Math.min(rankCount - 1, Math.max(0, node.rankIndex || 0))
+  if (rankCount === 1) return (top + bottom) / 2
+
+  const gap = (bottom - top) / (rankCount - 1)
+  return top + gap * rankIndex
+}
+
+function kindTargetX(kind: NodeKind) {
+  if (kind === 'project') return 300
+  if (kind === 'task') return SCENE_WIDTH / 2
+  return SCENE_WIDTH - 300
+}
+
 export function buildRadialLayout(nodes: GraphNode[]) {
   const centerX = SCENE_WIDTH / 2
   const centerY = SCENE_HEIGHT / 2
@@ -59,7 +103,7 @@ export function buildRadialLayout(nodes: GraphNode[]) {
 
   const positioned: Record<string, { x: number; y: number }> = {}
   ;(['project', 'task', 'person'] as NodeKind[]).forEach((kind) => {
-    const ringNodes = grouped[kind]
+    const ringNodes = [...grouped[kind]].sort(compareGraphNodesForCanvas)
     const radius = radiusMap[kind]
     const count = ringNodes.length
 
@@ -76,6 +120,8 @@ export function buildRadialLayout(nodes: GraphNode[]) {
 }
 
 export function buildLaneLayout(nodes: GraphNode[], edges: GraphEdge[] = []) {
+  const laneTop = 156
+  const laneBottom = SCENE_HEIGHT - 64
   const laneX: Record<NodeKind, number> = {
     project: 250,
     task: SCENE_WIDTH / 2,
@@ -87,6 +133,56 @@ export function buildLaneLayout(nodes: GraphNode[], edges: GraphEdge[] = []) {
     task: nodes.filter((node) => node.kind === 'task'),
     person: nodes.filter((node) => node.kind === 'person'),
   }
+
+  const placeOrderedNodes = (laneNodes: GraphNode[], top = laneTop, bottom = laneBottom) => {
+    const gap = laneNodes.length > 1
+      ? clamp((bottom - top) / (laneNodes.length - 1), 74, 160)
+      : 0
+    return laneNodes.map((node, index) => ({
+      node,
+      y: laneNodes.length === 1 ? (top + bottom) / 2 : top + gap * index,
+    }))
+  }
+  const placeAnchoredNodes = (
+    laneNodes: GraphNode[],
+    getAnchor: (node: GraphNode) => number,
+    top = laneTop,
+    bottom = laneBottom,
+  ) => {
+    if (laneNodes.length === 0) return [] as Array<{ node: GraphNode; y: number }>
+    if (laneNodes.length === 1) {
+      return [{ node: laneNodes[0], y: clamp(getAnchor(laneNodes[0]), top, bottom) }]
+    }
+
+    const gap = clamp((bottom - top) / (laneNodes.length - 1), 72, 128)
+    const placed = [...laneNodes]
+      .sort((left, right) => getAnchor(left) - getAnchor(right) || compareGraphNodesForCanvas(left, right))
+      .map((node) => ({ node, y: clamp(getAnchor(node), top, bottom) }))
+
+    for (let index = 1; index < placed.length; index += 1) {
+      placed[index].y = Math.max(placed[index].y, placed[index - 1].y + gap)
+    }
+
+    const overflow = placed[placed.length - 1].y - bottom
+    if (overflow > 0) {
+      for (const item of placed) item.y -= overflow
+    }
+
+    for (let index = placed.length - 2; index >= 0; index -= 1) {
+      placed[index].y = Math.min(placed[index].y, placed[index + 1].y - gap)
+    }
+
+    const underflow = top - placed[0].y
+    if (underflow > 0) {
+      for (const item of placed) item.y += underflow
+    }
+
+    return placed
+  }
+
+  grouped.project.sort((left, right) =>
+    compareGraphNodesForCanvas(left, right),
+  )
 
   // 建立连接映射
   const taskToProjects = new Map<string, string[]>()
@@ -112,9 +208,10 @@ export function buildLaneLayout(nodes: GraphNode[], edges: GraphEdge[] = []) {
       return ps.length ? Math.min(...ps.map((p) => projectOrder.get(p) ?? 9999)) : 9999
     }
     return minIdx(a.id) - minIdx(b.id)
+      || compareGraphNodesForCanvas(a, b)
   })
 
-  // 人员按关联任务在任务列中的平均位置排序，减少任务→人员连线交叉
+  // 人员按进行中任务数量排序，让负载一眼可见。
   const taskOrder = new Map(grouped.task.map((n, i) => [n.id, i]))
   grouped.person.sort((a, b) => {
     const avgIdx = (id: string) => {
@@ -122,21 +219,32 @@ export function buildLaneLayout(nodes: GraphNode[], edges: GraphEdge[] = []) {
       if (!ts.length) return 9999
       return ts.reduce((sum, t) => sum + (taskOrder.get(t) ?? 9999), 0) / ts.length
     }
-    return avgIdx(a.id) - avgIdx(b.id)
+    return compareGraphNodesForCanvas(a, b)
+      || avgIdx(a.id) - avgIdx(b.id)
   })
 
   const positioned: Record<string, { x: number; y: number }> = {}
-  ;(['project', 'task', 'person'] as NodeKind[]).forEach((kind) => {
-    const laneNodes = grouped[kind]
-    const gap = SCENE_HEIGHT / (laneNodes.length + 1)
 
-    laneNodes.forEach((node, index) => {
-      positioned[node.id] = {
-        x: laneX[kind],
-        y: gap * (index + 1),
-      }
-    })
+  for (const { node, y } of placeOrderedNodes(grouped.project)) {
+    positioned[node.id] = { x: laneX.project, y }
+  }
+
+  const taskPlacements = placeAnchoredNodes(grouped.task, (node) => {
+    const projects = taskToProjects.get(node.id) || []
+    const projectYs = projects
+      .map((projectId) => positioned[projectId]?.y)
+      .filter((y): y is number => typeof y === 'number')
+
+    if (projectYs.length === 0) return SCENE_HEIGHT - 112
+    return projectYs.reduce((sum, y) => sum + y, 0) / projectYs.length
   })
+  for (const { node, y } of taskPlacements) {
+    positioned[node.id] = { x: laneX.task, y }
+  }
+
+  for (const { node, y } of placeOrderedNodes(grouped.person)) {
+    positioned[node.id] = { x: laneX.person, y }
+  }
 
   return positioned
 }
@@ -144,14 +252,20 @@ export function buildLaneLayout(nodes: GraphNode[], edges: GraphEdge[] = []) {
 export function ensureSimulationNodes(nodes: GraphNode[], previous: Record<string, SimNode>) {
   const next: Record<string, SimNode> = {}
 
-  for (const node of nodes) {
+  const kindOrder: Record<NodeKind, number> = { project: 0, task: 1, person: 2 }
+  const orderedNodes = [...nodes].sort((left, right) =>
+    kindOrder[left.kind] - kindOrder[right.kind]
+    || compareGraphNodesForCanvas(left, right),
+  )
+
+  for (const node of orderedNodes) {
     const old = previous[node.id]
     next[node.id] = old
       ? { ...old, ...node }
       : {
           ...node,
-          x: Math.random() * (SCENE_WIDTH * 0.7) + SCENE_WIDTH * 0.15,
-          y: Math.random() * (SCENE_HEIGHT * 0.7) + SCENE_HEIGHT * 0.15,
+          x: kindTargetX(node.kind),
+          y: rankedY(node),
           vx: 0,
           vy: 0,
         }
@@ -297,9 +411,11 @@ export function runForceSimulation(
   for (const node of nodes) {
     if (pinnedNodeIds.has(node.id)) continue
 
-    const centerPull = node.kind === 'task' ? 0.00085 : 0.00055
+    const centerPull = node.kind === 'task' ? 0.00045 : 0.0003
+    const structurePull = node.kind === 'task' ? 0.00052 : 0.00042
     node.vx += (SCENE_WIDTH / 2 - node.x) * centerPull
-    node.vy += (SCENE_HEIGHT / 2 - node.y) * centerPull
+    node.vx += (kindTargetX(node.kind) - node.x) * structurePull
+    node.vy += (rankedY(node) - node.y) * structurePull
 
     node.x = clamp(node.x + node.vx, 30, SCENE_WIDTH - 30)
     node.y = clamp(node.y + node.vy, 30, SCENE_HEIGHT - 30)
@@ -330,6 +446,25 @@ export function buildEdgePath(source: SimNode, target: SimNode, kind: EdgeKind) 
   const controlY = (source.y + target.y) / 2 + normalY * bend
 
   return `M ${startX} ${startY} Q ${controlX} ${controlY} ${endX} ${endY}`
+}
+
+export function buildLaneEdgePath(source: SimNode, target: SimNode, kind: EdgeKind) {
+  const cardWidth: Record<NodeKind, number> = {
+    project: 250,
+    task: 330,
+    person: 250,
+  }
+  const sourceHalf = (cardWidth[source.kind] || 90) / 2
+  const targetHalf = (cardWidth[target.kind] || 90) / 2
+  const startX = source.x + sourceHalf + 6
+  const startY = source.y
+  const endX = target.x - targetHalf - 8
+  const endY = target.y
+  const controlOffset = kind === 'task-person' ? 64 : 58
+  const controlX1 = startX + controlOffset
+  const controlX2 = endX - controlOffset
+
+  return `M ${startX} ${startY} C ${controlX1} ${startY} ${controlX2} ${endY} ${endX} ${endY}`
 }
 
 export function toScenePoint(svg: SVGSVGElement | null, viewport: Viewport, clientX: number, clientY: number) {

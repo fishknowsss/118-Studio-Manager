@@ -18,6 +18,7 @@ import {
   buildAdjacency,
   buildEdgePath,
   buildHexagonPoints,
+  buildLaneEdgePath,
   buildLaneLayout,
   buildRadialLayout,
   clamp,
@@ -28,13 +29,35 @@ import {
   toScenePoint,
 } from '../features/graph/graphUtils'
 
+const LANE_NODE_WIDTH = {
+  project: 250,
+  task: 330,
+  person: 250,
+}
+
+const LANE_NODE_HEIGHT = 66
+const LANE_GUIDE_WIDTH = {
+  project: 306,
+  task: 390,
+  person: 306,
+}
+const LANE_X = {
+  project: 250,
+  task: SCENE_WIDTH / 2,
+  person: SCENE_WIDTH - 250,
+}
+
+function truncateGraphText(text: string, maxLength: number) {
+  return text.length > maxLength ? `${text.slice(0, maxLength - 1)}…` : text
+}
+
 export function Graph() {
   const store = useLegacyStoreSnapshot()
   const { projects, tasks, people } = store
   const { toast } = useToast()
 
   const [displayMode, setDisplayMode] = useState<DisplayMode>('all')
-  const [layoutMode, setLayoutMode] = useState<LayoutMode>('force')
+  const [layoutMode, setLayoutMode] = useState<LayoutMode>('lanes')
   const [showLabels, setShowLabels] = useState(true)
   const [hideDone, setHideDone] = useState(true)
   const [searchText, setSearchText] = useState('')
@@ -264,6 +287,26 @@ export function Graph() {
         : '0.0',
     }
   }, [activeEdgeSet, scopedGraph.edges.length, scopedGraph.nodes])
+
+  const laneSummaries = useMemo(() => {
+    const summary = {
+      project: { count: 0, alert: 0 },
+      task: { count: 0, alert: 0 },
+      person: { count: 0, alert: 0 },
+    }
+    const alertUrgencies = new Set(['urg-blocked', 'urg-overdue', 'urg-today', 'urg-soon'])
+
+    for (const node of scopedGraph.nodes) {
+      summary[node.kind].count += 1
+      if (alertUrgencies.has(node.urgency)) summary[node.kind].alert += 1
+    }
+
+    return [
+      { kind: 'project' as const, title: '项目', subtitle: `${summary.project.count} 个 · ${summary.project.alert} 个需关注`, x: LANE_X.project, width: LANE_GUIDE_WIDTH.project },
+      { kind: 'task' as const, title: '任务', subtitle: `${summary.task.count} 个 · ${summary.task.alert} 个紧急`, x: LANE_X.task, width: LANE_GUIDE_WIDTH.task },
+      { kind: 'person' as const, title: '人员', subtitle: `${summary.person.count} 人 · ${summary.person.alert} 人有压力`, x: LANE_X.person, width: LANE_GUIDE_WIDTH.person },
+    ]
+  }, [scopedGraph.nodes])
 
   const centerNodeInViewport = (nodeId: string) => {
     const node = simNodesRef.current[nodeId] || activeNodeMap[nodeId]
@@ -567,6 +610,24 @@ export function Graph() {
             <rect width={SCENE_WIDTH} height={SCENE_HEIGHT} fill="url(#graph-dot-grid)" />
 
             <g transform={`translate(${viewport.x} ${viewport.y}) scale(${viewport.scale})`}>
+              {layoutMode === 'lanes' ? (
+                <g className="graph-lane-guides">
+                  {laneSummaries.map((lane) => {
+                    const guideLeft = lane.x - lane.width / 2
+                    const guideRight = lane.x + lane.width / 2
+
+                    return (
+                      <g key={lane.kind} className={`graph-lane-guide ${lane.kind}`}>
+                        <line className="graph-lane-guide-mark" x1={guideLeft + 10} x2={guideLeft + 10} y1={58} y2={100} />
+                        <text className="graph-lane-guide-title" x={guideLeft + 24} y={74}>{lane.title}</text>
+                        <text className="graph-lane-guide-meta" x={guideLeft + 24} y={97}>{lane.subtitle}</text>
+                        <line className="graph-lane-guide-rule" x1={guideLeft + 10} x2={guideRight - 10} y1={122} y2={122} />
+                      </g>
+                    )
+                  })}
+                </g>
+              ) : null}
+
               {scopedGraph.edges.map((edge) => {
                 const source = activeNodeMap[edge.source]
                 const target = activeNodeMap[edge.target]
@@ -579,8 +640,8 @@ export function Graph() {
                 return (
                   <path
                     key={edge.id}
-                    className={`graph-edge ${edge.kind} ${isFocused ? 'focused' : ''} ${dimmed ? 'dimmed' : ''} ${matched ? 'matched' : ''}`}
-                    d={buildEdgePath(source, target, edge.kind)}
+                    className={`graph-edge ${edge.kind} ${layoutMode === 'lanes' ? 'lanes' : ''} ${isFocused ? 'focused' : ''} ${dimmed ? 'dimmed' : ''} ${matched ? 'matched' : ''}`}
+                    d={layoutMode === 'lanes' ? buildLaneEdgePath(source, target, edge.kind) : buildEdgePath(source, target, edge.kind)}
                     markerEnd={edge.kind === 'project-task' ? 'url(#graph-arrow-pt)' : 'url(#graph-arrow-tp)'}
                   />
                 )
@@ -593,13 +654,18 @@ export function Graph() {
                 const isDragging = draggingNodeId === node.id
                 const dimmed = Boolean(focusedNodeId && !isFocused && !isRelated)
                 const showLabel = showLabels || isFocused || isRelated || isMatched
+                const isLaneCanvas = layoutMode === 'lanes'
+                const cardWidth = LANE_NODE_WIDTH[node.kind]
+                const cardHalfWidth = cardWidth / 2
+                const cardHalfHeight = LANE_NODE_HEIGHT / 2
                 const projectHalf = node.size * 0.72
-                const truncatedLabel = node.label.length > 14 ? `${node.label.slice(0, 13)}…` : node.label
+                const truncatedLabel = truncateGraphText(node.label, isLaneCanvas ? (node.kind === 'task' ? 24 : 18) : 14)
+                const truncatedSubtitle = truncateGraphText(node.subtitle, node.kind === 'task' ? 30 : 24)
 
                 return (
                   <g
                     key={node.id}
-                    className={`graph-node-group ${node.kind} ${isFocused ? 'focused' : ''} ${isRelated ? 'related' : ''} ${isMatched ? 'matched' : ''} ${isDragging ? 'dragging' : ''} ${dimmed ? 'dimmed' : ''}`}
+                    className={`graph-node-group ${node.kind} ${isLaneCanvas ? 'card-node' : ''} ${isFocused ? 'focused' : ''} ${isRelated ? 'related' : ''} ${isMatched ? 'matched' : ''} ${isDragging ? 'dragging' : ''} ${dimmed ? 'dimmed' : ''}`}
                     data-urgency={node.urgency}
                     transform={`translate(${node.x} ${node.y})`}
                     onMouseDown={handleNodeMouseDown(node.id)}
@@ -607,6 +673,69 @@ export function Graph() {
                     onMouseLeave={() => setHoveredNodeId((current) => (current === node.id ? null : current))}
                     onClick={(event) => { event.stopPropagation(); focusNode(node.id, { center: false }) }}
                   >
+                    {isLaneCanvas ? (
+                      <>
+                        {(isFocused || isRelated) ? (
+                          <rect
+                            className={`graph-focus-ring ${isFocused ? 'selected' : 'related'}`}
+                            x={-cardHalfWidth - 5}
+                            y={-cardHalfHeight - 5}
+                            width={cardWidth + 10}
+                            height={LANE_NODE_HEIGHT + 10}
+                            rx={13}
+                          />
+                        ) : null}
+                        <rect
+                          className="graph-node-card-bg"
+                          x={-cardHalfWidth}
+                          y={-cardHalfHeight}
+                          width={cardWidth}
+                          height={LANE_NODE_HEIGHT}
+                          rx={10}
+                        />
+                        <rect
+                          className="graph-node-card-accent"
+                          x={-cardHalfWidth}
+                          y={-cardHalfHeight + 8}
+                          width={3}
+                          height={LANE_NODE_HEIGHT - 16}
+                          rx={2}
+                        />
+                        <g transform={`translate(${-cardHalfWidth + 24} 0)`}>
+                          {node.kind === 'project' ? (
+                            <rect
+                              className="graph-node-core"
+                              x={-8}
+                              y={-8}
+                              width={16}
+                              height={16}
+                              rx={2.2}
+                              transform="rotate(45)"
+                            />
+                          ) : null}
+                          {node.kind === 'task' ? (
+                            <circle className="graph-node-core" r={9} />
+                          ) : null}
+                          {node.kind === 'person' ? (
+                            <polygon className="graph-node-core" points={buildHexagonPoints(9)} />
+                          ) : null}
+                        </g>
+                        <text className="graph-node-card-title" x={-cardHalfWidth + 46} y={-8}>{truncatedLabel}</text>
+                        {showLabel ? (
+                          <text className="graph-node-card-meta" x={-cardHalfWidth + 46} y={16}>{truncatedSubtitle}</text>
+                        ) : null}
+                        {node.urgency ? (
+                          <circle
+                            className="graph-node-urgency-dot"
+                            data-urgency={node.urgency}
+                            cx={cardHalfWidth - 15}
+                            cy={-cardHalfHeight + 14}
+                            r={4}
+                          />
+                        ) : null}
+                      </>
+                    ) : (
+                      <>
                     {/* 焦点光环（在节点形状之下渲染） */}
                     {(isFocused || isRelated) ? (
                       <circle
@@ -655,6 +784,8 @@ export function Graph() {
                     {showLabel ? (
                       <text className="graph-node-label" x={node.size + 7} y={4}>{truncatedLabel}</text>
                     ) : null}
+                      </>
+                    )}
                   </g>
                 )
               })}

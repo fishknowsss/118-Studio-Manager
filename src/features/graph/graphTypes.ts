@@ -12,6 +12,9 @@ export type GraphNode = {
   subtitle: string
   size: number
   urgency: string
+  sortValue: number
+  rankIndex: number
+  rankCount: number
 }
 
 export type SimNode = GraphNode & {

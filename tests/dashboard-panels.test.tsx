@@ -589,6 +589,7 @@ describe('dashboard panels', () => {
     const styleSource = readFileSync(join(process.cwd(), 'css/style.css'), 'utf8')
     const componentSource = readFileSync(join(process.cwd(), 'src/features/dashboard/TaskPoolPanel.tsx'), 'utf8')
     const cardRule = styleSource.match(/\.task-detail-card\s*\{[\s\S]*?\n\}/)?.[0] ?? ''
+    const darkLayerRule = styleSource.match(/\[data-theme='dark'\]\s+\.task-detail-float-layer\s*\{[\s\S]*?\n\}/)?.[0] ?? ''
     const growKeyframes = styleSource.match(/@keyframes task-detail-card-grow\s*\{[\s\S]*?\n\}/)?.[0] ?? ''
 
     expect(cardRule).toContain('border:')
@@ -599,5 +600,7 @@ describe('dashboard panels', () => {
     expect(growKeyframes).not.toContain('scale(.96)')
     expect(componentSource).toContain('rowCenterX - width / 2')
     expect(componentSource).toContain('rowCenterY - estimatedHeight / 2')
+    expect(darkLayerRule).toContain('rgba(2, 6, 23')
+    expect(darkLayerRule).not.toContain('248, 250, 255')
   })
 })
