@@ -489,4 +489,115 @@ describe('dashboard panels', () => {
 
     view.cleanup()
   })
+
+  it('opens an exclusive task detail card from the clicked row center and closes outside', () => {
+    const people: LegacyPerson[] = [
+      { id: 'person-1', name: '王浩然', gender: 'male', status: 'active', skills: ['Cinema 4D'] },
+    ]
+    const project: LegacyProject = { id: 'project-1', name: '品牌宣传片第三季' }
+    const tasks: Array<LegacyTask & { people?: LegacyPerson[]; project?: LegacyProject | null }> = [
+      {
+        id: 'task-1',
+        title: '客户修改版渲染输出',
+        status: 'in-progress',
+        priority: 'urgent',
+        startDate: '2026-04-12',
+        endDate: '2026-04-14',
+        estimatedHours: 4,
+        description: '确认客户反馈后输出最终渲染文件。',
+        people,
+        project,
+      },
+      {
+        id: 'task-2',
+        title: '片头动画调整',
+        status: 'todo',
+        priority: 'high',
+        description: '调整前 3 秒入场节奏。',
+        people: [],
+        project,
+      },
+    ]
+
+    const view = renderNode(
+      <ToastProvider>
+        <TaskPoolPanel
+          dragOverTaskId={null}
+          draggingPersonId={null}
+          onDragLeaveTask={() => {}}
+          onDragOverTask={() => {}}
+          onDropToTask={() => {}}
+          onExpand={() => {}}
+          onTaskDragEnd={() => {}}
+          onTaskDragStart={() => {}}
+          tasks={tasks}
+        />
+      </ToastProvider>,
+    )
+
+    expect(view.container.querySelector('.task-detail-float-layer')).toBeNull()
+
+    act(() => {
+      view.container.querySelector('.task-row')?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+    })
+
+    const layer = view.container.querySelector('.task-detail-float-layer') as HTMLElement | null
+    const card = view.container.querySelector('.task-detail-card') as HTMLElement | null
+
+    expect(view.container.querySelector('.task-row--active')).not.toBeNull()
+    expect(layer).not.toBeNull()
+    expect(card).not.toBeNull()
+    expect(card?.className).toContain('priority-urgent')
+    expect(card?.style.transformOrigin).toBe('0px 0px')
+    expect(card?.textContent).toContain('确认客户反馈后输出最终渲染文件。')
+    expect(card?.querySelector('.task-detail-card-close')).toBeNull()
+    expect(card?.querySelector('.task-detail-card-action[aria-label="编辑任务"]')).not.toBeNull()
+    expect(card?.querySelector('.task-detail-card-action[aria-label="删除任务"]')).not.toBeNull()
+    expect(card?.querySelector('.task-detail-card-action')?.textContent?.trim()).toBe('')
+    expect(view.container.textContent).toContain('进行中')
+    expect(view.container.textContent).toContain('紧急')
+    expect(view.container.textContent).toContain('王浩然')
+    expect(view.container.textContent).toContain('品牌宣传片第三季')
+    expect(view.container.textContent).toContain('4 小时')
+    expect(view.container.textContent).toContain('4/14')
+    expect(card?.textContent).not.toContain('开始')
+    expect(card?.textContent).not.toContain('项目品牌宣传片第三季')
+
+    act(() => {
+      card?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+    })
+
+    expect(view.container.querySelector('.task-detail-float-layer')).toBeNull()
+
+    act(() => {
+      view.container.querySelector('.task-row')?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+    })
+
+    const editButton = view.container.querySelector('.task-detail-card-action[aria-label="编辑任务"]') as HTMLElement | null
+
+    act(() => {
+      editButton?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+    })
+
+    expect(view.container.querySelector('.task-detail-float-layer')).toBeNull()
+    expect(document.body.querySelector('.task-dialog-from-detail')).not.toBeNull()
+
+    view.cleanup()
+  })
+
+  it('keeps task detail card color on the border and uses centered non-bouncy growth', () => {
+    const styleSource = readFileSync(join(process.cwd(), 'css/style.css'), 'utf8')
+    const componentSource = readFileSync(join(process.cwd(), 'src/features/dashboard/TaskPoolPanel.tsx'), 'utf8')
+    const cardRule = styleSource.match(/\.task-detail-card\s*\{[\s\S]*?\n\}/)?.[0] ?? ''
+    const growKeyframes = styleSource.match(/@keyframes task-detail-card-grow\s*\{[\s\S]*?\n\}/)?.[0] ?? ''
+
+    expect(cardRule).toContain('border:')
+    expect(cardRule).not.toContain('inset')
+    expect(growKeyframes).toContain('scale(.92)')
+    expect(growKeyframes).not.toContain('1.018')
+    expect(growKeyframes).not.toContain('65%')
+    expect(growKeyframes).not.toContain('scale(.96)')
+    expect(componentSource).toContain('rowCenterX - width / 2')
+    expect(componentSource).toContain('rowCenterY - estimatedHeight / 2')
+  })
 })

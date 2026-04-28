@@ -24,12 +24,14 @@ function getAssigneeColumns(width: number) {
 }
 
 export function TaskDialog({
+  className,
   initialProjectId,
   onClose,
   people,
   projects,
   task,
 }: {
+  className?: string
   initialProjectId?: string | null
   onClose: () => void
   people: LegacyPerson[]
@@ -127,7 +129,7 @@ export function TaskDialog({
       title={isNew ? '新建任务' : '编辑任务'}
       onClose={onClose}
       backdropScrollable={false}
-      className="task-dialog"
+      className={`task-dialog ${className || ''}`.trim()}
       footer={(
         <>
           <button className="btn btn-secondary" type="button" onClick={onClose}>取消</button>

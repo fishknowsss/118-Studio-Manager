@@ -1433,6 +1433,153 @@ html[data-easter-mode='konami'] .assignee-chip.selected:has(.assignee-chip-avata
 .task-row.priority-high:hover   { background: color-mix(in srgb, var(--c-today)   8%, var(--c-surface)); border-left-color: var(--c-today);   border-right-color: var(--c-today); }
 .task-row.priority-medium:hover { background: color-mix(in srgb, var(--c-near)    8%, var(--c-surface)); border-left-color: var(--c-near);    border-right-color: var(--c-near); }
 .task-row[draggable="true"] { cursor: grab; }
+.task-row--active {
+  background: color-mix(in srgb, var(--c-primary) 8%, var(--c-surface));
+  border-color: var(--c-primary);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--c-primary) 14%, transparent), var(--shadow-md);
+}
+.task-detail-float-layer {
+  position: fixed;
+  inset: 0;
+  z-index: 90;
+  background: rgba(248, 250, 255, 0.34);
+  backdrop-filter: blur(1px);
+  cursor: default;
+  animation: task-detail-layer-in .16s ease-out both;
+}
+.task-detail-card {
+  --task-detail-accent: var(--c-primary);
+  position: fixed;
+  max-height: calc(100vh - 112px);
+  overflow: auto;
+  padding: 20px 22px 22px;
+  border-radius: 14px;
+  border: 1.5px solid color-mix(in srgb, var(--task-detail-accent) 72%, var(--c-border));
+  background: var(--c-surface);
+  box-shadow:
+    0 22px 60px rgba(18, 34, 66, 0.18),
+    0 3px 14px rgba(18, 34, 66, 0.08);
+  pointer-events: auto;
+  cursor: pointer;
+  animation: task-detail-card-grow .2s cubic-bezier(.2, .8, .2, 1) both;
+}
+.task-detail-card.priority-urgent { --task-detail-accent: var(--c-overdue); }
+.task-detail-card.priority-high { --task-detail-accent: var(--c-today); }
+.task-detail-card.priority-medium { --task-detail-accent: var(--c-near); }
+.task-detail-card.priority-low { --task-detail-accent: var(--c-text-3); }
+.task-detail-card-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 14px;
+  margin-bottom: 15px;
+}
+.task-detail-card-title {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+.task-detail-card-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+.task-detail-card-action {
+  width: 30px;
+  height: 30px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--c-border);
+  border-radius: var(--r-sm);
+  background: var(--c-bg);
+  color: var(--c-text-3);
+  cursor: pointer;
+  transition: background .15s, border-color .15s, color .15s, transform .15s;
+}
+.task-detail-card-action:hover {
+  background: var(--c-surface);
+  border-color: var(--c-primary);
+  color: var(--c-primary);
+  transform: translateY(-1px);
+}
+.task-detail-card-action.is-danger:hover {
+  border-color: var(--c-overdue);
+  color: var(--c-overdue);
+}
+.task-detail-card-action svg {
+  width: 15px;
+  height: 15px;
+}
+.task-detail-card-name {
+  font-size: 23px;
+  font-weight: 700;
+  color: var(--c-text-1);
+  line-height: 1.25;
+}
+.task-detail-card-project {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--c-text-3);
+}
+.task-detail-card-status {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 9px;
+  margin-bottom: 17px;
+}
+.task-detail-card-status span {
+  display: inline-flex;
+  align-items: center;
+  height: 30px;
+  padding: 0 12px;
+  border-radius: 999px;
+  border: 1px solid var(--c-border);
+  background: var(--c-bg);
+  color: var(--c-text-2);
+  font-size: 13px;
+  font-weight: 700;
+}
+.task-detail-card-meta {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px 18px;
+  margin-bottom: 17px;
+}
+.task-detail-card-meta span {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--c-text-2);
+}
+.task-detail-card-meta b {
+  font-size: 12px;
+  color: var(--c-text-3);
+}
+.task-detail-card-description {
+  min-height: 68px;
+  padding-top: 15px;
+  border-top: 1px solid var(--c-border);
+  color: var(--c-text-2);
+  font-size: 15px;
+  line-height: 1.7;
+  white-space: pre-wrap;
+}
+
+@keyframes task-detail-layer-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes task-detail-card-grow {
+  from { opacity: 0; transform: scale(.92); }
+  to { opacity: 1; transform: scale(1); }
+}
 
 .task-check {
   width: 14px; height: 14px;
@@ -5684,6 +5831,9 @@ html[data-easter-mode='konami'] .assignee-chip.selected:has(.assignee-chip-avata
 .task-dialog .modal-footer {
   padding: 12px 22px 16px;
 }
+.task-dialog-from-detail {
+  animation: task-dialog-from-detail-in .18s cubic-bezier(.2, .8, .2, 1) both;
+}
 .task-dialog .form-grid {
   gap: 12px 14px;
 }
@@ -5691,6 +5841,12 @@ html[data-easter-mode='konami'] .assignee-chip.selected:has(.assignee-chip-avata
   min-height: 64px;
   resize: none;
 }
+
+@keyframes task-dialog-from-detail-in {
+  from { opacity: 0; transform: scale(.94); }
+  to { opacity: 1; transform: scale(1); }
+}
+
 .task-assignee-picker {
   display: grid;
   grid-template-columns: minmax(0, 1fr) 38px;
