@@ -283,7 +283,7 @@ export function Graph() {
         ? (scopedGraph.edges.length / scopedGraph.nodes.length).toFixed(1)
         : '0.0',
     }
-  }, [activeEdgeSet, scopedGraph.edges.length, scopedGraph.nodes])
+  }, [activeEdgeSet, scopedGraph.edges, scopedGraph.nodes])
 
   const laneSummaries = useMemo(() => {
     const summary = {
