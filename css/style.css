@@ -4326,7 +4326,7 @@ html[data-easter-mode='konami'] .squid-mark {
   transform: translateY(-1px);
 }
 .tool-card-title {
-  font-size: 13px;
+  font-size: 15px;
   font-weight: 700;
   color: var(--c-text);
   min-width: 0;
