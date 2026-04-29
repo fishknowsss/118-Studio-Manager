@@ -3777,11 +3777,11 @@ html[data-easter-mode='konami'] .assignee-chip.selected:has(.assignee-chip-avata
   cursor: pointer;
 }
 .graph-node-card-bg {
-  fill: rgba(255, 255, 255, .98);
-  stroke: rgba(148, 163, 184, .34);
+  fill: rgba(255, 255, 255, .88);
+  stroke: rgba(148, 163, 184, .38);
   stroke-width: 1.35;
   transition: stroke-width .14s, stroke .14s, fill .14s, filter .14s;
-  filter: drop-shadow(0 8px 16px rgba(15, 23, 42, .12));
+  filter: drop-shadow(0 8px 16px rgba(15, 23, 42, .10));
 }
 .graph-node-card-accent {
   fill: var(--c-border);
@@ -3823,6 +3823,38 @@ html[data-easter-mode='konami'] .assignee-chip.selected:has(.assignee-chip-avata
   font-weight: 620;
   fill: var(--c-text-2);
   pointer-events: none;
+}
+[data-theme='dark'] .graph-stage {
+  background:
+    linear-gradient(90deg, rgba(65, 102, 245, .10), transparent 24%, transparent 74%, rgba(57, 197, 187, .10)),
+    var(--c-bg);
+}
+[data-theme='dark'] .graph-node-label {
+  stroke: rgba(15, 23, 42, .88);
+}
+[data-theme='dark'] .graph-node-card-bg {
+  fill: rgba(15, 23, 42, .72);
+  stroke: rgba(148, 163, 184, .36);
+  filter: drop-shadow(0 10px 18px rgba(0, 0, 0, .22));
+}
+[data-theme='dark'] .graph-node-group.project .graph-node-card-bg {
+  stroke: rgba(96, 126, 255, .62);
+}
+[data-theme='dark'] .graph-node-group.task .graph-node-card-bg {
+  stroke: rgba(245, 158, 11, .62);
+}
+[data-theme='dark'] .graph-node-group.person .graph-node-card-bg {
+  stroke: rgba(57, 197, 187, .64);
+}
+[data-theme='dark'] .graph-node-card-title {
+  fill: rgba(248, 250, 252, .96);
+}
+[data-theme='dark'] .graph-node-card-meta {
+  fill: rgba(203, 213, 225, .82);
+}
+[data-theme='dark'] .graph-node-group.card-node.focused .graph-node-card-bg {
+  stroke: rgba(129, 150, 255, .92);
+  filter: drop-shadow(0 12px 22px rgba(65, 102, 245, .28));
 }
 .graph-node-pin {
   fill: var(--c-overdue);

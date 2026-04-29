@@ -2,7 +2,7 @@ import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
 import { buildGraphData } from '../src/features/graph/graphData'
-import { buildLaneLayout, buildRadialLayout, ensureSimulationNodes } from '../src/features/graph/graphUtils'
+import { buildLaneLayout, buildRadialLayout, ensureSimulationNodes, truncateGraphTextByWidth } from '../src/features/graph/graphUtils'
 
 describe('graph canvas layout', () => {
   it('keeps the riskiest project-task-person chain near the top of the lane canvas', () => {
@@ -143,5 +143,23 @@ describe('graph canvas layout', () => {
     expect(styleSource).toMatch(/\.graph-edge\.lanes\s*\{[\s\S]*stroke-width:\s*1\.8;/)
     expect(styleSource).toMatch(/\.graph-node-card-title\s*\{[\s\S]*font-size:\s*17px;/)
     expect(styleSource).toMatch(/\.graph-node-label\s*\{[\s\S]*font-size:\s*13px;[\s\S]*paint-order:\s*stroke;/)
+  })
+
+  it('keeps lane card surfaces readable in light and dark themes', () => {
+    const styleSource = readFileSync(join(process.cwd(), 'css/style.css'), 'utf8')
+
+    expect(styleSource).toMatch(/\.graph-node-card-bg\s*\{[\s\S]*fill:\s*rgba\(255,\s*255,\s*255,\s*\.88\);/)
+    expect(styleSource).toMatch(/\[data-theme='dark'\]\s+\.graph-node-card-bg\s*\{[\s\S]*fill:\s*rgba\(15,\s*23,\s*42,\s*\.72\);/)
+    expect(styleSource).toMatch(/\[data-theme='dark'\]\s+\.graph-node-card-title\s*\{[\s\S]*fill:\s*rgba\(248,\s*250,\s*252,\s*\.96\);/)
+    expect(styleSource).toMatch(/\[data-theme='dark'\]\s+\.graph-node-card-meta\s*\{[\s\S]*fill:\s*rgba\(203,\s*213,\s*225,\s*\.82\);/)
+  })
+
+  it('truncates long lane task titles by visual width before they reach the card edge', () => {
+    const title = '极乐故乡游 项目介绍 场景参考（等场景三视图）'
+    const truncated = truncateGraphTextByWidth(title, 204)
+
+    expect(truncated).toMatch(/…$/)
+    expect(truncated.length).toBeLessThan(20)
+    expect(truncated).toBe('极乐故乡游 项目介绍…')
   })
 })

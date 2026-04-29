@@ -27,6 +27,41 @@ export function getKindShortLabel(kind: NodeKind) {
   return '人'
 }
 
+function estimateGraphTextWidth(text: string) {
+  return Array.from(text).reduce((width, char) => {
+    if (/[\u4e00-\u9fff\u3000-\u303f\uff00-\uffef]/.test(char)) return width + 18.5
+    if (/[A-Z0-9]/.test(char)) return width + 9.2
+    if (/[a-z]/.test(char)) return width + 7.5
+    if (/\s/.test(char)) return width + 4.8
+    return width + 8.5
+  }, 0)
+}
+
+export function truncateGraphTextByWidth(text: string, maxWidth: number) {
+  if (estimateGraphTextWidth(text) <= maxWidth) return text
+
+  const ellipsis = '…'
+  const ellipsisWidth = estimateGraphTextWidth(ellipsis)
+  let width = 0
+  let result = ''
+
+  for (const char of Array.from(text)) {
+    const charWidth = estimateGraphTextWidth(char)
+    if (width + charWidth + ellipsisWidth > maxWidth) break
+    result += char
+    width += charWidth
+  }
+
+  const trimmed = result.trimEnd()
+  const lastSpaceIndex = trimmed.lastIndexOf(' ')
+  const tail = lastSpaceIndex >= 0 ? trimmed.slice(lastSpaceIndex + 1) : trimmed
+  const readableHead = lastSpaceIndex >= 0 && tail.length <= 1
+    ? trimmed.slice(0, lastSpaceIndex)
+    : trimmed
+
+  return `${readableHead}${ellipsis}`
+}
+
 export function buildHexagonPoints(radius: number) {
   return Array.from({ length: 6 }, (_, index) => {
     const angle = ((Math.PI * 2) / 6) * index - Math.PI / 2

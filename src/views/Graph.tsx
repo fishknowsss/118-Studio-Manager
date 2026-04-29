@@ -27,6 +27,7 @@ import {
   getKindLabel,
   runForceSimulation,
   toScenePoint,
+  truncateGraphTextByWidth,
 } from '../features/graph/graphUtils'
 
 const LANE_NODE_WIDTH = {
@@ -45,10 +46,6 @@ const LANE_X = {
   project: 250,
   task: SCENE_WIDTH / 2,
   person: SCENE_WIDTH - 250,
-}
-
-function truncateGraphText(text: string, maxLength: number) {
-  return text.length > maxLength ? `${text.slice(0, maxLength - 1)}…` : text
 }
 
 export function Graph() {
@@ -659,8 +656,11 @@ export function Graph() {
                 const cardHalfWidth = cardWidth / 2
                 const cardHalfHeight = LANE_NODE_HEIGHT / 2
                 const projectHalf = node.size * 0.72
-                const truncatedLabel = truncateGraphText(node.label, isLaneCanvas ? (node.kind === 'task' ? 24 : 18) : 14)
-                const truncatedSubtitle = truncateGraphText(node.subtitle, node.kind === 'task' ? 30 : 24)
+                const cardTextWidth = cardWidth - (node.kind === 'task' ? 126 : 86)
+                const truncatedLabel = isLaneCanvas
+                  ? truncateGraphTextByWidth(node.label, cardTextWidth)
+                  : truncateGraphTextByWidth(node.label, 126)
+                const truncatedSubtitle = truncateGraphTextByWidth(node.subtitle, isLaneCanvas ? cardTextWidth : 180)
 
                 return (
                   <g

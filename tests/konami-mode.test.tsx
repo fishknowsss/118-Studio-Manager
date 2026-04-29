@@ -170,4 +170,29 @@ describe('konami anomaly mode', () => {
 
     view.cleanup()
   })
+
+  it('uses the light theme surface while anomaly mode is active from dark mode', async () => {
+    localStorage.setItem('theme', 'dark')
+    const view = await renderApp()
+
+    expect(document.documentElement.getAttribute('data-theme')).toBe('dark')
+
+    await dispatchKonami(window)
+
+    expect(document.documentElement.getAttribute('data-theme')).toBe('light')
+    expect(localStorage.getItem('theme')).toBe('dark')
+
+    const exitButton = Array.from(view.container.querySelectorAll('button')).find((button) =>
+      button.textContent?.includes('退出异象'),
+    )
+
+    await act(async () => {
+      exitButton?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+    })
+
+    expect(document.documentElement.getAttribute('data-theme')).toBe('dark')
+    expect(localStorage.getItem('theme')).toBe('dark')
+
+    view.cleanup()
+  })
 })

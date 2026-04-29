@@ -71,9 +71,12 @@ export default function App() {
   }, [])
 
   useEffect(() => {
-    document.documentElement.setAttribute('data-theme', theme)
     localStorage.setItem('theme', theme)
   }, [theme])
+
+  useEffect(() => {
+    document.documentElement.setAttribute('data-theme', easterMode ? 'light' : theme)
+  }, [easterMode, theme])
 
   useEffect(() => {
     const onHash = () => setView(getHashView())
