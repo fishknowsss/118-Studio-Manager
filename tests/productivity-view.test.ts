@@ -1,10 +1,37 @@
 import { describe, expect, it } from 'vitest'
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
+import * as pdfjsLib from 'pdfjs-dist/legacy/build/pdf.mjs'
 import { buildProductivityPersonModels, buildScheduleOwnerSummaries } from '../src/features/productivity/productivityModels'
 import { buildScheduleCourseLayouts } from '../src/features/productivity/scheduleModels'
-import { parseScheduleTextItems } from '../src/features/productivity/schedulePdfParser'
+import { parseScheduleTextItems, type ScheduleTextItem } from '../src/features/productivity/schedulePdfParser'
 import { BACKUP_COLLECTION_NAMES } from '../src/legacy/utils'
+
+async function parseScheduleFixture(fileName: string) {
+  const data = new Uint8Array(readFileSync(join(process.cwd(), 'tests/fixtures/schedules', fileName)))
+  const pdf = await pdfjsLib.getDocument({
+    data,
+    cMapUrl: join(process.cwd(), 'node_modules/pdfjs-dist/cmaps') + '/',
+    cMapPacked: true,
+  }).promise
+  const items: ScheduleTextItem[] = []
+
+  for (let pageIndex = 1; pageIndex <= pdf.numPages; pageIndex += 1) {
+    const page = await pdf.getPage(pageIndex)
+    const content = await page.getTextContent()
+    for (const item of content.items) {
+      if (!('str' in item) || !item.str.trim()) continue
+      items.push({
+        str: item.str,
+        x: item.transform[4],
+        y: item.transform[5],
+        pageIndex,
+      })
+    }
+  }
+
+  return parseScheduleTextItems(items)
+}
 
 describe('productivity view', () => {
   it('registers the productivity route and sidebar entry', () => {
@@ -101,6 +128,8 @@ describe('productivity view', () => {
     expect(source).toMatch(/getScheduleConflictDetail/)
     expect(source).toMatch(/fullCourseText/)
     expect(source).toMatch(/fullMemberText/)
+    expect(source).toMatch(/title: `\$\{memberNames\.length\} 人`/)
+    expect(source).not.toMatch(/title: `\$\{courseNames\.length\} 门课`/)
     expect(source).toMatch(/data-short-text=\{conflictSummary\.courseText\}/)
     expect(source).toMatch(/summary\.courseNames\.join\('、'\)/)
     expect(source).toMatch(/summary\.memberNames\.join\('、'\)/)
@@ -144,8 +173,17 @@ describe('productivity view', () => {
     expect(source).toMatch(/schedule-course-person/)
     expect(source).toMatch(/groupScheduleCourses/)
     expect(source).toMatch(/getScheduleLoadClass/)
-    expect(source).toMatch(/getScheduleOverlapClass/)
-    expect(source).toMatch(/overlapRanks/)
+    expect(source).toMatch(/getClusterPersonIds/)
+    expect(source).toMatch(/getSchedulePersonLoadClass/)
+    expect(source).toMatch(/SchedulePersonCountBadge/)
+    expect(source).toMatch(/personCount > 1/)
+    expect(source).toMatch(/<SchedulePersonCountBadge personCount=\{personCount\} \/>/)
+    expect(source).toMatch(/if \(personCount >= 7\) return 'schedule-load-tight'/)
+    expect(source).toMatch(/if \(personCount >= 5\) return 'schedule-load-busy'/)
+    expect(source).toMatch(/if \(personCount >= 3\) return 'schedule-load-steady'/)
+    expect(source).not.toMatch(/personLoadRanks/)
+    expect(source).toMatch(/personCount: Math\.max\(1, getClusterPersonIds\(cluster\)\.length\)/)
+    expect(source).not.toMatch(/overlapCount: Math\.max\(1, layoutCourses\.length\)/)
     expect(source).toMatch(/scheduleClusterItems/)
     expect(styleSource).toMatch(/--person-accent/)
     expect(styleSource).toMatch(/\.schedule-load-calm/)
@@ -168,6 +206,7 @@ describe('productivity view', () => {
     expect(styleSource).toMatch(/\.schedule-conflict-face/)
     expect(styleSource).toMatch(/\.schedule-conflict-face\s*\{[\s\S]*place-content:\s*center/)
     expect(styleSource).toMatch(/\.schedule-conflict-count\s*\{[\s\S]*position:\s*absolute/)
+    expect(styleSource).toMatch(/\.schedule-conflict-count\s*\{[^}]*font-size:\s*14px/)
     expect(styleSource).toMatch(/\.schedule-conflict-title\s*\{[\s\S]*text-align:\s*center/)
     expect(styleSource).toMatch(/\.schedule-conflict-title\s*\{[\s\S]*-webkit-line-clamp:\s*3/)
     expect(styleSource).toMatch(/\.schedule-conflict-members\s*\{[\s\S]*-webkit-line-clamp:\s*2/)
@@ -357,6 +396,9 @@ describe('productivity view', () => {
       { str: '美学导论—从科学走向', x: 143, y: 416 },
       { str: '艺术◆', x: 156, y: 416 },
       { str: '(6-8节)1-8周,10-12周(双)/校区:下沙/场地:D224/教师:竺乐庆/教学班:(2025-2026-2)-GENNET063-01', x: 168, y: 416 },
+      { str: '大脑的奥秘：神经科学', x: 143, y: 519 },
+      { str: '导论◆', x: 156, y: 519 },
+      { str: '(6-8节)1-16周/校区:下沙/场地:D225/教师:测试', x: 168, y: 519 },
     ])
 
     expect(parsed.entries).toEqual([
@@ -368,11 +410,18 @@ describe('productivity view', () => {
         weeksText: '1-8周',
       }),
       expect.objectContaining({
-        courseName: '美学导论',
+        courseName: '美学导论—从科学走向艺术',
         dayOfWeek: 4,
         startSection: 6,
         endSection: 8,
         weeksText: '1-8周,10-12周(双)',
+      }),
+      expect.objectContaining({
+        courseName: '大脑的奥秘：神经科学导论',
+        dayOfWeek: 5,
+        startSection: 6,
+        endSection: 8,
+        weeksText: '1-16周',
       }),
     ])
   })
@@ -469,5 +518,45 @@ describe('productivity view', () => {
       expect.objectContaining({ courseName: '世界遗产概论', dayOfWeek: 4, startSection: 10, endSection: 10 }),
       expect.objectContaining({ courseName: '世界遗产概论', dayOfWeek: 4, startSection: 10, endSection: 12 }),
     ])
+  })
+
+  it('parses the three real imported schedule PDFs without shortening course titles', async () => {
+    const [kong, chen, liu] = await Promise.all([
+      parseScheduleFixture('kong-yunli-2025-2026-2.pdf'),
+      parseScheduleFixture('chen-yiying-2025-2026-2.pdf'),
+      parseScheduleFixture('liu-yongyuan-2025-2026-2.pdf'),
+    ])
+
+    expect(kong).toMatchObject({
+      personName: '孔云丽',
+      studentNo: '2408160302',
+      className: '视传2402',
+    })
+    expect(kong.entries).toEqual(expect.arrayContaining([
+      expect.objectContaining({ courseName: '数字媒体技术Ⅱ', dayOfWeek: 4, startSection: 1, endSection: 5, weeksText: '9-12周' }),
+      expect.objectContaining({ courseName: '社会性别学', dayOfWeek: 4, startSection: 6, endSection: 8, weeksText: '1-10周' }),
+    ]))
+
+    expect(chen).toMatchObject({
+      personName: '陈怡盈',
+      studentNo: '2408240116',
+      className: '数媒2403',
+    })
+    expect(chen.entries).toEqual(expect.arrayContaining([
+      expect.objectContaining({ courseName: '原画创意', dayOfWeek: 4, startSection: 1, endSection: 4, weeksText: '9-12周' }),
+      expect.objectContaining({ courseName: '大学生音乐素质拓展', dayOfWeek: 4, startSection: 6, endSection: 8, weeksText: '1-10周' }),
+      expect.objectContaining({ courseName: '马克思主义基本原理', dayOfWeek: 5, startSection: 3, endSection: 5, weeksText: '1-16周' }),
+    ]))
+
+    expect(liu).toMatchObject({
+      personName: '刘永元',
+      studentNo: '2308240205',
+      className: '数媒2301',
+    })
+    expect(liu.entries).toEqual(expect.arrayContaining([
+      expect.objectContaining({ courseName: '智媒影像艺术模块(1)', dayOfWeek: 4, startSection: 3, endSection: 5, weeksText: '9-12周' }),
+      expect.objectContaining({ courseName: '美学导论—从科学走向艺术', dayOfWeek: 4, startSection: 6, endSection: 8, weeksText: '1-8周,10-12周(双)' }),
+      expect.objectContaining({ courseName: '美学导论—从科学走向艺术', dayOfWeek: 4, startSection: 6, endSection: 7, weeksText: '11周' }),
+    ]))
   })
 })

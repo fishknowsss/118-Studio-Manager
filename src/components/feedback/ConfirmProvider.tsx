@@ -1,6 +1,7 @@
 /* eslint-disable react-refresh/only-export-components */
 
 import { createContext, useContext, useMemo, useState, type ReactNode } from 'react'
+import { useBackdropDismiss } from '../ui/useBackdropDismiss'
 
 type ConfirmTone = 'danger' | 'primary'
 
@@ -41,13 +42,14 @@ export function ConfirmProvider({ children }: { children: ReactNode }) {
       return null
     })
   }
+  const backdropDismiss = useBackdropDismiss<HTMLDivElement>(() => close(false))
 
   return (
     <ConfirmContext.Provider value={value}>
       {children}
       {state ? (
-        <div className="dialog-backdrop" onClick={() => close(false)} role="presentation">
-          <div className="confirm-modal confirm-modal-react" onClick={(event) => event.stopPropagation()} role="alertdialog" aria-modal="true" aria-label={state.title}>
+        <div className="dialog-backdrop" role="presentation" {...backdropDismiss}>
+          <div className="confirm-modal confirm-modal-react" role="alertdialog" aria-modal="true" aria-label={state.title}>
             <div className="confirm-title">{state.title}</div>
             <div className="confirm-body">{state.body}</div>
             <div className="confirm-actions">

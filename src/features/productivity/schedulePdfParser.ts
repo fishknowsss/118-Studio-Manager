@@ -25,7 +25,7 @@ export type ParsedSchedulePdf = {
 const WEEKDAYS = ['星期一', '星期二', '星期三', '星期四', '星期五', '星期六', '星期日']
 const COURSE_MARK_RE = /◆/
 const COURSE_TITLE_FRAGMENT_MAX_GAP = 18
-const COURSE_METADATA_RE = /[:：/]|^\d+$|^(上午|下午|晚上|节次|时间段)$|校区|场地?|教师|教学班|教学班组成|考核|选课|备注|课程学时|周学时|总学时|学分|理论|实验|实习|劳动|未安排/
+const COURSE_METADATA_RE = /^\d+$|^(上午|下午|晚上|节次|时间段)$|^(校区|场\s*地|地|教师|教学班|学班|班|教学班组成|班组成|考核方式|核方式|选课备注|课备注|课程学时|课程学时组成|程学时组成|学时组成|周学时|总学时|学分)\s*[:：]|未安排/
 type DayAxis = 'x' | 'y'
 
 function normalizeText(value: string) {
@@ -44,14 +44,12 @@ function cleanCourseName(value: string) {
 }
 
 function getPrimaryCourseName(value: string) {
-  const courseName = cleanCourseName(value)
-  const mainTitle = courseName.split(/[—–]/)[0]?.trim()
-  return mainTitle && /[\u4e00-\u9fa5A-Za-z]/.test(mainTitle) ? mainTitle : courseName
+  return cleanCourseName(value)
 }
 
 function isCourseTitleFragment(value: string) {
   const text = cleanCourseName(value)
-  return Boolean(text && !WEEKDAYS.includes(text) && /[\u4e00-\u9fa5A-Za-z]/.test(text) && !COURSE_METADATA_RE.test(text))
+  return Boolean(text && !WEEKDAYS.includes(text) && /[\u4e00-\u9fa5A-Za-z]/.test(text) && !text.includes('/') && !COURSE_METADATA_RE.test(text))
 }
 
 function getDayHeaders(items: ScheduleTextItem[]) {

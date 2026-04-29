@@ -85,7 +85,7 @@ describe('current app regressions', () => {
     expect(csv).toContain('"张三, 李四"')
   })
 
-  it('closes the React dialog exactly once on backdrop click', () => {
+  it('closes the React dialog exactly once on direct backdrop click', () => {
     const onClose = vi.fn()
     const container = document.createElement('div')
     document.body.appendChild(container)
@@ -103,10 +103,43 @@ describe('current app regressions', () => {
     expect(backdrop).not.toBeNull()
 
     act(() => {
-      backdrop?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+      backdrop?.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, button: 0 }))
+      backdrop?.dispatchEvent(new MouseEvent('click', { bubbles: true, button: 0 }))
     })
 
     expect(onClose).toHaveBeenCalledTimes(1)
+
+    act(() => {
+      root.unmount()
+    })
+    container.remove()
+  })
+
+  it('keeps editable dialogs open when text selection drags outside the modal', () => {
+    const onClose = vi.fn()
+    const container = document.createElement('div')
+    document.body.appendChild(container)
+    const root = createRoot(container)
+
+    act(() => {
+      root.render(
+        <Dialog open title="测试弹窗" onClose={onClose}>
+          <input defaultValue="可编辑内容" />
+        </Dialog>,
+      )
+    })
+
+    const backdrop = document.body.querySelector('.dialog-backdrop')
+    const input = document.body.querySelector('input')
+    expect(backdrop).not.toBeNull()
+    expect(input).not.toBeNull()
+
+    act(() => {
+      input?.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, button: 0 }))
+      backdrop?.dispatchEvent(new MouseEvent('click', { bubbles: true, button: 0 }))
+    })
+
+    expect(onClose).not.toHaveBeenCalled()
 
     act(() => {
       root.unmount()

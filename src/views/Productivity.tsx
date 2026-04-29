@@ -13,6 +13,7 @@ import {
 import {
   buildScheduleClusters,
   buildScheduleCourseLayouts,
+  getClusterPersonIds,
   getWeekNumber,
   groupScheduleCourses,
   mergeScheduleEntries,
@@ -132,12 +133,10 @@ function getScheduleLoadClass(loadTone: ProductivityPersonModel['loadTone'] | un
   return `schedule-load-${loadTone || 'calm'}`
 }
 
-function getScheduleOverlapClass(overlapCount: number, overlapRanks: number[]) {
-  if (overlapCount <= 1) return 'schedule-load-calm'
-  const rank = overlapRanks.indexOf(overlapCount)
-  if (rank === 0) return 'schedule-load-tight'
-  if (rank === 1) return 'schedule-load-busy'
-  if (rank === 2) return 'schedule-load-steady'
+function getSchedulePersonLoadClass(personCount: number) {
+  if (personCount >= 7) return 'schedule-load-tight'
+  if (personCount >= 5) return 'schedule-load-busy'
+  if (personCount >= 3) return 'schedule-load-steady'
   return 'schedule-load-calm'
 }
 
@@ -828,6 +827,11 @@ function ScheduleCourseContent({
   )
 }
 
+function SchedulePersonCountBadge({ personCount }: { personCount: number }) {
+  if (personCount > 1) return <span className="schedule-conflict-count">{personCount} 人</span>
+  return null
+}
+
 function getScheduleConflictSummary(courses: ScheduleVisualCourse[]) {
   const courseNames = Array.from(new Set(courses.map((course) => course.courseGroup.courseName).filter(Boolean)))
   const memberNames = Array.from(new Set(
@@ -841,7 +845,7 @@ function getScheduleConflictSummary(courses: ScheduleVisualCourse[]) {
   return {
     courseNames,
     memberNames,
-    title: `${courseNames.length} 门课`,
+    title: `${memberNames.length} 人`,
     fullCourseText,
     fullMemberText,
     courseText: courseNames.slice(0, 3).join('、') + (courseNames.length > 3 ? ` +${courseNames.length - 3}` : ''),
@@ -942,15 +946,12 @@ function ProductivityScheduleView({
         visualCourses,
         layoutCourses,
         conflictSummary: shouldGroupConflict ? getScheduleConflictSummary(visualCourses) : null,
-        overlapCount: Math.max(1, layoutCourses.length),
+        personCount: Math.max(1, getClusterPersonIds(cluster).length),
       }
     })
-    const overlapRanks = Array.from(new Set(items.map((item) => item.overlapCount).filter((count) => count > 1)))
-      .sort((left, right) => right - left)
-
     return items.map((item) => ({
       ...item,
-      overlapClass: getScheduleOverlapClass(item.overlapCount, overlapRanks),
+      loadClass: getSchedulePersonLoadClass(item.personCount),
     }))
   }, [scheduleClusters])
   const buildDetailAnchor = (target: HTMLElement): ScheduleDetailAnchor => {
@@ -994,7 +995,7 @@ function ProductivityScheduleView({
             })}
           </Fragment>
         ))}
-        {scheduleClusterItems.map(({ cluster, visualCourses, layoutCourses, conflictSummary, overlapClass }) => {
+        {scheduleClusterItems.map(({ cluster, visualCourses, layoutCourses, conflictSummary, personCount, loadClass }) => {
           const span = Math.max(1, cluster.endSection - cluster.startSection + 1)
           const dayIndex = visibleWeekdayIndexByDay.get(cluster.dayOfWeek) ?? 0
 
@@ -1010,7 +1011,7 @@ function ProductivityScheduleView({
             >
               {conflictSummary ? (
                 <div
-                  className={`schedule-stack-card schedule-conflict-card ${overlapClass}`}
+                  className={`schedule-stack-card schedule-conflict-card ${loadClass}`}
                   role="button"
                   tabIndex={0}
                   aria-label={`${conflictSummary.memberText}，${conflictSummary.title}，${cluster.startSection} 至 ${cluster.endSection} 节`}
@@ -1037,7 +1038,7 @@ function ProductivityScheduleView({
                   }}
                 >
                   <span className="schedule-stack-face schedule-conflict-face">
-                    <span className="schedule-conflict-count">{conflictSummary.title}</span>
+                    <SchedulePersonCountBadge personCount={personCount} />
                     <strong className="schedule-conflict-title" data-short-text={conflictSummary.courseText}>{conflictSummary.fullCourseText}</strong>
                     <span className="schedule-conflict-members" data-short-text={conflictSummary.memberText}>{conflictSummary.fullMemberText}</span>
                   </span>
@@ -1048,7 +1049,7 @@ function ProductivityScheduleView({
                 return (
                   <div
                     key={course.id}
-                    className={`schedule-stack-card ${overlapClass}`}
+                    className={`schedule-stack-card ${loadClass}`}
                     role="button"
                     tabIndex={0}
                     aria-label={`${memberText}，${course.courseGroup.courseName}，${course.startSection} 至 ${course.endSection} 节`}
@@ -1070,6 +1071,7 @@ function ProductivityScheduleView({
                     }}
                   >
                     <span className="schedule-stack-face">
+                      <SchedulePersonCountBadge personCount={personCount} />
                       <ScheduleCourseContent courseGroup={course.courseGroup} isCompact={span <= 2 || course.stackCount >= 3} />
                     </span>
                   </div>

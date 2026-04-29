@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react'
+import { useBackdropDismiss } from './useBackdropDismiss'
 
 const CLOSE_FALLBACK_MS = 260
 
@@ -63,6 +64,7 @@ export function ExpandPanel({
     setClosing(true)
     closeTimerRef.current = window.setTimeout(finishClose, CLOSE_FALLBACK_MS)
   }, [closing, finishClose])
+  const backdropDismiss = useBackdropDismiss<HTMLDivElement>(triggerClose)
 
   const handleAnimationEnd = (event: React.AnimationEvent<HTMLDivElement>) => {
     if (closing && event.target === overlayRef.current) {
@@ -91,9 +93,9 @@ export function ExpandPanel({
     <div
       ref={overlayRef}
       className={`expand-panel-overlay${overlayClassName ? ` ${overlayClassName}` : ''}${closing ? ' is-closing' : ''}`}
-      onClick={triggerClose}
       onAnimationEnd={handleAnimationEnd}
       role="presentation"
+      {...backdropDismiss}
     >
       <div
         className={`expand-panel-box${variant === 'slim' ? ' slim' : variant === 'wide' ? ' wide' : ''}${boxClassName ? ` ${boxClassName}` : ''}`}
@@ -101,7 +103,6 @@ export function ExpandPanel({
         role="dialog"
         aria-modal="true"
         aria-label={title}
-        onClick={(event) => event.stopPropagation()}
       >
         <div className="expand-panel-header">
           <span className="expand-panel-title">{title}</span>

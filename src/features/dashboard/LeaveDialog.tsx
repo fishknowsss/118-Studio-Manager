@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import type { LeaveRecord } from '../../legacy/store'
+import { useBackdropDismiss } from '../../components/ui/useBackdropDismiss'
 
 export function LeaveDialog({
   date,
@@ -42,6 +43,7 @@ export function LeaveDialog({
     if (closing) return
     setClosing(true)
   }, [closing])
+  const backdropDismiss = useBackdropDismiss<HTMLDivElement>(triggerClose)
 
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
@@ -65,8 +67,8 @@ export function LeaveDialog({
     <div
       ref={overlayRef}
       className={`leave-dialog-overlay${closing ? ' is-closing' : ''}`}
-      onClick={(e) => { if (e.target === e.currentTarget) triggerClose() }}
       onAnimationEnd={handleAnimationEnd}
+      {...backdropDismiss}
     >
       <div className="leave-dialog">
         <div className="leave-dialog-header">

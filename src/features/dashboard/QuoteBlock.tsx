@@ -1,4 +1,5 @@
 import { useRef, useState } from 'react'
+import { useBackdropDismiss } from '../../components/ui/useBackdropDismiss'
 import { PHILOSOPHY_QUOTES, MOTIVATIONS } from '../../content/quotes'
 
 const LS_CUSTOM_QUOTES = '118studio:custom-quotes'
@@ -87,6 +88,7 @@ export function QuoteBlock() {
   }
 
   const closeManager = () => setShowManager(false)
+  const backdropDismiss = useBackdropDismiss<HTMLDivElement>(closeManager)
 
   return (
     <>
@@ -130,10 +132,9 @@ export function QuoteBlock() {
       </div>
 
       {showManager ? (
-        <div className="qm-overlay" onClick={closeManager} role="presentation">
+        <div className="qm-overlay" role="presentation" {...backdropDismiss}>
           <div
             className="qm-box"
-            onClick={(e) => e.stopPropagation()}
             role="dialog"
             aria-modal="true"
             aria-label="语句管理"

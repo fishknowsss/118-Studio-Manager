@@ -1,5 +1,6 @@
 import { useEffect, type ReactNode } from 'react'
 import { createPortal } from 'react-dom'
+import { useBackdropDismiss } from './useBackdropDismiss'
 
 type DialogProps = {
   open: boolean
@@ -24,6 +25,8 @@ export function Dialog({
   backdropScrollable = true,
   bodyScrollable = true,
 }: DialogProps) {
+  const backdropDismiss = useBackdropDismiss<HTMLDivElement>(onClose)
+
   useEffect(() => {
     if (!open) return undefined
 
@@ -43,13 +46,16 @@ export function Dialog({
   if (!open) return null
 
   return createPortal(
-    <div className={`dialog-backdrop ${backdropScrollable ? '' : 'no-scroll'}`.trim()} onClick={onClose} role="presentation">
+    <div
+      className={`dialog-backdrop ${backdropScrollable ? '' : 'no-scroll'}`.trim()}
+      role="presentation"
+      {...backdropDismiss}
+    >
       <div
         className={`app-modal app-modal-react ${width === 'wide' ? 'wide' : ''} ${className || ''}`.trim()}
         role="dialog"
         aria-modal="true"
         aria-label={title}
-        onClick={(event) => event.stopPropagation()}
       >
         <div className="modal-inner">
           <div className="modal-header">
