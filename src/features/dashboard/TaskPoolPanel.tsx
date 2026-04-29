@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import type { DragEvent, MouseEvent } from 'react'
 import type { LegacyPerson, LegacyProject, LegacyTask } from '../../legacy/store'
 import { TASK_STATUSES } from '../../legacy/store'
+import { getSquidVariant, hasSquidAssignee, SquidMark } from '../../components/easter/SquidMark'
 import { ContextMenu, type ContextMenuItem } from '../../components/ui/ContextMenu'
 import { TaskDialog } from '../tasks/TaskDialog'
 import { deleteTaskWithLog, updateTaskQuickField } from '../../legacy/actions'
@@ -210,6 +211,7 @@ export function TaskPoolPanel({
             const isDropTarget = Boolean(draggingPersonId) && dragOverTaskId === task.id
             const assignees = task.people ?? []
             const isActive = detailState?.task.id === task.id
+            const showSquidMark = hasSquidAssignee(assignees.map((person) => person.name))
             return (
               <div
                 key={task.id}
@@ -224,6 +226,7 @@ export function TaskPoolPanel({
                 onDragStart={(event) => handleTaskDragStart(event, task.id)}
                 onDrop={(event) => onDropToTask(event, task.id)}
               >
+                {showSquidMark ? <SquidMark className="squid-mark--task-row" variant={getSquidVariant(task.id)} /> : null}
                 <StatusIcon status={task.status} />
                 <div className="task-row-body">
                   <div className="task-row-main">

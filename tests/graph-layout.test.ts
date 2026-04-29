@@ -1,4 +1,4 @@
-import { readFileSync } from 'node:fs'
+import { existsSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
 import { buildGraphData } from '../src/features/graph/graphData'
@@ -152,6 +152,49 @@ describe('graph canvas layout', () => {
     expect(styleSource).toMatch(/\[data-theme='dark'\]\s+\.graph-node-card-bg\s*\{[\s\S]*fill:\s*rgba\(15,\s*23,\s*42,\s*\.72\);/)
     expect(styleSource).toMatch(/\[data-theme='dark'\]\s+\.graph-node-card-title\s*\{[\s\S]*fill:\s*rgba\(248,\s*250,\s*252,\s*\.96\);/)
     expect(styleSource).toMatch(/\[data-theme='dark'\]\s+\.graph-node-card-meta\s*\{[\s\S]*fill:\s*rgba\(203,\s*213,\s*225,\s*\.82\);/)
+  })
+
+  it('keeps lane cards aligned with the anomaly palette', () => {
+    const styleSource = readFileSync(join(process.cwd(), 'css/style.css'), 'utf8')
+
+    expect(styleSource).toMatch(/html\[data-easter-mode='konami'\]\s+\.graph-node-card-bg\s*\{[\s\S]*fill:\s*rgba\(250,\s*245,\s*220,\s*\.66\);/)
+    expect(styleSource).toMatch(/html\[data-easter-mode='konami'\]\s+\.graph-node-card-title\s*\{[\s\S]*fill:\s*#4f421a;/)
+    expect(styleSource).toMatch(/html\[data-easter-mode='konami'\]\s+\.graph-node-card-meta\s*\{[\s\S]*fill:\s*#695729;/)
+  })
+
+  it('adds anomaly-only squid marks to task and person cards for Quan Shuyi', () => {
+    const graphSource = readFileSync(join(process.cwd(), 'src/views/Graph.tsx'), 'utf8')
+    const squidPath = join(process.cwd(), 'src/components/easter/SquidMark.tsx')
+    const taskItemSource = readFileSync(join(process.cwd(), 'src/features/tasks/TaskItem.tsx'), 'utf8')
+    const taskPoolSource = readFileSync(join(process.cwd(), 'src/features/dashboard/TaskPoolPanel.tsx'), 'utf8')
+    const personCardSource = readFileSync(join(process.cwd(), 'src/features/people/PersonCard.tsx'), 'utf8')
+    const personAssignmentSource = readFileSync(join(process.cwd(), 'src/features/dashboard/PersonAssignmentCard.tsx'), 'utf8')
+    const productivitySource = readFileSync(join(process.cwd(), 'src/views/Productivity.tsx'), 'utf8')
+    const styleSource = readFileSync(join(process.cwd(), 'css/style.css'), 'utf8')
+
+    expect(existsSync(squidPath)).toBe(true)
+    const squidSource = readFileSync(squidPath, 'utf8')
+
+    expect(squidSource).toContain("SQUID_PERSON_NAME = '全舒怡'")
+    expect(squidSource).toContain('getSquidVariant')
+    expect(squidSource).toContain('SquidMark')
+    expect(squidSource).toContain('SquidMarkSvg')
+    expect(squidSource).not.toContain('graph-squid-tentacle')
+    expect(squidSource).not.toContain('graph-squid-shadow')
+    expect(graphSource).toContain('squidNodeIds')
+    expect(graphSource).toContain('SquidMarkSvg')
+    expect(graphSource).not.toContain('squidTaskIds')
+    expect(taskItemSource).toContain('SquidMark')
+    expect(taskPoolSource).toContain('SquidMark')
+    expect(personCardSource).toContain('SquidMark')
+    expect(personAssignmentSource).toContain('SquidMark')
+    expect(productivitySource).toContain('SquidMark')
+    expect(styleSource).toContain("html[data-easter-mode='konami'] .squid-mark")
+    expect(styleSource).toContain('.squid-mark--lavender')
+    expect(styleSource).toContain('.squid-mark--mint')
+    expect(squidSource).toContain('graph-squid-eye')
+    expect(styleSource).toMatch(/\.graph-squid-mark\s*\{[\s\S]*display:\s*none;/)
+    expect(styleSource).toMatch(/html\[data-easter-mode='konami'\]\s+\.graph-squid-mark\s*\{[\s\S]*display:\s*block;/)
   })
 
   it('truncates long lane task titles by visual width before they reach the card edge', () => {

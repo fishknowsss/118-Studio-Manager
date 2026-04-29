@@ -1,4 +1,4 @@
-import { useMemo, useState, useSyncExternalStore, type DragEvent } from 'react'
+import { useEffect, useMemo, useState, useSyncExternalStore, type DragEvent } from 'react'
 import { DashboardHeader } from '../features/dashboard/DashboardHeader'
 import { DashboardMiniCalendar } from '../features/dashboard/DashboardMiniCalendar'
 import { FocusPrimaryCard } from '../features/dashboard/FocusPrimaryCard'
@@ -120,6 +120,18 @@ export function Dashboard() {
     () => buildQuickJumpSearchItems(projects, tasks, people, searchQuery),
     [people, projects, searchQuery, tasks],
   )
+
+  useEffect(() => {
+    if (expandedPanel) {
+      document.body.dataset.easterPanel = expandedPanel.type
+      return () => {
+        delete document.body.dataset.easterPanel
+      }
+    }
+
+    delete document.body.dataset.easterPanel
+    return undefined
+  }, [expandedPanel?.type])
 
   const clearDragState = () => {
     setDraggingPersonId(null)
@@ -327,6 +339,8 @@ export function Dashboard() {
           originY={expandedPanel.oy}
           onClose={closePanel}
           variant={expandedPanel.type === 'calendar' ? 'wide' : 'default'}
+          overlayClassName="expand-panel-overlay--easter-lite"
+          boxClassName="expand-panel-box--easter-lite"
         >
           {expandedPanel.type === 'tasks' && <Tasks />}
           {expandedPanel.type === 'people' && <People />}

@@ -2,6 +2,7 @@ import { readFileSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
 
 const stylesheet = readFileSync(new URL('../css/style.css', import.meta.url), 'utf8')
+const dashboardSource = readFileSync(new URL('../src/views/Dashboard.tsx', import.meta.url), 'utf8')
 
 describe('konami anomaly style coverage', () => {
   const entryFlashSection =
@@ -38,5 +39,23 @@ describe('konami anomaly style coverage', () => {
     expect(entryFlashSection).not.toContain('background-position:')
     expect(entryFlashSection).not.toContain('saturate(')
     expect(entryFlashSection).not.toContain('brightness(')
+  })
+
+  it('keeps dashboard expanded panels lightweight while preserving close animations in anomaly mode', () => {
+    const liteOverlaySection =
+      stylesheet.match(/html\[data-easter-mode='konami'\] \.expand-panel-overlay--easter-lite\s*\{[\s\S]*?\n\}/)?.[0] ?? ''
+
+    expect(dashboardSource).toContain('document.body.dataset.easterPanel = expandedPanel.type')
+    expect(dashboardSource).toContain('overlayClassName="expand-panel-overlay--easter-lite"')
+    expect(dashboardSource).toContain('boxClassName="expand-panel-box--easter-lite"')
+    expect(stylesheet).toMatch(/body\[data-easter-mode='konami'\]\[data-easter-panel\]\s+#app\[data-easter-mode='konami'\]::before,[\s\S]*display:\s*none;[\s\S]*animation:\s*none;/)
+    expect(liteOverlaySection).toContain('backdrop-filter: none;')
+    expect(liteOverlaySection).not.toContain('animation: none;')
+    expect(stylesheet).toMatch(/html\[data-easter-mode='konami'\]\s+\.expand-panel-box--easter-lite\s*\{[\s\S]*animation:\s*none;/)
+    expect(stylesheet).toMatch(/html\[data-easter-mode='konami'\]\s+\.expand-panel-box--easter-lite::after\s*\{[\s\S]*display:\s*none;/)
+    expect(stylesheet).toMatch(/html\[data-easter-mode='konami'\]\s+\.expand-panel-box--easter-lite\s+\.task-item,[\s\S]*\.person-card,[\s\S]*\.project-card[\s\S]*contain:\s*paint;/)
+    expect(stylesheet).toMatch(/html\[data-easter-mode='konami'\]\s+\.expand-panel-box--easter-lite\s+\.task-item:hover,[\s\S]*\.person-card:hover,[\s\S]*\.project-card:hover[\s\S]*box-shadow:\s*none;/)
+    expect(stylesheet).not.toContain('.expand-panel-overlay:has(.view-tasks)')
+    expect(stylesheet).not.toContain('content-visibility: auto')
   })
 })

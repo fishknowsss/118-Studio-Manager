@@ -1,4 +1,5 @@
 import { useRef, type DragEvent, type MouseEvent, type Ref } from 'react'
+import { getSquidVariant, hasSquidPersonName, SquidMark } from '../../components/easter/SquidMark'
 import type { PersonCardModel } from '../../legacy/selectors'
 import { getPersonGenderSymbol, getPersonGenderTone } from '../../legacy/utils'
 import { PersonStatusMark } from './PersonStatusMark'
@@ -45,6 +46,7 @@ export function PersonAssignmentCard({
   const genderSymbol = getPersonGenderSymbol(model.genderLabel)
   const statusKind = model.isOnLeaveToday ? 'leave' : model.isPresent ? 'present' : null
   const isPresent = statusKind === 'present'
+  const showSquidMark = hasSquidPersonName(model.name)
 
   return (
     <div
@@ -77,6 +79,7 @@ export function PersonAssignmentCard({
         onPersonClick(model.id, r.left + r.width / 2, r.top + r.height / 2)
       }}
     >
+      {showSquidMark ? <SquidMark className="squid-mark--person-assignment" variant={getSquidVariant(model.id)} /> : null}
       <div className="person-assignment-main">
         <div className="person-assignment-name-row">
           <div className="person-assignment-name">{model.name}</div>

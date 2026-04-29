@@ -1,4 +1,5 @@
 import type React from 'react'
+import { getSquidVariant, hasSquidAssignee, SquidMark } from '../../components/easter/SquidMark'
 import type { TaskListItemModel } from '../../legacy/selectors'
 
 type TaskMenuType = 'assignee' | 'priority' | 'status'
@@ -16,8 +17,11 @@ export function TaskItem({
   onMenu: (event: React.MouseEvent, type: TaskMenuType) => void
   onToggle: () => void
 }) {
+  const showSquidMark = hasSquidAssignee(model.assigneeNames)
+
   return (
     <div className={`task-item ${model.isDone ? 'done-row' : ''}`} onClick={onEdit}>
+      {showSquidMark ? <SquidMark className="squid-mark--task-item" variant={getSquidVariant(model.id)} /> : null}
       <button
         className={`task-status-btn ${model.isDone ? 'done' : ''}`}
         type="button"

@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState, type MouseEventHandler, type WheelEventHandler } from 'react'
 import { useToast } from '../components/feedback/ToastProvider'
+import { getSquidVariant, SQUID_PERSON_NAME, SquidMarkSvg } from '../components/easter/SquidMark'
 import { useLegacyStoreSnapshot } from '../legacy/useLegacyStore'
 import { buildGraphData } from '../features/graph/graphData'
 import {
@@ -304,6 +305,22 @@ export function Graph() {
       { kind: 'person' as const, title: '人员', subtitle: `${summary.person.count} 人 · ${summary.person.alert} 人有压力`, x: LANE_X.person, width: LANE_GUIDE_WIDTH.person },
     ]
   }, [scopedGraph.nodes])
+
+  const squidNodeIds = useMemo(() => {
+    const ids = new Set<string>()
+    const squidPeople = scopedGraph.nodes.filter((node) =>
+      node.kind === 'person' && node.label.includes(SQUID_PERSON_NAME),
+    )
+    const squidPersonIds = new Set(squidPeople.map((node) => node.id))
+    for (const personNode of squidPeople) ids.add(personNode.id)
+
+    for (const edge of scopedGraph.edges) {
+      if (edge.kind !== 'task-person' || !squidPersonIds.has(edge.target)) continue
+      ids.add(edge.source)
+    }
+
+    return ids
+  }, [scopedGraph.edges, scopedGraph.nodes])
 
   const centerNodeInViewport = (nodeId: string) => {
     const node = simNodesRef.current[nodeId] || activeNodeMap[nodeId]
@@ -732,6 +749,9 @@ export function Graph() {
                             cy={-cardHalfHeight + 14}
                             r={4}
                           />
+                        ) : null}
+                        {squidNodeIds.has(node.id) ? (
+                          <SquidMarkSvg variant={getSquidVariant(node.id)} x={cardHalfWidth - 42} y={cardHalfHeight - 30} />
                         ) : null}
                       </>
                     ) : (

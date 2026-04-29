@@ -7,6 +7,7 @@ import { act } from 'react'
 import { createRoot } from 'react-dom/client'
 import { ToastProvider } from '../src/components/feedback/ToastProvider'
 import { Dialog } from '../src/components/ui/Dialog'
+import { ExpandPanel } from '../src/components/ui/ExpandPanel'
 import { buildTaskExportRows } from '../src/legacy/selectors'
 import { downloadFile, formatLocalDateKey, normalizeImportedBackup, toCSV } from '../src/legacy/utils'
 import { getAssignableTasks } from '../src/features/planner/plannerUtils'
@@ -111,6 +112,41 @@ describe('current app regressions', () => {
       root.unmount()
     })
     container.remove()
+  })
+
+  it('closes expanded panels even when CSS animationend is not delivered', () => {
+    vi.useFakeTimers()
+    const onClose = vi.fn()
+    const container = document.createElement('div')
+    document.body.appendChild(container)
+    const root = createRoot(container)
+
+    act(() => {
+      root.render(
+        <ExpandPanel title="全部任务" originX={300} originY={220} onClose={onClose}>
+          <div>内容</div>
+        </ExpandPanel>,
+      )
+    })
+
+    const closeButton = container.querySelector('.modal-close')
+    expect(closeButton).not.toBeNull()
+
+    act(() => {
+      closeButton?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+    })
+    expect(onClose).not.toHaveBeenCalled()
+
+    act(() => {
+      vi.advanceTimersByTime(260)
+    })
+    expect(onClose).toHaveBeenCalledTimes(1)
+
+    act(() => {
+      root.unmount()
+    })
+    container.remove()
+    vi.useRealTimers()
   })
 
   it('keeps task dialog focused on deadline metadata and prevents modal footer clipping in short viewports', () => {

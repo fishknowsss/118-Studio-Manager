@@ -1,4 +1,5 @@
 import type { PersonCardModel } from '../../legacy/selectors'
+import { getSquidVariant, hasSquidPersonName, SquidMark } from '../../components/easter/SquidMark'
 import { PersonGenderAvatar } from '../../components/ui/PersonGenderAvatar'
 
 export function PersonCard({
@@ -12,8 +13,11 @@ export function PersonCard({
   onEdit: () => void
   onToggle: () => void
 }) {
+  const showSquidMark = hasSquidPersonName(model.name)
+
   return (
     <div className={`person-card ${model.isInactive ? 'inactive' : ''}`} onClick={onEdit}>
+      {showSquidMark ? <SquidMark className="squid-mark--person-card" variant={getSquidVariant(model.id)} /> : null}
       <div className="person-card-top">
         <PersonGenderAvatar className="person-card-avatar" gender={model.genderLabel} inactive={model.isInactive} />
         <div className="person-card-main">

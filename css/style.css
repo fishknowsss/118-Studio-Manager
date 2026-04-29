@@ -484,6 +484,64 @@ html[data-easter-mode='konami'] .planner-stat {
   background: rgba(250, 245, 220, 0.94);
 }
 
+body[data-easter-mode='konami'][data-easter-panel] #app[data-easter-mode='konami']::before,
+body[data-easter-mode='konami'][data-easter-panel] #app[data-easter-mode='konami']::after,
+body[data-easter-mode='konami'][data-easter-panel] #app .sidebar::before,
+body[data-easter-mode='konami'][data-easter-panel] #app .main-content::before {
+  display: none;
+  animation: none;
+  filter: none;
+}
+
+body[data-easter-mode='konami'][data-easter-panel] .brand-chaos {
+  animation: none;
+}
+
+html[data-easter-mode='konami'] .expand-panel-overlay--easter-lite {
+  background: rgba(226, 213, 164, 0.34);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+
+html[data-easter-mode='konami'] .expand-panel-box--easter-lite {
+  animation: none;
+  box-shadow: 0 10px 28px rgba(117, 91, 18, .12);
+}
+
+html[data-easter-mode='konami'] .expand-panel-box--easter-lite::after {
+  display: none;
+}
+
+html[data-easter-mode='konami'] .expand-panel-box--easter-lite .expand-panel-body,
+html[data-easter-mode='konami'] .expand-panel-box--easter-lite .view-tasks,
+html[data-easter-mode='konami'] .expand-panel-box--easter-lite .view-people,
+html[data-easter-mode='konami'] .expand-panel-box--easter-lite .view-projects,
+html[data-easter-mode='konami'] .expand-panel-box--easter-lite .view-calendar,
+html[data-easter-mode='konami'] .expand-panel-box--easter-lite .person-detail-panel,
+html[data-easter-mode='konami'] .expand-panel-box--easter-lite .project-detail-panel {
+  animation: none;
+}
+
+html[data-easter-mode='konami'] .expand-panel-box--easter-lite .task-item,
+html[data-easter-mode='konami'] .expand-panel-box--easter-lite .person-card,
+html[data-easter-mode='konami'] .expand-panel-box--easter-lite .project-card,
+html[data-easter-mode='konami'] .expand-panel-box--easter-lite .calendar-event-item,
+html[data-easter-mode='konami'] .expand-panel-box--easter-lite .calendar-project-event,
+html[data-easter-mode='konami'] .expand-panel-box--easter-lite .pdp-ms-row {
+  contain: paint;
+  transition: none;
+  box-shadow: none;
+}
+
+html[data-easter-mode='konami'] .expand-panel-box--easter-lite .task-item:hover,
+html[data-easter-mode='konami'] .expand-panel-box--easter-lite .person-card:hover,
+html[data-easter-mode='konami'] .expand-panel-box--easter-lite .project-card:hover,
+html[data-easter-mode='konami'] .expand-panel-box--easter-lite .calendar-event-item:hover,
+html[data-easter-mode='konami'] .expand-panel-box--easter-lite .calendar-project-event:hover,
+html[data-easter-mode='konami'] .expand-panel-box--easter-lite .pdp-ms-row:hover {
+  box-shadow: none;
+}
+
 html[data-easter-mode='konami'] .konami-entry-flash {
   position: fixed;
   inset: 0;
@@ -3855,6 +3913,123 @@ html[data-easter-mode='konami'] .assignee-chip.selected:has(.assignee-chip-avata
 [data-theme='dark'] .graph-node-group.card-node.focused .graph-node-card-bg {
   stroke: rgba(129, 150, 255, .92);
   filter: drop-shadow(0 12px 22px rgba(65, 102, 245, .28));
+}
+html[data-easter-mode='konami'] .graph-node-card-bg {
+  fill: rgba(250, 245, 220, .66);
+  stroke: rgba(150, 116, 32, .24);
+  filter: drop-shadow(0 8px 16px rgba(117, 91, 18, .08));
+}
+html[data-easter-mode='konami'] .graph-node-group.project .graph-node-card-bg {
+  stroke: rgba(138, 111, 34, .34);
+}
+html[data-easter-mode='konami'] .graph-node-group.task .graph-node-card-bg {
+  stroke: rgba(192, 145, 28, .36);
+}
+html[data-easter-mode='konami'] .graph-node-group.person .graph-node-card-bg {
+  stroke: rgba(160, 125, 37, .34);
+}
+html[data-easter-mode='konami'] .graph-node-group.card-node.focused .graph-node-card-bg {
+  stroke: rgba(150, 116, 32, .54);
+  filter: drop-shadow(0 10px 18px rgba(150, 116, 32, .14));
+}
+html[data-easter-mode='konami'] .graph-node-card-title {
+  fill: #4f421a;
+}
+html[data-easter-mode='konami'] .graph-node-card-meta {
+  fill: #695729;
+}
+.graph-squid-mark {
+  display: none;
+  pointer-events: none;
+}
+.squid-mark {
+  display: none;
+  position: absolute;
+  right: 10px;
+  bottom: 8px;
+  width: 34px;
+  height: 37px;
+  pointer-events: none;
+  z-index: 3;
+}
+html[data-easter-mode='konami'] .graph-squid-mark {
+  display: block;
+}
+html[data-easter-mode='konami'] .squid-mark {
+  display: block;
+}
+.squid-mark-svg {
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+.task-row,
+.task-item,
+.person-card,
+.person-assignment-card {
+  position: relative;
+}
+.squid-mark--task-row {
+  right: 7px;
+  bottom: 5px;
+  width: 28px;
+  height: 31px;
+  opacity: .92;
+}
+.squid-mark--task-item {
+  right: 7px;
+  bottom: 5px;
+  width: 27px;
+  height: 30px;
+}
+.squid-mark--person-card,
+.squid-mark--person-assignment,
+.squid-mark--productivity-card {
+  right: 9px;
+  bottom: 7px;
+  width: 35px;
+  height: 38px;
+}
+.squid-mark--productivity-card {
+  right: 11px;
+  bottom: 11px;
+}
+.squid-mark--mint {
+  --squid-body: #9fe9cf;
+  --squid-stroke: rgba(35, 164, 150, .56);
+  --squid-eye-bridge: rgba(28, 138, 145, .9);
+  --squid-pupil: #199db0;
+}
+.squid-mark--lavender {
+  --squid-body: #d9c8ff;
+  --squid-stroke: rgba(139, 112, 215, .58);
+  --squid-eye-bridge: rgba(124, 95, 191, .9);
+  --squid-pupil: #7662c9;
+}
+.graph-squid-body {
+  fill: var(--squid-body, #9fe9cf);
+  stroke: var(--squid-stroke, rgba(35, 164, 150, .56));
+  stroke-width: 1.45;
+}
+.graph-squid-gloss {
+  fill: none;
+  stroke: rgba(255, 255, 239, .58);
+  stroke-width: 2.1;
+  stroke-linecap: round;
+}
+.graph-squid-eye-bridge {
+  fill: var(--squid-eye-bridge, rgba(28, 138, 145, .9));
+}
+.graph-squid-eye {
+  fill: #fffdf0;
+  stroke: var(--squid-eye-bridge, rgba(31, 139, 145, .82));
+  stroke-width: 1.25;
+}
+.graph-squid-pupil {
+  fill: var(--squid-pupil, #199db0);
+}
+.graph-squid-catchlight {
+  fill: rgba(255, 255, 255, .72);
 }
 .graph-node-pin {
   fill: var(--c-overdue);

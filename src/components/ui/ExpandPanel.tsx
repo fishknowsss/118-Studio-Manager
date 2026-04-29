@@ -1,5 +1,7 @@
 import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react'
 
+const CLOSE_FALLBACK_MS = 260
+
 const VARIANTS = {
   default: { maxW: 860,  vwFrac: 0.76, maxH: 720,  vhFrac: 0.78 },
   wide:    { maxW: 1080, vwFrac: 0.88, maxH: 860,  vhFrac: 0.90 },
@@ -42,16 +44,29 @@ export function ExpandPanel({
 }) {
   const [closing, setClosing] = useState(false)
   const overlayRef = useRef<HTMLDivElement>(null)
+  const closeTimerRef = useRef<number | null>(null)
+  const closedRef = useRef(false)
   const transformOrigin = calcOrigin(originX, originY, variant)
+
+  const finishClose = useCallback(() => {
+    if (closedRef.current) return
+    closedRef.current = true
+    if (closeTimerRef.current) {
+      window.clearTimeout(closeTimerRef.current)
+      closeTimerRef.current = null
+    }
+    onClose()
+  }, [onClose])
 
   const triggerClose = useCallback(() => {
     if (closing) return
     setClosing(true)
-  }, [closing])
+    closeTimerRef.current = window.setTimeout(finishClose, CLOSE_FALLBACK_MS)
+  }, [closing, finishClose])
 
   const handleAnimationEnd = (event: React.AnimationEvent<HTMLDivElement>) => {
     if (closing && event.target === overlayRef.current) {
-      onClose()
+      finishClose()
     }
   }
 
@@ -62,6 +77,15 @@ export function ExpandPanel({
     document.addEventListener('keydown', handler, true)
     return () => document.removeEventListener('keydown', handler, true)
   }, [triggerClose])
+
+  useEffect(() => {
+    return () => {
+      if (closeTimerRef.current) {
+        window.clearTimeout(closeTimerRef.current)
+        closeTimerRef.current = null
+      }
+    }
+  }, [])
 
   return (
     <div

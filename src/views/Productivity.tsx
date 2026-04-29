@@ -1,6 +1,7 @@
 import { Fragment, useEffect, useMemo, useRef, useState, type CSSProperties, type ChangeEvent, type Dispatch, type SetStateAction } from 'react'
 import { useConfirm } from '../components/feedback/ConfirmProvider'
 import { useToast } from '../components/feedback/ToastProvider'
+import { getSquidVariant, hasSquidPersonName, SquidMark } from '../components/easter/SquidMark'
 import { Dialog } from '../components/ui/Dialog'
 import {
   buildProductivityPersonModels,
@@ -500,6 +501,7 @@ function ProductivityCardsView({
               type="button"
               onClick={() => onFlip(person.id)}
             >
+              {hasSquidPersonName(person.name) ? <SquidMark className="squid-mark--productivity-card" variant={getSquidVariant(person.id)} /> : null}
               <span className="productivity-card-inner">
                 <span className="productivity-card-face productivity-card-front">
                   <span className="productivity-card-top">
