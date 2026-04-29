@@ -1,5 +1,6 @@
 import type React from 'react'
-import { getSquidVariant, hasSquidAssignee, SquidMark } from '../../components/easter/SquidMark'
+import { SquidMark } from '../../components/easter/SquidMark'
+import { getSquidVariant, hasSquidAssignee } from '../../components/easter/squidMarkUtils'
 import type { TaskListItemModel } from '../../legacy/selectors'
 
 type TaskMenuType = 'assignee' | 'priority' | 'status'

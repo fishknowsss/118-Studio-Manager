@@ -1,5 +1,6 @@
 import { useRef, type DragEvent, type MouseEvent, type Ref } from 'react'
-import { getSquidVariant, hasSquidPersonName, SquidMark } from '../../components/easter/SquidMark'
+import { SquidMark } from '../../components/easter/SquidMark'
+import { getSquidVariant, hasSquidPersonName } from '../../components/easter/squidMarkUtils'
 import type { PersonCardModel } from '../../legacy/selectors'
 import { getPersonGenderSymbol, getPersonGenderTone } from '../../legacy/utils'
 import { PersonStatusMark } from './PersonStatusMark'

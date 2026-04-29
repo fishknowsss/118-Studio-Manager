@@ -45,7 +45,8 @@ describe('konami anomaly style coverage', () => {
     const liteOverlaySection =
       stylesheet.match(/html\[data-easter-mode='konami'\] \.expand-panel-overlay--easter-lite\s*\{[\s\S]*?\n\}/)?.[0] ?? ''
 
-    expect(dashboardSource).toContain('document.body.dataset.easterPanel = expandedPanel.type')
+    expect(dashboardSource).toContain('const expandedPanelType = expandedPanel?.type')
+    expect(dashboardSource).toContain('document.body.dataset.easterPanel = expandedPanelType')
     expect(dashboardSource).toContain('overlayClassName="expand-panel-overlay--easter-lite"')
     expect(dashboardSource).toContain('boxClassName="expand-panel-box--easter-lite"')
     expect(stylesheet).toMatch(/body\[data-easter-mode='konami'\]\[data-easter-panel\]\s+#app\[data-easter-mode='konami'\]::before,[\s\S]*display:\s*none;[\s\S]*animation:\s*none;/)

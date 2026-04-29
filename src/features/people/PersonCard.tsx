@@ -1,5 +1,6 @@
 import type { PersonCardModel } from '../../legacy/selectors'
-import { getSquidVariant, hasSquidPersonName, SquidMark } from '../../components/easter/SquidMark'
+import { SquidMark } from '../../components/easter/SquidMark'
+import { getSquidVariant, hasSquidPersonName } from '../../components/easter/squidMarkUtils'
 import { PersonGenderAvatar } from '../../components/ui/PersonGenderAvatar'
 
 export function PersonCard({

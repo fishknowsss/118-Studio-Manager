@@ -165,6 +165,7 @@ describe('graph canvas layout', () => {
   it('adds anomaly-only squid marks to task and person cards for Quan Shuyi', () => {
     const graphSource = readFileSync(join(process.cwd(), 'src/views/Graph.tsx'), 'utf8')
     const squidPath = join(process.cwd(), 'src/components/easter/SquidMark.tsx')
+    const squidUtilsPath = join(process.cwd(), 'src/components/easter/squidMarkUtils.ts')
     const taskItemSource = readFileSync(join(process.cwd(), 'src/features/tasks/TaskItem.tsx'), 'utf8')
     const taskPoolSource = readFileSync(join(process.cwd(), 'src/features/dashboard/TaskPoolPanel.tsx'), 'utf8')
     const personCardSource = readFileSync(join(process.cwd(), 'src/features/people/PersonCard.tsx'), 'utf8')
@@ -173,10 +174,12 @@ describe('graph canvas layout', () => {
     const styleSource = readFileSync(join(process.cwd(), 'css/style.css'), 'utf8')
 
     expect(existsSync(squidPath)).toBe(true)
+    expect(existsSync(squidUtilsPath)).toBe(true)
     const squidSource = readFileSync(squidPath, 'utf8')
+    const squidUtilsSource = readFileSync(squidUtilsPath, 'utf8')
 
-    expect(squidSource).toContain("SQUID_PERSON_NAME = '全舒怡'")
-    expect(squidSource).toContain('getSquidVariant')
+    expect(squidUtilsSource).toContain("SQUID_PERSON_NAME = '全舒怡'")
+    expect(squidUtilsSource).toContain('getSquidVariant')
     expect(squidSource).toContain('SquidMark')
     expect(squidSource).toContain('SquidMarkSvg')
     expect(squidSource).not.toContain('graph-squid-tentacle')

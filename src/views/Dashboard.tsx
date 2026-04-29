@@ -120,10 +120,11 @@ export function Dashboard() {
     () => buildQuickJumpSearchItems(projects, tasks, people, searchQuery),
     [people, projects, searchQuery, tasks],
   )
+  const expandedPanelType = expandedPanel?.type
 
   useEffect(() => {
-    if (expandedPanel) {
-      document.body.dataset.easterPanel = expandedPanel.type
+    if (expandedPanelType) {
+      document.body.dataset.easterPanel = expandedPanelType
       return () => {
         delete document.body.dataset.easterPanel
       }
@@ -131,7 +132,7 @@ export function Dashboard() {
 
     delete document.body.dataset.easterPanel
     return undefined
-  }, [expandedPanel?.type])
+  }, [expandedPanelType])
 
   const clearDragState = () => {
     setDraggingPersonId(null)

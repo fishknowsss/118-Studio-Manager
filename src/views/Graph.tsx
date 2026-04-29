@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState, type MouseEventHandler, type WheelEventHandler } from 'react'
 import { useToast } from '../components/feedback/ToastProvider'
-import { getSquidVariant, SQUID_PERSON_NAME, SquidMarkSvg } from '../components/easter/SquidMark'
+import { SquidMarkSvg } from '../components/easter/SquidMark'
+import { getSquidVariant, SQUID_PERSON_NAME } from '../components/easter/squidMarkUtils'
 import { useLegacyStoreSnapshot } from '../legacy/useLegacyStore'
 import { buildGraphData } from '../features/graph/graphData'
 import {

@@ -1,7 +1,8 @@
 import { Fragment, useEffect, useMemo, useRef, useState, type CSSProperties, type ChangeEvent, type Dispatch, type SetStateAction } from 'react'
 import { useConfirm } from '../components/feedback/ConfirmProvider'
 import { useToast } from '../components/feedback/ToastProvider'
-import { getSquidVariant, hasSquidPersonName, SquidMark } from '../components/easter/SquidMark'
+import { SquidMark } from '../components/easter/SquidMark'
+import { getSquidVariant, hasSquidPersonName } from '../components/easter/squidMarkUtils'
 import { Dialog } from '../components/ui/Dialog'
 import {
   buildProductivityPersonModels,
