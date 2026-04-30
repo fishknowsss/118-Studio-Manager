@@ -1,232 +1,198 @@
 # 118 Studio Manager VC
 
-A local-first studio operations app for small media and design teams, built around daily focus, reusable materials, and low-friction backup workflows.
+118 Studio Manager VC 是一个本地优先的工作室管理工具，面向小型视频、设计和内容团队。它把每日排班、项目推进、人员状态、甲方资料、账号素材、关系图谱、工效课表和备份同步放在一个浏览器应用里。
 
-All working data stays in the browser's IndexedDB. Cloud sync is optional and can be self-hosted with Cloudflare Workers.
-
----
-
-## Overview
-
-The current VC build centers the product around five working views:
-
-- **Home** for daily focus, assignments, and deadlines
-- **Materials** for client briefs and shared account folders
-- **Graph** for project-task-people relationships
-- **Tools** for reusable external references and production utilities
-- **Settings** for backup, restore, sync, and operational logs
-
-It is designed for a studio workflow where planning, handoff, and asset access happen in one place without depending on a traditional backend.
+当前 `vc` 分支是主力版本。数据默认保存在浏览器 IndexedDB，不依赖传统后端；需要多设备备份时，可选接入自托管的 Cloudflare Worker 同步服务。
 
 ---
 
-## Interface Preview
+## 当前功能
 
-### Home
+### 首页
 
-| Light | Dark |
+- 今日控制台：项目焦点、任务池、人员分配、迷你日历和语句区。
+- 支持任务快速编辑、拖拽分配、隐藏已完成任务、展开项目或人员详情。
+- 人员区支持在岗/请假状态、请假记录、分页展示和排序记忆。
+- 顶部搜索可快速定位项目、任务和人员。
+
+| 浅色 | 深色 |
 |---|---|
-| ![Home Light](docs/screenshots/vc-dashboard-light.png) | ![Home Dark](docs/screenshots/vc-dashboard-dark.png) |
+| ![首页浅色](docs/screenshots/vc-dashboard-light.png) | ![首页深色](docs/screenshots/vc-dashboard-dark.png) |
 
-### Materials
+### 资料
 
-| Light | Dark |
+- 甲方要求：记录核心需求、风格偏好、禁忌事项和参考资料。
+- 账号密码：按文件夹管理共享账号，支持新建、改名、换色、移动和删除。
+- 账号字段可一键复制，适合集中维护平台登录、素材站和工具站信息。
+
+| 浅色 | 深色 |
 |---|---|
-| ![Materials Light](docs/screenshots/vc-materials-light.png) | ![Materials Dark](docs/screenshots/vc-materials-dark.png) |
+| ![资料浅色](docs/screenshots/vc-materials-light.png) | ![资料深色](docs/screenshots/vc-materials-dark.png) |
 
-### Graph
+### 工效
 
-| Light | Dark |
+- 人员工效卡：结合任务、排期和状态查看成员当前负载。
+- 课表视图：支持导入课程表 PDF、手动添加课程、按成员筛选、按学期周查看。
+- 课表数据会进入完整备份和云同步集合。
+
+| 浅色 | 深色 |
 |---|---|
-| ![Graph Light](docs/screenshots/vc-graph-light.png) | ![Graph Dark](docs/screenshots/vc-graph-dark.png) |
+| ![工效浅色](docs/screenshots/vc-productivity-light.png) | ![工效深色](docs/screenshots/vc-productivity-dark.png) |
 
-### Tools
+### 图谱
 
-| Light | Dark |
+- 基于项目、任务和人员生成关系图。
+- 支持全部关系、项目任务、任务人员等范围切换。
+- 支持力导向、环形、分栏布局，以及搜索、聚焦、缩放、拖拽和详情侧栏。
+
+| 浅色 | 深色 |
 |---|---|
-| ![Tools Light](docs/screenshots/vc-tools-light.png) | ![Tools Dark](docs/screenshots/vc-tools-dark.png) |
+| ![图谱浅色](docs/screenshots/vc-graph-light.png) | ![图谱深色](docs/screenshots/vc-graph-dark.png) |
 
-### Settings
+### 工具
 
-| Light | Dark |
+- 收集常用灵感、视频、音效、字体、压图、转码、全景和模型相关工具。
+- 卡片以短功能词呈现，点击后在新窗口打开外部工具。
+
+| 浅色 | 深色 |
 |---|---|
-| ![Settings Light](docs/screenshots/vc-settings-light.png) | ![Settings Dark](docs/screenshots/vc-settings-dark.png) |
+| ![工具浅色](docs/screenshots/vc-tools-light.png) | ![工具深色](docs/screenshots/vc-tools-dark.png) |
+
+### 设置
+
+- JSON 完整导出/导入，项目和任务 CSV 导出。
+- 可选 Cloudflare Worker 云同步、手动同步并备份、云端恢复本地。
+- 当前数据摘要覆盖项目、任务、人员、日志、设置、请假和课表。
+- 最近操作支持可撤回编辑；清空数据等危险操作会二次确认。
+
+| 浅色 | 深色 |
+|---|---|
+| ![设置浅色](docs/screenshots/vc-settings-light.png) | ![设置深色](docs/screenshots/vc-settings-dark.png) |
 
 ---
 
-## What's New In This Iteration
+## 数据与备份
 
-- The product is now organized around five primary views instead of the older project/task/people/calendar split.
-- The **Materials** workspace now combines client briefs with **folder-based shared account management**, including folder creation, rename, delete, and account move actions.
-- The **Home** view has been refined into a true daily operations surface with drag-and-drop task assignment, paged people cards, richer focus cards, and leave tracking.
-- The **Graph** view supports multiple layout modes, scoped relationship filters, node search, and focused detail inspection.
-- The **Settings** view now covers export/import, cloud restore, manual sync, transfer summaries, and undo-aware recent operation history.
+所有业务数据保存在 IndexedDB 数据库 `studio118db`。
 
----
-
-## Key Capabilities
-
-### Home
-
-- Prioritized project focus cards with urgency-aware deadline treatment
-- A task pool that supports quick actions, contextual edits, and drag-to-assign flows
-- A people assignment panel with task counts, skill tags, leave indicators, and page-based navigation
-- A mini calendar that surfaces deadlines and leave markers
-- Quick jump search across projects, tasks, and people
-
-### Materials
-
-- Client briefs with linked projects, requirements, style notes, prohibitions, and reference links
-- Folder-based account storage for team credentials and shared platform access
-- Inline account copy actions and folder-to-folder move actions
-- Empty-folder support, searchable folder/account lists, and lightweight organization without nested dashboards
-
-### Graph
-
-- Relationship graph built from projects, tasks, and people
-- Toggleable scopes for full graph, project-task edges, or task-person edges
-- Force, radial, and lane layouts
-- Search-driven focus, node selection, zoom/pan, and detail side panel
-
-### Tools
-
-- Curated inspiration links for motion, video, sound, and visual research
-- Common web utilities for color, compression, animation, panorama, conversion, and asset processing
-- Lightweight launch surface for external tools frequently used in studio production
-
-### Settings
-
-- JSON export/import for full local backup and restore
-- CSV export for project and task lists
-- Optional Cloudflare-based cloud sync with manual push and remote restore
-- Local data summary, transfer summary, and recent operation history
-- Full wipe flow with confirmation for destructive actions
-
----
-
-## Tech Stack
-
-| Layer | Technology |
+| Store | 用途 |
 |---|---|
-| UI | React 19 + TypeScript |
-| Build | Vite 8 |
-| Styling | Plain CSS + CSS variables |
-| Local persistence | IndexedDB (`studio118db`) |
-| Optional sync | Cloudflare Worker + KV |
-| Testing | Vitest + jsdom |
-| Linting | ESLint |
-| Deployment | Static hosting (GitHub Pages, Cloudflare Pages, Vercel, self-hosted) |
+| `projects` | 项目名称、状态、优先级、截止日期和描述 |
+| `tasks` | 任务标题、负责人、排期、状态、优先级和工时 |
+| `people` | 成员信息、班级/学号/邮箱、技能、状态和备注 |
+| `logs` | 导入、导出、同步等操作记录 |
+| `settings` | 可同步的视图状态、资料、账号、文件夹和界面记忆 |
+| `leaveRecords` | 人员请假日期 |
+| `classSchedules` | 工效课表数据 |
 
----
-
-## Architecture
-
-The app uses a React interface on top of a legacy-style data layer that still provides the single source of truth for persisted entities and derived selectors.
-
-```text
-src/
-├── App.tsx                     # App shell, theme toggle, view routing
-├── views/                      # Top-level views (Home, Materials, Graph, Tools, Settings)
-├── features/                   # Domain-specific UI and state helpers
-├── components/                 # Shared UI primitives and feedback components
-├── content/                    # Static content such as quotes
-└── legacy/
-    ├── store.ts                # In-memory entity store + subscriptions
-    ├── actions.ts              # State mutations and import/export helpers
-    ├── selectors.ts            # Derived models for views
-    ├── db.ts                   # IndexedDB open/read/write/import/export
-    └── utils.ts                # Shared date, backup, and formatting helpers
-```
-
-### Architectural notes
-
-- React renders the UI, but entity persistence still flows through the legacy store and IndexedDB helpers.
-- Derived view models are centralized in `src/legacy/selectors.ts`.
-- Syncable view data such as materials briefs, account records, and account folders lives in the `settings` store through `createSyncableSettingsStore`.
-- On first boot with an empty database, the app tries cloud restore first and falls back to seeded demo data.
-- Older hash routes are still aliased so historical links continue to resolve into the current five-view structure.
-
----
-
-## Data And Sync
-
-All persistent data is stored in IndexedDB under `studio118db`.
-
-| Store | Purpose |
-|---|---|
-| `projects` | Project records, priority, status, deadline, description |
-| `tasks` | Task records, assignees, schedule, status, estimate |
-| `people` | Team members, skills, status, notes |
-| `logs` | Recent operations and activity traces |
-| `settings` | Syncable view state such as briefs, account folders, account records, and other keyed settings |
-| `leaveRecords` | Per-person leave dates used by the Home view and planner |
-
-### Backup model
-
-Every store registered in `BACKUP_COLLECTION_NAMES` is included in:
-
-- `db.exportAll()`
-- `db.importAll()`
-- `db.clearAll()`
-- Cloud sync payloads
-
-Current backup schema:
+当前备份 schema：
 
 ```jsonc
 {
-  "schemaVersion": 3,
-  "exportedAt": "2026-04-16T12:00:00.000Z",
+  "schemaVersion": 4,
+  "exportedAt": "2026-04-30T12:00:00.000Z",
   "projects": [],
   "tasks": [],
   "people": [],
   "logs": [],
   "settings": [],
-  "leaveRecords": []
+  "leaveRecords": [],
+  "classSchedules": []
 }
 ```
 
-### Optional cloud sync
+`BACKUP_COLLECTION_NAMES` 是导出、导入、清空和云同步的注册中心。新增 IndexedDB store 时，需要同步更新：
 
-Cloud sync is not required for the app to work. When configured, it adds:
-
-- debounced auto-sync after local edits
-- manual sync plus local JSON download
-- remote metadata polling
-- cloud-to-local restore for the latest snapshot
-
-The worker exposes:
-
-- `GET /meta`
-- `GET /data`
-- `PUT /data`
-
-See [cloudflare/sync-worker/](cloudflare/sync-worker/) for the worker setup.
+- `src/legacy/db.ts`
+- `src/legacy/utils.ts`
+- `src/legacy/selectors.ts`
+- `src/features/settings/settingsTransferState.ts`
 
 ---
 
-## Getting Started
+## 云同步
 
-### Requirements
+云同步是可选能力，不影响本地使用。当前同步模型是小团队备份式同步，不是实时协同系统。
 
-- Node.js `24.14.1`
-- npm `11.11.0`
+配置后会启用：
 
-Both are pinned in `package.json` via Volta.
+- 本地编辑后的延迟自动同步
+- 手动同步并下载本地 JSON 备份
+- 远端元数据轮询
+- 从云端快照恢复本地 IndexedDB
 
-### Install and run
+Worker 接口：
+
+```text
+GET /meta
+GET /data
+PUT /data
+```
+
+部署说明见 [cloudflare/sync-worker/README.md](cloudflare/sync-worker/README.md)。生产鉴权边界依赖 Cloudflare Access；公开仓库文档不要写入真实生产域名。
+
+---
+
+## 技术栈
+
+| 层级 | 技术 |
+|---|---|
+| UI | React 19 + TypeScript |
+| 构建 | Vite 8 |
+| 样式 | 原生 CSS + CSS variables |
+| 本地存储 | IndexedDB |
+| PDF 解析 | `pdfjs-dist` |
+| 可选同步 | Cloudflare Worker + KV |
+| 测试 | Vitest + jsdom、Playwright |
+| 代码检查 | ESLint |
+| 部署 | 静态托管 |
+
+---
+
+## 项目结构
+
+```text
+src/
+├── App.tsx                     # 应用壳、主题、导航和 hash 路由
+├── views/                      # 首页、资料、工效、图谱、工具、设置
+├── features/                   # 各业务域组件和状态工具
+├── components/                 # 通用弹窗、反馈、菜单和头像组件
+├── content/                    # 固定内容
+└── legacy/
+    ├── store.ts                # 内存实体状态与订阅
+    ├── actions.ts              # 新增、编辑、删除、导入、导出和撤回
+    ├── selectors.ts            # 页面展示模型和备份摘要
+    ├── db.ts                   # IndexedDB 读写和迁移
+    └── utils.ts                # 日期、备份、CSV 和格式化工具
+```
+
+当前主导航只暴露 6 个入口：`dashboard`、`materials`、`productivity`、`graph`、`tools`、`settings`。旧 hash `#people` 会转到图谱，`#calendar` 会转到首页。
+
+---
+
+## 本地运行
+
+项目使用 Volta 固定 Node 和 npm 版本：
+
+```text
+Node.js 24.14.1
+npm 11.11.0
+```
+
+安装依赖并启动：
 
 ```bash
 npm install
 npm run dev
 ```
 
-Default local server:
+默认本地地址：
 
 ```text
 http://127.0.0.1:5173/
 ```
 
-One-click launchers:
+macOS 和 Windows 启动脚本：
 
 ```bash
 ./118-start.command
@@ -238,38 +204,41 @@ One-click launchers:
 
 ---
 
-## Build And Test
+## 构建与测试
+
+每次修改后需要通过：
 
 ```bash
-npm run lint
 npm run test
 npm run build
 ```
 
-Preview the production build locally:
+可选检查：
 
 ```bash
+npm run lint
+npm run test:e2e
 npm run preview
 ```
 
-Tests live in `tests/` and cover selectors, sync behavior, materials state migration, dashboard panels, theme regressions, and current React app regressions.
+现有测试覆盖同步、数据库迁移、资料文件夹排序、Dashboard 面板、图谱布局、课表解析、设置转移状态、当前应用回归和彩蛋模式。
 
 ---
 
-## Deployment
+## 部署
 
-This is a static Vite app and can be deployed anywhere that serves static assets.
+这是一个静态 Vite 应用，可部署到 GitHub Pages、Cloudflare Pages、Vercel 或任意静态托管服务。
 
-If you need to build for a subdirectory:
+子目录部署：
 
 ```bash
-DEPLOY_BASE=/studio/ npm run build
+DEPLOY_BASE=/vc/ npm run build
 ```
 
-To enable optional cloud sync in deployment, provide:
+启用云同步时，在构建环境中提供：
 
 ```bash
 VITE_SYNC_API_URL=https://your-worker.example.com
 ```
 
-For GitHub Pages, add `VITE_SYNC_API_URL` as a GitHub Actions variable if sync should be enabled in the deployed build.
+GitHub Pages 部署时，可把 `VITE_SYNC_API_URL` 放在 GitHub Actions 变量中。不要把真实生产域名直接写进公开 README。
