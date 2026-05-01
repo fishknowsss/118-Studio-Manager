@@ -3,7 +3,7 @@ import { createPortal } from 'react-dom'
 
 const WEEKDAYS = ['日', '一', '二', '三', '四', '五', '六']
 const POPOVER_WIDTH = 314
-const POPOVER_HEIGHT = 330
+const POPOVER_HEIGHT = 386
 const POPOVER_GAP = 8
 const VIEWPORT_PADDING = 12
 

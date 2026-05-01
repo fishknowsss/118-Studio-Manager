@@ -336,6 +336,67 @@ describe('current app regressions', () => {
     container.remove()
   })
 
+  it('opens the date picker upward when the real panel would be clipped below the viewport', () => {
+    const people = [{ id: 'person-1', name: '成员1', gender: 'male' as const, status: 'active' as const }]
+    const projects = [{ id: 'project-1', name: '项目 A', status: 'active' as const }]
+    const task = {
+      id: 'task-1',
+      title: '测试任务',
+      projectId: 'project-1',
+      status: 'todo' as const,
+      priority: 'medium' as const,
+      assigneeIds: [],
+      endDate: '2026-05-15',
+    }
+    const container = document.createElement('div')
+    document.body.appendChild(container)
+    const root = createRoot(container)
+
+    act(() => {
+      root.render(
+        <ToastProvider>
+          <TaskDialog
+            task={task}
+            people={people}
+            projects={projects}
+            onClose={() => {}}
+          />
+        </ToastProvider>,
+      )
+    })
+
+    const trigger = document.body.querySelector('#task-end') as HTMLButtonElement | null
+    expect(trigger).not.toBeNull()
+
+    trigger!.getBoundingClientRect = () => ({
+      x: 120,
+      y: 380,
+      top: 380,
+      left: 120,
+      right: 320,
+      bottom: 416,
+      width: 200,
+      height: 36,
+      toJSON: () => {},
+    } as DOMRect)
+
+    Object.defineProperty(window, 'innerWidth', { configurable: true, value: 760 })
+    Object.defineProperty(window, 'innerHeight', { configurable: true, value: 780 })
+
+    act(() => {
+      trigger?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+    })
+
+    const picker = document.body.querySelector('.date-picker-popover') as HTMLElement | null
+    expect(picker).not.toBeNull()
+    expect(picker?.dataset.placement).toBe('top')
+
+    act(() => {
+      root.unmount()
+    })
+    container.remove()
+  })
+
   it('pages assignee chips inside task dialog without reintroducing modal scrolling', () => {
     const people = Array.from({ length: 13 }, (_, index) => ({
       id: `person-${index + 1}`,
