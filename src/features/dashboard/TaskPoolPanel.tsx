@@ -75,22 +75,21 @@ export function TaskPoolPanel({
   const [editingFromDetail, setEditingFromDetail] = useState(false)
   const [hideDone, setHideDone] = useState(false)
   const [detailState, setDetailState] = useState<DetailState | null>(null)
-  const activeDetailTaskId = detailState?.taskId ?? null
+  const storedDetailTaskId = detailState?.taskId ?? null
+  const detailTask = storedDetailTaskId
+    ? tasks.find((task) => task.id === storedDetailTaskId) ?? null
+    : null
+  const activeDetailTaskId = detailTask?.id ?? null
 
   useEffect(() => {
-    if (!detailState) return
+    if (!detailTask) return
 
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key === 'Escape') setDetailState(null)
     }
     window.addEventListener('keydown', handleKeyDown)
     return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [detailState])
-
-  useEffect(() => {
-    if (!activeDetailTaskId) return
-    if (!tasks.some((task) => task.id === activeDetailTaskId)) setDetailState(null)
-  }, [activeDetailTaskId, tasks])
+  }, [detailTask])
 
   const handleCtx = (e: MouseEvent<HTMLDivElement>, task: TaskRow) => {
     e.preventDefault()
@@ -181,10 +180,6 @@ export function TaskPoolPanel({
     if (people.length <= 3) return visibleNames
     return `${visibleNames} +${people.length - 3}`
   }
-
-  const detailTask = activeDetailTaskId
-    ? tasks.find((task) => task.id === activeDetailTaskId) ?? null
-    : null
 
   return (
     <div className="panel" ref={panelRef}>

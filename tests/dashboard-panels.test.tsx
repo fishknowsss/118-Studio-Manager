@@ -697,4 +697,10 @@ describe('dashboard panels', () => {
     expect(darkLayerRule).toContain('rgba(2, 6, 23')
     expect(darkLayerRule).not.toContain('248, 250, 255')
   })
+
+  it('derives removed task detail visibility without synchronously setting state in an effect', () => {
+    const componentSource = readFileSync(join(process.cwd(), 'src/features/dashboard/TaskPoolPanel.tsx'), 'utf8')
+
+    expect(componentSource).not.toMatch(/useEffect\(\(\) => \{\s*if \(!activeDetailTaskId\) return[\s\S]*?setDetailState\(null\)[\s\S]*?\}, \[activeDetailTaskId, tasks\]\)/)
+  })
 })
