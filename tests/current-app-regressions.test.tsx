@@ -617,6 +617,13 @@ describe('current app regressions', () => {
     expect(styleSource).toMatch(/\.acc-color-swatch/)
   })
 
+  it('keeps account folder flyouts within the visible viewport when many accounts are listed', () => {
+    const materialsSource = readFileSync(join(process.cwd(), 'src/views/Materials.tsx'), 'utf8')
+
+    expect(materialsSource).toMatch(/const panelMaxHeight = Math\.max\([^)]*window\.innerHeight - top - panelMargin/)
+    expect(materialsSource).toMatch(/maxHeight:\s*panelMaxHeight/)
+  })
+
   it('keeps planner assignment list limited to unscheduled actionable tasks', () => {
     const tasks = [
       { id: 'task-open', title: '正常任务', status: 'todo', scheduledDate: null },

@@ -14,7 +14,7 @@ import type { TaskStatus } from '../../legacy/store'
 type TaskRow = LegacyTask & { people?: LegacyPerson[]; project?: LegacyProject | null }
 type CtxState = { x: number; y: number; task: TaskRow }
 type DetailState = {
-  task: TaskRow
+  taskId: string
   left: number
   originX: number
   originY: number
@@ -75,6 +75,7 @@ export function TaskPoolPanel({
   const [editingFromDetail, setEditingFromDetail] = useState(false)
   const [hideDone, setHideDone] = useState(false)
   const [detailState, setDetailState] = useState<DetailState | null>(null)
+  const activeDetailTaskId = detailState?.taskId ?? null
 
   useEffect(() => {
     if (!detailState) return
@@ -85,6 +86,11 @@ export function TaskPoolPanel({
     window.addEventListener('keydown', handleKeyDown)
     return () => window.removeEventListener('keydown', handleKeyDown)
   }, [detailState])
+
+  useEffect(() => {
+    if (!activeDetailTaskId) return
+    if (!tasks.some((task) => task.id === activeDetailTaskId)) setDetailState(null)
+  }, [activeDetailTaskId, tasks])
 
   const handleCtx = (e: MouseEvent<HTMLDivElement>, task: TaskRow) => {
     e.preventDefault()
@@ -112,8 +118,8 @@ export function TaskPoolPanel({
     if (isTaskDraggingRef.current) return
     if (draggingPersonId) return
     setDetailState((current) => {
-      if (current?.task.id === task.id) return null
-      return { task, ...getTaskDetailPlacement(row) }
+      if (current?.taskId === task.id) return null
+      return { taskId: task.id, ...getTaskDetailPlacement(row) }
     })
   }
 
@@ -176,6 +182,10 @@ export function TaskPoolPanel({
     return `${visibleNames} +${people.length - 3}`
   }
 
+  const detailTask = activeDetailTaskId
+    ? tasks.find((task) => task.id === activeDetailTaskId) ?? null
+    : null
+
   return (
     <div className="panel" ref={panelRef}>
       <div
@@ -211,7 +221,7 @@ export function TaskPoolPanel({
             const isOverdue = task.endDate && task.endDate < today() && task.status !== 'done'
             const isDropTarget = Boolean(draggingPersonId) && dragOverTaskId === task.id
             const assignees = task.people ?? []
-            const isActive = detailState?.task.id === task.id
+            const isActive = activeDetailTaskId === task.id
             const showSquidMark = hasSquidAssignee(assignees.map((person) => person.name))
             return (
               <div
@@ -263,7 +273,7 @@ export function TaskPoolPanel({
         )}
       </div>
 
-      {detailState ? (
+      {detailState && detailTask ? (
         <div
           className="task-detail-float-layer"
           onClick={() => setDetailState(null)}
@@ -273,7 +283,7 @@ export function TaskPoolPanel({
           }}
         >
           <div
-            className={`task-detail-card ${detailState.task.priority ? `priority-${detailState.task.priority}` : ''}`}
+            className={`task-detail-card ${detailTask.priority ? `priority-${detailTask.priority}` : ''}`}
             style={{
               left: detailState.left,
               top: detailState.top,
@@ -288,8 +298,8 @@ export function TaskPoolPanel({
           >
             <div className="task-detail-card-header">
               <div className="task-detail-card-title">
-                <span className="task-detail-card-name">{detailState.task.title || '未命名任务'}</span>
-                <span className="task-detail-card-project">{detailState.task.project?.name || '未关联项目'}</span>
+                <span className="task-detail-card-name">{detailTask.title || '未命名任务'}</span>
+                <span className="task-detail-card-project">{detailTask.project?.name || '未关联项目'}</span>
               </div>
               <div className="task-detail-card-actions">
                 <button
@@ -298,7 +308,7 @@ export function TaskPoolPanel({
                   aria-label="编辑任务"
                   onClick={(event) => {
                     event.stopPropagation()
-                    openDetailTaskEditor(detailState.task)
+                    openDetailTaskEditor(detailTask)
                   }}
                 >
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
@@ -312,7 +322,7 @@ export function TaskPoolPanel({
                   aria-label="删除任务"
                   onClick={(event) => {
                     event.stopPropagation()
-                    deleteDetailTask(detailState.task)
+                    deleteDetailTask(detailTask)
                   }}
                 >
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
@@ -327,18 +337,18 @@ export function TaskPoolPanel({
             </div>
 
             <div className="task-detail-card-status">
-              <span>{STATUS_LABELS[detailState.task.status || 'todo'] ?? detailState.task.status ?? '待处理'}</span>
-              <span>{PRIORITY_LABELS[detailState.task.priority || 'medium'] ?? detailState.task.priority ?? '中'}</span>
-              <span>{detailState.task.endDate ? `截止 ${formatDate(detailState.task.endDate)}` : '未设截止'}</span>
+              <span>{STATUS_LABELS[detailTask.status || 'todo'] ?? detailTask.status ?? '待处理'}</span>
+              <span>{PRIORITY_LABELS[detailTask.priority || 'medium'] ?? detailTask.priority ?? '中'}</span>
+              <span>{detailTask.endDate ? `截止 ${formatDate(detailTask.endDate)}` : '未设截止'}</span>
             </div>
 
             <div className="task-detail-card-meta">
-              <span><b>负责人</b>{formatAssigneeText(detailState.task.people ?? [])}</span>
-              <span><b>工时</b>{detailState.task.estimatedHours ? `${detailState.task.estimatedHours} 小时` : '未填写'}</span>
+              <span><b>负责人</b>{formatAssigneeText(detailTask.people ?? [])}</span>
+              <span><b>工时</b>{detailTask.estimatedHours ? `${detailTask.estimatedHours} 小时` : '未填写'}</span>
             </div>
 
             <div className="task-detail-card-description">
-              {detailState.task.description?.trim() || '还没有填写描述'}
+              {detailTask.description?.trim() || '还没有填写描述'}
             </div>
           </div>
         </div>

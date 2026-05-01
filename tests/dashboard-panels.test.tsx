@@ -27,6 +27,11 @@ function renderNode(node: ReactNode) {
   return {
     container,
     root,
+    rerender(nextNode: ReactNode) {
+      act(() => {
+        root.render(nextNode)
+      })
+    },
     cleanup() {
       act(() => {
         root.unmount()
@@ -581,6 +586,95 @@ describe('dashboard panels', () => {
 
     expect(view.container.querySelector('.task-detail-float-layer')).toBeNull()
     expect(document.body.querySelector('.task-dialog-from-detail')).not.toBeNull()
+
+    view.cleanup()
+  })
+
+  it('keeps an open task detail card synced with the current task row data', () => {
+    const renderPanel = (tasks: Array<LegacyTask & { people?: LegacyPerson[]; project?: LegacyProject | null }>) => (
+      <TaskPoolPanel
+        dragOverTaskId={null}
+        draggingPersonId={null}
+        onDragLeaveTask={() => {}}
+        onDragOverTask={() => {}}
+        onDropToTask={() => {}}
+        onExpand={() => {}}
+        onTaskDragEnd={() => {}}
+        onTaskDragStart={() => {}}
+        tasks={tasks}
+      />
+    )
+    const view = renderNode(renderPanel([
+      {
+        id: 'task-1',
+        title: '初版渲染',
+        status: 'todo',
+        priority: 'medium',
+        description: '等待开始。',
+        project: null,
+      },
+    ]))
+
+    act(() => {
+      view.container.querySelector('.task-row')?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+    })
+
+    expect(view.container.querySelector('.task-detail-card')?.textContent).toContain('待处理')
+
+    view.rerender(renderPanel([
+      {
+        id: 'task-1',
+        title: '终版渲染',
+        status: 'done',
+        priority: 'high',
+        description: '已经完成。',
+        project: null,
+      },
+    ]))
+
+    const card = view.container.querySelector('.task-detail-card') as HTMLElement | null
+    expect(card?.textContent).toContain('终版渲染')
+    expect(card?.textContent).toContain('完成')
+    expect(card?.textContent).toContain('已经完成。')
+    expect(card?.textContent).not.toContain('初版渲染')
+    expect(card?.textContent).not.toContain('等待开始。')
+
+    view.cleanup()
+  })
+
+  it('closes an open task detail card when the selected task is removed', () => {
+    const renderPanel = (tasks: Array<LegacyTask & { people?: LegacyPerson[]; project?: LegacyProject | null }>) => (
+      <TaskPoolPanel
+        dragOverTaskId={null}
+        draggingPersonId={null}
+        onDragLeaveTask={() => {}}
+        onDragOverTask={() => {}}
+        onDropToTask={() => {}}
+        onExpand={() => {}}
+        onTaskDragEnd={() => {}}
+        onTaskDragStart={() => {}}
+        tasks={tasks}
+      />
+    )
+    const view = renderNode(renderPanel([
+      {
+        id: 'task-1',
+        title: '需要删除的任务',
+        status: 'todo',
+        priority: 'medium',
+        project: null,
+      },
+    ]))
+
+    act(() => {
+      view.container.querySelector('.task-row')?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+    })
+
+    expect(view.container.querySelector('.task-detail-card')?.textContent).toContain('需要删除的任务')
+
+    view.rerender(renderPanel([]))
+
+    expect(view.container.querySelector('.task-detail-float-layer')).toBeNull()
 
     view.cleanup()
   })

@@ -297,12 +297,16 @@ function PlatformCard({
     if (!rect) return
     const spaceRight = window.innerWidth - rect.right
     const isLeft = spaceRight < 280
-    const top = Math.min(rect.top, window.innerHeight - 80)
+    const panelMargin = 12
+    const minPanelHeight = Math.min(420, window.innerHeight - panelMargin * 2)
+    const maxTop = Math.max(panelMargin, window.innerHeight - minPanelHeight - panelMargin)
+    const top = Math.max(panelMargin, Math.min(rect.top, maxTop))
+    const panelMaxHeight = Math.max(220, window.innerHeight - top - panelMargin)
     setPanelLeft(isLeft)
     setPanelStyle(
       isLeft
-        ? { top, right: window.innerWidth - rect.left + 6 }
-        : { top, left: rect.right + 6 },
+        ? { top, right: window.innerWidth - rect.left + 6, maxHeight: panelMaxHeight }
+        : { top, left: rect.right + 6, maxHeight: panelMaxHeight },
     )
     setOpen(true)
   }
