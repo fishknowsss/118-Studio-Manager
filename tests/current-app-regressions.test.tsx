@@ -619,9 +619,12 @@ describe('current app regressions', () => {
 
   it('keeps account folder flyouts within the visible viewport when many accounts are listed', () => {
     const materialsSource = readFileSync(join(process.cwd(), 'src/views/Materials.tsx'), 'utf8')
+    const styleSource = readFileSync(join(process.cwd(), 'css/style.css'), 'utf8')
 
-    expect(materialsSource).toMatch(/const panelMaxHeight = Math\.max\([^)]*window\.innerHeight - top - panelMargin/)
+    expect(materialsSource).toMatch(/const panelBottomGap = 56/)
+    expect(materialsSource).toMatch(/const panelMaxHeight = Math\.max\([^)]*window\.innerHeight - top - panelBottomGap/)
     expect(materialsSource).toMatch(/maxHeight:\s*panelMaxHeight/)
+    expect(styleSource).toMatch(/\.acc-fan-panel\s*\{[\s\S]*box-sizing:\s*border-box;/)
   })
 
   it('keeps planner assignment list limited to unscheduled actionable tasks', () => {

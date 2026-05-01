@@ -298,10 +298,11 @@ function PlatformCard({
     const spaceRight = window.innerWidth - rect.right
     const isLeft = spaceRight < 280
     const panelMargin = 12
-    const minPanelHeight = Math.min(420, window.innerHeight - panelMargin * 2)
-    const maxTop = Math.max(panelMargin, window.innerHeight - minPanelHeight - panelMargin)
+    const panelBottomGap = 56
+    const minPanelHeight = Math.min(420, window.innerHeight - panelMargin - panelBottomGap)
+    const maxTop = Math.max(panelMargin, window.innerHeight - minPanelHeight - panelBottomGap)
     const top = Math.max(panelMargin, Math.min(rect.top, maxTop))
-    const panelMaxHeight = Math.max(220, window.innerHeight - top - panelMargin)
+    const panelMaxHeight = Math.max(180, window.innerHeight - top - panelBottomGap)
     setPanelLeft(isLeft)
     setPanelStyle(
       isLeft
