@@ -5061,7 +5061,7 @@ html[data-easter-mode='konami'] .squid-mark {
   font-size: var(--fs-xs);
   font-weight: 800;
 }
-.schedule-week-field input {
+.schedule-week-field .date-picker-trigger {
   height: 34px;
   border: 1px solid var(--c-border);
   border-radius: var(--r-md);
@@ -5070,10 +5070,6 @@ html[data-easter-mode='konami'] .squid-mark {
   background: var(--c-bg);
   color: var(--c-text);
   font: inherit;
-  color-scheme: light;
-}
-[data-theme='dark'] .schedule-week-field input {
-  color-scheme: dark;
 }
 .schedule-person-filter,
 .schedule-management-menu {
@@ -6082,6 +6078,151 @@ html[data-easter-mode='konami'] .squid-mark {
 .form-label { font-size: var(--fs-sm); font-weight: 600; color: var(--c-text-2); }
 .form-label-count { font-weight: 400; color: var(--c-primary); }
 .form-hint { font-size: var(--fs-2xs); color: var(--c-text-3); margin-top: 2px; }
+
+.date-picker {
+  position: relative;
+}
+.date-picker-trigger {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  text-align: left;
+  cursor: pointer;
+}
+.date-picker-trigger.is-empty {
+  color: var(--c-text-3);
+}
+.date-picker-trigger-icon {
+  width: 18px;
+  height: 18px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--c-text-3);
+  flex-shrink: 0;
+}
+.date-picker-trigger-icon svg {
+  width: 17px;
+  height: 17px;
+}
+.date-picker-popover {
+  position: fixed;
+  z-index: 980;
+  width: min(314px, calc(100vw - 40px));
+  padding: 12px;
+  border: 1px solid var(--c-border);
+  border-radius: var(--r-lg);
+  background: var(--c-surface);
+  box-shadow: var(--shadow-lg);
+  transform-origin: top center;
+  animation: date-picker-popover-in .16s cubic-bezier(.2, .8, .2, 1) both;
+}
+.date-picker-popover[data-placement='top'] {
+  transform-origin: bottom center;
+}
+.date-picker-header {
+  display: grid;
+  grid-template-columns: 34px minmax(0, 1fr) 34px;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+.date-picker-month {
+  text-align: center;
+  font-size: var(--fs-base);
+  font-weight: 800;
+  color: var(--c-text);
+}
+.date-picker-nav {
+  width: 34px;
+  height: 32px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--r-sm);
+  color: var(--c-text-2);
+  font-size: 20px;
+  line-height: 1;
+  transition: background .12s, color .12s;
+}
+.date-picker-nav:hover {
+  background: var(--c-bg);
+  color: var(--c-text);
+}
+.date-picker-weekdays,
+.date-picker-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 4px;
+}
+.date-picker-weekdays {
+  margin-bottom: 5px;
+}
+.date-picker-weekdays span {
+  height: 24px;
+  display: grid;
+  place-items: center;
+  font-size: var(--fs-xs);
+  color: var(--c-text-3);
+  font-weight: 700;
+}
+.date-picker-day {
+  aspect-ratio: 1;
+  min-width: 0;
+  border-radius: var(--r-sm);
+  color: var(--c-text-2);
+  font-size: var(--fs-sm);
+  font-variant-numeric: tabular-nums;
+  transition: background .12s, color .12s, box-shadow .12s;
+}
+.date-picker-day:hover {
+  background: var(--c-primary-light);
+  color: var(--c-primary);
+}
+.date-picker-day.muted {
+  color: var(--c-text-3);
+  opacity: .55;
+}
+.date-picker-day.today {
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--c-primary) 42%, transparent);
+}
+.date-picker-day.selected {
+  background: var(--c-primary);
+  color: white;
+  box-shadow: none;
+}
+.date-picker-actions {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px solid var(--c-border-light);
+}
+.date-picker-action {
+  height: 30px;
+  padding: 0 10px;
+  border-radius: var(--r-sm);
+  color: var(--c-text-2);
+  font-size: var(--fs-sm);
+  font-weight: 700;
+  transition: background .12s, color .12s;
+}
+.date-picker-action:hover:not(:disabled) {
+  background: var(--c-bg);
+  color: var(--c-text);
+}
+.date-picker-action:disabled {
+  opacity: .38;
+  cursor: default;
+}
+
+@keyframes date-picker-popover-in {
+  from { opacity: 0; transform: translateY(-6px) scale(.98); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
 
 .person-gender-avatar {
   display: flex;

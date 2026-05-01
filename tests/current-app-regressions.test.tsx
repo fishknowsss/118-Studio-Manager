@@ -184,11 +184,16 @@ describe('current app regressions', () => {
 
   it('keeps task dialog focused on deadline metadata and prevents modal footer clipping in short viewports', () => {
     const taskDialogSource = readFileSync(join(process.cwd(), 'src/features/tasks/TaskDialog.tsx'), 'utf8')
+    const projectDialogSource = readFileSync(join(process.cwd(), 'src/features/projects/ProjectDialog.tsx'), 'utf8')
     const styleSource = readFileSync(join(process.cwd(), 'css/style.css'), 'utf8')
 
     expect(taskDialogSource).not.toMatch(/安排日期/)
     expect(taskDialogSource).not.toMatch(/开始日期/)
     expect(taskDialogSource).toMatch(/截止日期/)
+    expect(taskDialogSource).toMatch(/DatePicker/)
+    expect(taskDialogSource).not.toMatch(/type="date"/)
+    expect(projectDialogSource).toMatch(/DatePicker/)
+    expect(projectDialogSource).not.toMatch(/type="date"/)
     expect(taskDialogSource).toMatch(/预计工时\(h\)/)
     expect(taskDialogSource).toMatch(/backdropScrollable=\{false\}/)
     expect(taskDialogSource).not.toMatch(/bodyScrollable=\{false\}/)
@@ -204,6 +209,131 @@ describe('current app regressions', () => {
     expect(styleSource).toMatch(/\.modal-body\.no-scroll\s*\{[\s\S]*overflow:\s*hidden;/)
     expect(styleSource).toMatch(/\.task-assignee-page\s*\{[\s\S]*min-height:\s*114px;/)
     expect(styleSource).toMatch(/\.task-assignee-page\.cols-6\s*\{[\s\S]*repeat\(6, minmax\(0, 1fr\)\);/)
+    expect(styleSource).toMatch(/\.date-picker-popover\s*\{/)
+    expect(styleSource).toMatch(/\.date-picker-popover\s*\{[\s\S]*position:\s*fixed;/)
+    expect(styleSource).toMatch(/\.date-picker-day\.selected\s*\{/)
+  })
+
+  it('opens a custom date picker from the task dialog and writes the selected deadline', () => {
+    const people = [{ id: 'person-1', name: '成员1', gender: 'male' as const, status: 'active' as const }]
+    const projects = [{ id: 'project-1', name: '项目 A', status: 'active' as const }]
+    const task = {
+      id: 'task-1',
+      title: '测试任务',
+      projectId: 'project-1',
+      status: 'todo' as const,
+      priority: 'medium' as const,
+      assigneeIds: [],
+      endDate: '2026-05-15',
+    }
+    const container = document.createElement('div')
+    document.body.appendChild(container)
+    const root = createRoot(container)
+
+    act(() => {
+      root.render(
+        <ToastProvider>
+          <TaskDialog
+            task={task}
+            people={people}
+            projects={projects}
+            onClose={() => {}}
+          />
+        </ToastProvider>,
+      )
+    })
+
+    const trigger = document.body.querySelector('#task-end') as HTMLButtonElement | null
+    expect(trigger).not.toBeNull()
+    expect(trigger?.tagName).toBe('BUTTON')
+    expect(document.body.querySelector('.date-picker-popover')).toBeNull()
+
+    act(() => {
+      trigger?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+    })
+
+    const picker = document.body.querySelector('.date-picker-popover')
+    expect(picker).not.toBeNull()
+
+    const targetDay = document.body.querySelector('[data-date="2026-05-01"]') as HTMLButtonElement | null
+    expect(targetDay).not.toBeNull()
+
+    act(() => {
+      targetDay?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+    })
+
+    expect(trigger?.textContent).toContain('2026-05-01')
+    expect(document.body.querySelector('.date-picker-popover')).toBeNull()
+
+    act(() => {
+      root.unmount()
+    })
+    container.remove()
+  })
+
+  it('renders the date picker as a viewport layer that can open upward without changing modal flow', () => {
+    const people = [{ id: 'person-1', name: '成员1', gender: 'male' as const, status: 'active' as const }]
+    const projects = [{ id: 'project-1', name: '项目 A', status: 'active' as const }]
+    const task = {
+      id: 'task-1',
+      title: '测试任务',
+      projectId: 'project-1',
+      status: 'todo' as const,
+      priority: 'medium' as const,
+      assigneeIds: [],
+      endDate: '2026-05-15',
+    }
+    const container = document.createElement('div')
+    document.body.appendChild(container)
+    const root = createRoot(container)
+
+    act(() => {
+      root.render(
+        <ToastProvider>
+          <TaskDialog
+            task={task}
+            people={people}
+            projects={projects}
+            onClose={() => {}}
+          />
+        </ToastProvider>,
+      )
+    })
+
+    const trigger = document.body.querySelector('#task-end') as HTMLButtonElement | null
+    expect(trigger).not.toBeNull()
+
+    trigger!.getBoundingClientRect = () => ({
+      x: 120,
+      y: 430,
+      top: 430,
+      left: 120,
+      right: 320,
+      bottom: 466,
+      width: 200,
+      height: 36,
+      toJSON: () => {},
+    } as DOMRect)
+
+    Object.defineProperty(window, 'innerWidth', { configurable: true, value: 760 })
+    Object.defineProperty(window, 'innerHeight', { configurable: true, value: 520 })
+
+    act(() => {
+      trigger?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+    })
+
+    const picker = document.body.querySelector('.date-picker-popover') as HTMLElement | null
+    const formField = trigger?.closest('.form-field')
+    expect(picker).not.toBeNull()
+    expect(picker?.parentElement).toBe(document.body)
+    expect(formField?.contains(picker)).toBe(false)
+    expect(picker?.dataset.placement).toBe('top')
+    expect(picker?.style.position).toBe('fixed')
+
+    act(() => {
+      root.unmount()
+    })
+    container.remove()
   })
 
   it('pages assignee chips inside task dialog without reintroducing modal scrolling', () => {

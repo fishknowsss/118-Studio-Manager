@@ -3,6 +3,7 @@ import { useConfirm } from '../components/feedback/ConfirmProvider'
 import { useToast } from '../components/feedback/ToastProvider'
 import { SquidMark } from '../components/easter/SquidMark'
 import { getSquidVariant, hasSquidPersonName } from '../components/easter/squidMarkUtils'
+import { DatePicker } from '../components/ui/DatePicker'
 import { Dialog } from '../components/ui/Dialog'
 import {
   buildProductivityPersonModels,
@@ -382,14 +383,15 @@ export function Productivity() {
               >
                 <summary className="schedule-week-pill">第 {currentWeek} 周</summary>
                 <div className="schedule-week-panel">
-                  <label className="schedule-week-field">
+                  <div className="schedule-week-field">
                     <span>学期开始</span>
-                    <input
-                      type="date"
+                    <DatePicker
+                      id="schedule-start-date"
+                      label="学期开始"
                       value={termStartDate}
-                      onChange={(event) => setTermStartDate(event.currentTarget.value || DEFAULT_TERM_START_DATE)}
+                      onChange={(value) => setTermStartDate(value || DEFAULT_TERM_START_DATE)}
                     />
-                  </label>
+                  </div>
                 </div>
               </details>
               <SchedulePersonFilter

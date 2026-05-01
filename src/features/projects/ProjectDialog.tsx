@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useToast } from '../../components/feedback/ToastProvider'
+import { DatePicker } from '../../components/ui/DatePicker'
 import { Dialog } from '../../components/ui/Dialog'
 import { PROJECT_PRIORITIES, PROJECT_STATUSES, type LegacyProject } from '../../legacy/store'
 import { PRIORITY_LABELS, STATUS_LABELS } from '../../legacy/utils'
@@ -70,7 +71,12 @@ export function ProjectDialog({
         </div>
         <div className="form-field">
           <label className="form-label" htmlFor="project-ddl">截止日期</label>
-          <input id="project-ddl" className="form-input" type="date" value={form.ddl || ''} onChange={(event) => setForm((current) => ({ ...current, ddl: event.target.value || null }))} />
+          <DatePicker
+            id="project-ddl"
+            label="截止日期"
+            value={form.ddl || null}
+            onChange={(value) => setForm((current) => ({ ...current, ddl: value }))}
+          />
         </div>
         <div className="form-field span2">
           <label className="form-label" htmlFor="project-desc">描述</label>

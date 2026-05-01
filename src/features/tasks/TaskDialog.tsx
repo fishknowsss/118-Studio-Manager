@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { PersonGenderAvatar } from '../../components/ui/PersonGenderAvatar'
 import { useToast } from '../../components/feedback/ToastProvider'
+import { DatePicker } from '../../components/ui/DatePicker'
 import { Dialog } from '../../components/ui/Dialog'
 import {
   PROJECT_PRIORITIES,
@@ -230,7 +231,12 @@ export function TaskDialog({
         </div>
         <div className="form-field">
           <label className="form-label" htmlFor="task-end">截止日期</label>
-          <input id="task-end" className="form-input" type="date" value={form.endDate || ''} onChange={(event) => setForm((current) => ({ ...current, endDate: event.target.value || null }))} />
+          <DatePicker
+            id="task-end"
+            label="截止日期"
+            value={form.endDate || null}
+            onChange={(value) => setForm((current) => ({ ...current, endDate: value }))}
+          />
         </div>
         <div className="form-field">
           <label className="form-label" htmlFor="task-hours">预计工时(h)</label>
