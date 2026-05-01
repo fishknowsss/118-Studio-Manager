@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState, type CSSProperties } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from 'react'
 import { createPortal } from 'react-dom'
 
 const WEEKDAYS = ['日', '一', '二', '三', '四', '五', '六']
@@ -73,7 +73,7 @@ export function DatePicker({
 }) {
   const wrapperRef = useRef<HTMLDivElement | null>(null)
   const popoverRef = useRef<HTMLDivElement | null>(null)
-  const selectedDate = parseDateKey(value)
+  const selectedDate = useMemo(() => parseDateKey(value), [value])
   const todayKey = formatDateKey(new Date())
   const [open, setOpen] = useState(false)
   const [popoverStyle, setPopoverStyle] = useState<CSSProperties | null>(null)
@@ -83,12 +83,7 @@ export function DatePicker({
     return new Date(baseDate.getFullYear(), baseDate.getMonth(), 1)
   })
 
-  useEffect(() => {
-    if (!selectedDate) return
-    setViewDate(new Date(selectedDate.getFullYear(), selectedDate.getMonth(), 1))
-  }, [value])
-
-  const updatePopoverPosition = () => {
+  const updatePopoverPosition = useCallback(() => {
     const trigger = wrapperRef.current?.querySelector<HTMLButtonElement>('.date-picker-trigger')
     if (!trigger) return
 
@@ -114,12 +109,7 @@ export function DatePicker({
       top: `${Math.max(VIEWPORT_PADDING, top)}px`,
       left: `${left}px`,
     })
-  }
-
-  useEffect(() => {
-    if (!open) return
-    updatePopoverPosition()
-  }, [open, viewDate, value])
+  }, [])
 
   useEffect(() => {
     if (!open) return undefined
@@ -149,7 +139,7 @@ export function DatePicker({
       window.removeEventListener('resize', updatePopoverPosition)
       window.removeEventListener('scroll', updatePopoverPosition, true)
     }
-  }, [open])
+  }, [open, updatePopoverPosition])
 
   const days = useMemo(() => buildMonthDays(viewDate), [viewDate])
   const selectedKey = value || ''
@@ -169,6 +159,18 @@ export function DatePicker({
   const clearDate = () => {
     onChange(null)
     setOpen(false)
+  }
+
+  const toggleOpen = () => {
+    setOpen((current) => {
+      const nextOpen = !current
+      if (nextOpen) {
+        const baseDate = selectedDate ?? new Date()
+        setViewDate(new Date(baseDate.getFullYear(), baseDate.getMonth(), 1))
+        updatePopoverPosition()
+      }
+      return nextOpen
+    })
   }
 
   const popover = open ? (
@@ -241,7 +243,7 @@ export function DatePicker({
         aria-label={label}
         className={`form-input date-picker-trigger${value ? '' : ' is-empty'}`}
         type="button"
-        onClick={() => setOpen((current) => !current)}
+        onClick={toggleOpen}
       >
         <span>{value || '选择日期'}</span>
         <span className="date-picker-trigger-icon" aria-hidden="true">
