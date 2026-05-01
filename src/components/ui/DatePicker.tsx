@@ -4,7 +4,6 @@ import { createPortal } from 'react-dom'
 const WEEKDAYS = ['日', '一', '二', '三', '四', '五', '六']
 const POPOVER_WIDTH = 314
 const POPOVER_HEIGHT = 386
-const POPOVER_GAP = 8
 const VIEWPORT_PADDING = 12
 
 function pad(value: number) {
@@ -77,7 +76,6 @@ export function DatePicker({
   const todayKey = formatDateKey(new Date())
   const [open, setOpen] = useState(false)
   const [popoverStyle, setPopoverStyle] = useState<CSSProperties | null>(null)
-  const [placement, setPlacement] = useState<'bottom' | 'center'>('bottom')
   const [viewDate, setViewDate] = useState(() => {
     const baseDate = selectedDate ?? new Date()
     return new Date(baseDate.getFullYear(), baseDate.getMonth(), 1)
@@ -90,23 +88,19 @@ export function DatePicker({
     const rect = trigger.getBoundingClientRect()
     const viewportWidth = window.innerWidth || document.documentElement.clientWidth
     const viewportHeight = window.innerHeight || document.documentElement.clientHeight
-    const spaceBelow = viewportHeight - rect.bottom - VIEWPORT_PADDING
     const panelHeight = popoverRef.current?.offsetHeight || POPOVER_HEIGHT
     const panelWidth = popoverRef.current?.offsetWidth || POPOVER_WIDTH
-    const nextPlacement = spaceBelow >= panelHeight + POPOVER_GAP ? 'bottom' : 'center'
     const left = Math.min(
       Math.max(VIEWPORT_PADDING, rect.left),
       Math.max(VIEWPORT_PADDING, viewportWidth - panelWidth - VIEWPORT_PADDING),
     )
     const centeredTop = rect.top + (rect.height / 2) - (panelHeight / 2)
-    const bottomTop = rect.bottom + POPOVER_GAP
     const maxTop = Math.max(VIEWPORT_PADDING, viewportHeight - panelHeight - VIEWPORT_PADDING)
     const top = Math.min(
-      Math.max(VIEWPORT_PADDING, nextPlacement === 'center' ? centeredTop : bottomTop),
+      Math.max(VIEWPORT_PADDING, centeredTop),
       maxTop,
     )
 
-    setPlacement(nextPlacement)
     setPopoverStyle({
       position: 'fixed',
       top: `${Math.max(VIEWPORT_PADDING, top)}px`,
@@ -182,7 +176,6 @@ export function DatePicker({
       className="date-picker-popover"
       role="dialog"
       aria-label={label}
-      data-placement={placement}
       style={popoverStyle ?? { position: 'fixed', top: 0, left: 0 }}
     >
       <div className="date-picker-header">

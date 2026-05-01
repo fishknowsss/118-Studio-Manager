@@ -211,6 +211,7 @@ describe('current app regressions', () => {
     expect(styleSource).toMatch(/\.task-assignee-page\.cols-6\s*\{[\s\S]*repeat\(6, minmax\(0, 1fr\)\);/)
     expect(styleSource).toMatch(/\.date-picker-popover\s*\{/)
     expect(styleSource).toMatch(/\.date-picker-popover\s*\{[\s\S]*position:\s*fixed;/)
+    expect(styleSource).not.toMatch(/data-placement/)
     expect(styleSource).toMatch(/\.date-picker-day\.selected\s*\{/)
   })
 
@@ -271,7 +272,7 @@ describe('current app regressions', () => {
     container.remove()
   })
 
-  it('renders the date picker as a viewport layer centered on the trigger when opening downward would clip', () => {
+  it('renders the date picker as a centered viewport layer without changing modal flow', () => {
     const people = [{ id: 'person-1', name: '成员1', gender: 'male' as const, status: 'active' as const }]
     const projects = [{ id: 'project-1', name: '项目 A', status: 'active' as const }]
     const task = {
@@ -327,7 +328,6 @@ describe('current app regressions', () => {
     expect(picker).not.toBeNull()
     expect(picker?.parentElement).toBe(document.body)
     expect(formField?.contains(picker)).toBe(false)
-    expect(picker?.dataset.placement).toBe('center')
     expect(picker?.style.position).toBe('fixed')
     expect(picker?.style.top).toBe('122px')
 
@@ -337,7 +337,7 @@ describe('current app regressions', () => {
     container.remove()
   })
 
-  it('centers the date picker around the trigger when the real panel would be clipped below the viewport', () => {
+  it('centers the date picker around the trigger even when there is room below', () => {
     const people = [{ id: 'person-1', name: '成员1', gender: 'male' as const, status: 'active' as const }]
     const projects = [{ id: 'project-1', name: '项目 A', status: 'active' as const }]
     const task = {
@@ -390,7 +390,6 @@ describe('current app regressions', () => {
 
     const picker = document.body.querySelector('.date-picker-popover') as HTMLElement | null
     expect(picker).not.toBeNull()
-    expect(picker?.dataset.placement).toBe('center')
     expect(picker?.style.top).toBe('205px')
 
     act(() => {
