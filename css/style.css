@@ -6121,8 +6121,8 @@ html[data-easter-mode='konami'] .squid-mark {
   transform-origin: top center;
   animation: date-picker-popover-in .16s cubic-bezier(.2, .8, .2, 1) both;
 }
-.date-picker-popover[data-placement='top'] {
-  transform-origin: bottom center;
+.date-picker-popover[data-placement='center'] {
+  transform-origin: center center;
 }
 .date-picker-header {
   display: grid;

@@ -77,7 +77,7 @@ export function DatePicker({
   const todayKey = formatDateKey(new Date())
   const [open, setOpen] = useState(false)
   const [popoverStyle, setPopoverStyle] = useState<CSSProperties | null>(null)
-  const [placement, setPlacement] = useState<'top' | 'bottom'>('bottom')
+  const [placement, setPlacement] = useState<'bottom' | 'center'>('bottom')
   const [viewDate, setViewDate] = useState(() => {
     const baseDate = selectedDate ?? new Date()
     return new Date(baseDate.getFullYear(), baseDate.getMonth(), 1)
@@ -91,17 +91,20 @@ export function DatePicker({
     const viewportWidth = window.innerWidth || document.documentElement.clientWidth
     const viewportHeight = window.innerHeight || document.documentElement.clientHeight
     const spaceBelow = viewportHeight - rect.bottom - VIEWPORT_PADDING
-    const spaceAbove = rect.top - VIEWPORT_PADDING
-    const nextPlacement = spaceBelow < POPOVER_HEIGHT && spaceAbove > spaceBelow ? 'top' : 'bottom'
     const panelHeight = popoverRef.current?.offsetHeight || POPOVER_HEIGHT
     const panelWidth = popoverRef.current?.offsetWidth || POPOVER_WIDTH
+    const nextPlacement = spaceBelow >= panelHeight + POPOVER_GAP ? 'bottom' : 'center'
     const left = Math.min(
       Math.max(VIEWPORT_PADDING, rect.left),
       Math.max(VIEWPORT_PADDING, viewportWidth - panelWidth - VIEWPORT_PADDING),
     )
-    const top = nextPlacement === 'top'
-      ? Math.max(VIEWPORT_PADDING, rect.top - panelHeight - POPOVER_GAP)
-      : Math.min(rect.bottom + POPOVER_GAP, viewportHeight - panelHeight - VIEWPORT_PADDING)
+    const centeredTop = rect.top + (rect.height / 2) - (panelHeight / 2)
+    const bottomTop = rect.bottom + POPOVER_GAP
+    const maxTop = Math.max(VIEWPORT_PADDING, viewportHeight - panelHeight - VIEWPORT_PADDING)
+    const top = Math.min(
+      Math.max(VIEWPORT_PADDING, nextPlacement === 'center' ? centeredTop : bottomTop),
+      maxTop,
+    )
 
     setPlacement(nextPlacement)
     setPopoverStyle({

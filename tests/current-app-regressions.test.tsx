@@ -271,7 +271,7 @@ describe('current app regressions', () => {
     container.remove()
   })
 
-  it('renders the date picker as a viewport layer that can open upward without changing modal flow', () => {
+  it('renders the date picker as a viewport layer centered on the trigger when opening downward would clip', () => {
     const people = [{ id: 'person-1', name: '成员1', gender: 'male' as const, status: 'active' as const }]
     const projects = [{ id: 'project-1', name: '项目 A', status: 'active' as const }]
     const task = {
@@ -327,8 +327,9 @@ describe('current app regressions', () => {
     expect(picker).not.toBeNull()
     expect(picker?.parentElement).toBe(document.body)
     expect(formField?.contains(picker)).toBe(false)
-    expect(picker?.dataset.placement).toBe('top')
+    expect(picker?.dataset.placement).toBe('center')
     expect(picker?.style.position).toBe('fixed')
+    expect(picker?.style.top).toBe('122px')
 
     act(() => {
       root.unmount()
@@ -336,7 +337,7 @@ describe('current app regressions', () => {
     container.remove()
   })
 
-  it('opens the date picker upward when the real panel would be clipped below the viewport', () => {
+  it('centers the date picker around the trigger when the real panel would be clipped below the viewport', () => {
     const people = [{ id: 'person-1', name: '成员1', gender: 'male' as const, status: 'active' as const }]
     const projects = [{ id: 'project-1', name: '项目 A', status: 'active' as const }]
     const task = {
@@ -389,7 +390,8 @@ describe('current app regressions', () => {
 
     const picker = document.body.querySelector('.date-picker-popover') as HTMLElement | null
     expect(picker).not.toBeNull()
-    expect(picker?.dataset.placement).toBe('top')
+    expect(picker?.dataset.placement).toBe('center')
+    expect(picker?.style.top).toBe('205px')
 
     act(() => {
       root.unmount()
