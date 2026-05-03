@@ -7601,6 +7601,13 @@ select.form-input { cursor: pointer; }
     padding: 10px 14px;
   }
 
+  .dashboard {
+    display: flex;
+    flex: none;
+    flex-direction: column;
+    overflow: visible;
+  }
+
   .dash-header-right {
     gap: 8px;
   }
@@ -7665,14 +7672,20 @@ select.form-input { cursor: pointer; }
   }
 
   .dash-bottom {
-    overflow-y: auto;
-    overflow-x: hidden;
+    display: flex;
+    flex: none;
+    flex-direction: column;
+    overflow: visible;
   }
 
   .dash-bottom > .panel,
   .dash-right {
     min-height: 320px;
     flex: none;
+  }
+
+  .dash-bottom .panel-body {
+    overflow: visible;
   }
 
   .people-page-viewport {
