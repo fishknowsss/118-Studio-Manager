@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useMemo, useState } from 'react'
 import { useConfirm } from '../components/feedback/ConfirmProvider'
 import { useToast } from '../components/feedback/ToastProvider'
 import { ShortDramaAssignmentDialog } from '../features/short-drama/ShortDramaAssignmentDialog'
@@ -86,29 +86,20 @@ export function ShortDrama() {
   const [editingAssignment, setEditingAssignment] = useState<ShortDramaAssignment | null | undefined>(undefined)
   const [quickAssignmentGroupId, setQuickAssignmentGroupId] = useState<string | null | undefined>(undefined)
 
-  useEffect(() => {
-    if (shortDramas.length === 0) {
-      setSelectedDramaId('')
-      return
-    }
-    if (!shortDramas.some((drama) => drama.id === selectedDramaId)) {
-      setSelectedDramaId(shortDramas[0].id)
-    }
-  }, [selectedDramaId, shortDramas])
-
   const selectedDrama = useMemo(
-    () => shortDramas.find((drama) => drama.id === selectedDramaId) || null,
+    () => shortDramas.find((drama) => drama.id === selectedDramaId) || shortDramas[0] || null,
     [selectedDramaId, shortDramas],
   )
+  const effectiveSelectedDramaId = selectedDrama?.id || ''
   const selectedGroups = useMemo(
     () => shortDramaGroups
-      .filter((group) => group.dramaId === selectedDramaId)
+      .filter((group) => group.dramaId === effectiveSelectedDramaId)
       .sort((left, right) => (left.sortOrder || 0) - (right.sortOrder || 0)),
-    [selectedDramaId, shortDramaGroups],
+    [effectiveSelectedDramaId, shortDramaGroups],
   )
   const selectedAssignments = useMemo(
-    () => shortDramaAssignments.filter((assignment) => assignment.dramaId === selectedDramaId),
-    [selectedDramaId, shortDramaAssignments],
+    () => shortDramaAssignments.filter((assignment) => assignment.dramaId === effectiveSelectedDramaId),
+    [effectiveSelectedDramaId, shortDramaAssignments],
   )
   const stats = useMemo(
     () => buildShortDramaStats(selectedDrama, shortDramaAssignments),
@@ -181,7 +172,7 @@ export function ShortDrama() {
               {shortDramas.map((drama) => (
                 <button
                   key={drama.id}
-                  className={`short-drama-rail-item${drama.id === selectedDramaId ? ' active' : ''}`}
+                  className={`short-drama-rail-item${drama.id === effectiveSelectedDramaId ? ' active' : ''}`}
                   type="button"
                   onClick={() => setSelectedDramaId(drama.id)}
                 >
