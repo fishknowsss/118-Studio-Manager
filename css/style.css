@@ -7476,6 +7476,13 @@ select.form-input { cursor: pointer; }
   .main-content {
     height: 100dvh;
     padding-bottom: var(--mobile-nav-h);
+    overflow-y: auto;
+    overflow-x: hidden;
+  }
+
+  #view-container {
+    overflow-y: auto;
+    overflow-x: hidden;
   }
 
   .sidebar {
@@ -7575,7 +7582,17 @@ select.form-input { cursor: pointer; }
   .view-graph,
   .view-tools,
   .view-productivity {
+    height: auto;
     min-height: 0;
+  }
+
+  .view-settings,
+  .view-short-drama,
+  .view-materials,
+  .view-graph,
+  .view-tools,
+  .view-productivity {
+    overflow: visible;
   }
 
   .dash-header {
@@ -7671,16 +7688,17 @@ select.form-input { cursor: pointer; }
   }
 
   .view-body {
-    padding: 12px 14px 18px;
+    padding: 12px 14px calc(var(--mobile-nav-h) + 18px);
+    overflow: visible;
     overflow-x: hidden;
   }
 
   .settings-layout {
-    overflow-y: auto;
+    overflow: visible;
   }
 
   .settings-body {
-    padding: 14px;
+    padding: 14px 14px calc(var(--mobile-nav-h) + 24px);
   }
 
   .settings-log-panel {
@@ -7713,27 +7731,185 @@ select.form-input { cursor: pointer; }
     grid-template-columns: 1fr 1fr;
   }
 
+  .mat-topbar {
+    flex-direction: column;
+    min-height: 0;
+  }
+
+  .mat-top-sep {
+    display: none;
+  }
+
+  .mat-col-head {
+    flex: none;
+    width: 100%;
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 9px;
+    padding: 12px 14px;
+    border-bottom: 1px solid var(--c-border-light);
+  }
+
+  .mat-col-head:last-child {
+    border-bottom: 0;
+  }
+
+  .mat-col-controls {
+    width: 100%;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    justify-content: stretch;
+  }
+
+  .mat-col-controls > .filter-select,
+  .mat-col-controls > .filter-input {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .mat-col-controls > .btn-primary {
+    width: 100%;
+  }
+
+  .mat-col-controls > .acc-folder-search + .btn-primary {
+    grid-column: 1 / -1;
+  }
+
   .materials-split {
+    flex: none;
+    flex-direction: column;
+    min-height: 0;
+    overflow: visible;
+  }
+
+  .materials-divider {
+    width: auto;
+    height: 1px;
+  }
+
+  .materials-pane {
+    flex: none;
+    overflow: visible;
+  }
+
+  .materials-pane-body {
+    overflow: visible;
+    padding: 14px 14px 24px;
+  }
+
+  .acc-subhead {
+    align-items: flex-start;
+    padding: 8px 14px;
+  }
+
+  .acc-warn-inline {
+    align-items: flex-start;
+    white-space: normal;
+  }
+
+  .brief-list {
     grid-template-columns: 1fr;
-    overflow-y: auto;
+  }
+
+  .acc-grid {
+    grid-template-columns: repeat(auto-fill, minmax(96px, 1fr));
+    justify-content: stretch;
+  }
+
+  .acc-platform-card {
+    width: auto;
+    max-width: none;
+  }
+
+  .acc-platform-trigger-wrap {
+    width: 100%;
   }
 
   .graph-view-body {
-    grid-template-columns: 1fr;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
   }
 
   .graph-stage-panel {
-    min-height: 520px;
+    min-height: min(520px, calc(100dvh - var(--header-h) - var(--mobile-nav-h) - 92px));
+    height: min(58dvh, 480px);
+  }
+
+  .graph-hint-bar {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+
+  .graph-hint-bar::-webkit-scrollbar {
+    display: none;
+  }
+
+  .graph-kind-legend,
+  .graph-hint-text {
+    white-space: nowrap;
   }
 
   .graph-canvas-toolbar {
     right: 10px;
+    top: auto;
+    bottom: 52px;
+    transform: none;
+  }
+
+  .graph-canvas-topright {
+    top: 54px;
+    right: 12px;
+    gap: 6px;
+  }
+
+  .graph-canvas-hide-done {
+    right: auto;
+    left: 12px;
+    bottom: 12px;
+    max-width: calc(100% - 82px);
+  }
+
+  .graph-side-panel {
+    min-height: 0;
+    overflow: visible;
+  }
+
+  .tools-view-body {
+    display: flex;
+    flex-direction: column;
+    height: auto;
+    min-height: 0;
+    overflow: visible;
+    gap: 14px;
+  }
+
+  .tools-section {
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
   }
 
   .tools-grid {
     grid-template-columns: 1fr;
-    grid-template-rows: none;
-    grid-auto-rows: minmax(150px, auto);
+    grid-template-rows: none !important;
+    grid-auto-rows: auto;
+  }
+
+  .tool-card {
+    height: auto;
+    min-height: 118px;
+    overflow: visible;
+  }
+
+  .productivity-view {
+    overflow: visible;
+  }
+
+  .productivity-cards-shell,
+  .productivity-schedule-shell {
+    padding-bottom: calc(var(--mobile-nav-h) + 18px);
   }
 
   .app-modal {
