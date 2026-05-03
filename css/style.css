@@ -5740,20 +5740,21 @@ html[data-easter-mode='konami'] .squid-mark {
   min-height: 0;
   display: grid;
   grid-template-columns: 220px minmax(0, 1fr);
-  gap: 14px;
+  gap: 22px;
+  padding: 16px 28px 24px;
+  overflow: hidden;
 }
 
 .short-drama-rail {
   min-height: 0;
-  padding: 12px;
-  border: 1px solid var(--c-border);
-  border-radius: var(--r-md);
-  background: var(--c-surface);
+  padding: 4px 14px 0 0;
+  border-right: 1px solid var(--c-border-light);
   overflow: hidden;
 }
 
 .short-drama-rail-title {
-  margin-bottom: 10px;
+  margin-bottom: 12px;
+  padding: 0 4px;
   font-size: 13px;
   font-weight: 700;
   color: var(--c-text-2);
@@ -5772,17 +5773,22 @@ html[data-easter-mode='konami'] .squid-mark {
   display: flex;
   flex-direction: column;
   align-items: flex-start;
-  gap: 8px;
-  padding: 10px;
-  border-radius: var(--r-md);
+  gap: 7px;
+  padding: 10px 10px 10px 12px;
+  border-left: 3px solid transparent;
+  border-radius: var(--r-sm);
   color: var(--c-text);
   text-align: left;
-  transition: background .14s, color .14s;
+  transition: background .14s, border-color .14s, color .14s;
 }
 
-.short-drama-rail-item:hover,
+.short-drama-rail-item:hover {
+  background: var(--c-surface);
+}
+
 .short-drama-rail-item.active {
-  background: var(--c-primary-light);
+  border-left-color: var(--c-primary);
+  background: var(--c-surface);
   color: var(--c-primary);
 }
 
@@ -5806,11 +5812,12 @@ html[data-easter-mode='konami'] .squid-mark {
   min-height: 0;
   display: flex;
   flex-direction: column;
-  gap: 12px;
-  padding: 16px;
-  border: 1px solid var(--c-border);
-  border-radius: var(--r-md);
+  gap: 14px;
+  padding: 18px 18px 16px;
+  border: 1px solid var(--c-border-light);
+  border-radius: var(--r-lg);
   background: var(--c-surface);
+  box-shadow: 0 1px 2px rgba(15, 23, 42, .03);
   overflow: hidden;
 }
 
@@ -5819,6 +5826,8 @@ html[data-easter-mode='konami'] .squid-mark {
   align-items: center;
   justify-content: space-between;
   gap: 14px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--c-border-light);
 }
 
 .short-drama-board-head h2 {
@@ -5849,9 +5858,8 @@ html[data-easter-mode='konami'] .squid-mark {
 .short-drama-overview-strip {
   display: flex;
   flex-wrap: wrap;
-  gap: 8px 18px;
-  padding: 10px 0;
-  border-top: 1px solid var(--c-border-light);
+  gap: 8px 22px;
+  padding: 0 0 14px;
   border-bottom: 1px solid var(--c-border-light);
   color: var(--c-text-2);
   font-size: 13px;
@@ -5868,10 +5876,10 @@ html[data-easter-mode='konami'] .squid-mark {
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-  padding: 14px;
+  padding: 14px 16px;
   border: 1px solid var(--c-border-light);
   border-radius: var(--r-md);
-  background: var(--c-bg);
+  background: var(--c-surface);
 }
 
 .short-drama-next-step strong {
@@ -5884,18 +5892,24 @@ html[data-easter-mode='konami'] .squid-mark {
   overflow-y: auto;
   display: flex;
   flex-direction: column;
-  gap: 10px;
-  padding-right: 2px;
+  gap: 0;
+  padding-right: 8px;
 }
 
 .short-drama-lane {
   display: flex;
   flex-direction: column;
-  gap: 10px;
-  padding: 12px;
-  border: 1px solid var(--c-border-light);
-  border-radius: var(--r-md);
-  background: var(--c-bg);
+  gap: 12px;
+  padding: 14px 0;
+  border-bottom: 1px solid var(--c-border-light);
+}
+
+.short-drama-lane:first-child {
+  padding-top: 0;
+}
+
+.short-drama-lane:last-child {
+  border-bottom: 0;
 }
 
 .short-drama-lane-head {
@@ -5932,9 +5946,9 @@ html[data-easter-mode='konami'] .squid-mark {
   align-items: center;
   gap: 10px;
   padding: 9px 10px;
-  border: 1px solid var(--c-border);
-  border-radius: var(--r-md);
-  background: var(--c-surface);
+  border: 1px solid var(--c-border-light);
+  border-radius: var(--r-sm);
+  background: var(--c-bg);
 }
 
 .short-drama-assignment-title {
@@ -6096,6 +6110,13 @@ html[data-easter-mode='konami'] .squid-mark {
 @media (max-width: 1100px) {
   .short-drama-workspace {
     grid-template-columns: 1fr;
+    gap: 16px;
+  }
+
+  .short-drama-rail {
+    padding: 0 0 12px;
+    border-right: 0;
+    border-bottom: 1px solid var(--c-border-light);
   }
 
   .short-drama-rail-list {
