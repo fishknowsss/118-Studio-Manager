@@ -8,6 +8,7 @@ import { Dashboard } from './views/Dashboard'
 import { Materials } from './views/Materials'
 import { Productivity } from './views/Productivity'
 import { Graph } from './views/Graph'
+import { ShortDrama } from './views/ShortDrama'
 import { Tools } from './views/Tools'
 import { Settings } from './views/Settings'
 
@@ -15,6 +16,7 @@ const VIEWS: Record<string, React.ComponentType> = {
   dashboard: Dashboard,
   materials: Materials,
   productivity: Productivity,
+  shortDrama: ShortDrama,
   graph: Graph,
   tools: Tools,
   settings: Settings,
@@ -204,6 +206,12 @@ export default function App() {
                   <NavItem label="工效" active={view === 'productivity'} onClick={() => window.location.hash = '#productivity'}>
                     <path d="M3 19l7-7 3 3 7-8" />
                     <path d="M14 7h6v6" />
+                  </NavItem>
+                  <NavItem label="短剧" active={view === 'shortDrama'} onClick={() => window.location.hash = '#shortDrama'}>
+                    <rect x="4" y="5" width="16" height="14" rx="2" />
+                    <path d="M5 7h14" />
+                    <path d="M8 11h8" />
+                    <path d="M8 15h5" />
                   </NavItem>
                   <NavItem label="图谱" active={view === 'graph'} onClick={() => window.location.hash = '#graph'}>
                     <circle cx="5" cy="12" r="2" />

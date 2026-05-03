@@ -23,6 +23,9 @@ function buildPayload(exportedAt: string, suffix: string): BackupPayload {
     settings: [],
     leaveRecords: [],
     classSchedules: [],
+    shortDramas: [],
+    shortDramaGroups: [],
+    shortDramaAssignments: [],
   }
 }
 
@@ -99,6 +102,10 @@ describe('cloud sync helpers', () => {
       logs: [],
       settings: [],
       leaveRecords: [{ id: 'leave-1' }],
+      classSchedules: [],
+      shortDramas: [],
+      shortDramaGroups: [],
+      shortDramaAssignments: [],
     })).toBe(true)
 
     expect(hasBackupContent({
@@ -110,6 +117,10 @@ describe('cloud sync helpers', () => {
       logs: [],
       settings: [{ key: 'materials:briefs', value: [] }],
       leaveRecords: [],
+      classSchedules: [],
+      shortDramas: [],
+      shortDramaGroups: [],
+      shortDramaAssignments: [],
     })).toBe(true)
 
     expect(hasBackupContent({
@@ -121,6 +132,25 @@ describe('cloud sync helpers', () => {
       logs: [],
       settings: [],
       leaveRecords: [],
+      classSchedules: [],
+      shortDramas: [{ id: 'drama-1' }],
+      shortDramaGroups: [],
+      shortDramaAssignments: [],
+    })).toBe(true)
+
+    expect(hasBackupContent({
+      schemaVersion: 5,
+      exportedAt: '2026-05-02T16:00:00+08:00',
+      projects: [],
+      tasks: [],
+      people: [],
+      logs: [],
+      settings: [],
+      leaveRecords: [],
+      classSchedules: [],
+      shortDramas: [],
+      shortDramaGroups: [],
+      shortDramaAssignments: [],
     })).toBe(false)
   })
 
@@ -199,5 +229,59 @@ describe('cloud sync helpers', () => {
     const { fetchCloudSyncMeta } = await import('../src/features/sync/syncApi')
 
     await expect(fetchCloudSyncMeta()).rejects.toThrow('Cloudflare Access')
+  })
+
+  it('does not seed demo data when configured cloud boot restore fails', async () => {
+    const savePerson = vi.fn()
+    const saveProject = vi.fn()
+    const saveTask = vi.fn()
+    const addLog = vi.fn()
+
+    vi.doMock('../src/legacy/db', () => ({
+      openDB: vi.fn(),
+      db: {
+        exportAll: vi.fn().mockResolvedValue({
+          schemaVersion: 5,
+          exportedAt: '2026-05-03T10:00:00+08:00',
+          projects: [],
+          tasks: [],
+          people: [],
+          logs: [],
+          settings: [],
+          leaveRecords: [],
+          classSchedules: [],
+          shortDramas: [],
+          shortDramaGroups: [],
+          shortDramaAssignments: [],
+        }),
+      },
+    }))
+    vi.doMock('../src/legacy/store', () => ({
+      store: {
+        loadAll: vi.fn(),
+        savePerson,
+        saveProject,
+        saveTask,
+        addLog,
+      },
+    }))
+    vi.doMock('../src/features/sync/bootstrapSync', () => ({
+      restoreCloudSnapshotOnBoot: vi.fn().mockRejectedValue(new Error('Access required')),
+    }))
+    vi.doMock('../src/features/sync/syncApi', () => ({
+      isCloudSyncConfigured: () => true,
+    }))
+    vi.doMock('../src/features/persistence/syncableViewState', () => ({
+      initializeSyncableViewState: vi.fn(),
+    }))
+    vi.stubGlobal('window', { location: { hash: '' } })
+
+    const { initializeAppData } = await import('../src/legacy/bootstrap')
+    await initializeAppData()
+
+    expect(savePerson).not.toHaveBeenCalled()
+    expect(saveProject).not.toHaveBeenCalled()
+    expect(saveTask).not.toHaveBeenCalled()
+    expect(addLog).not.toHaveBeenCalledWith('加载了演示数据')
   })
 })

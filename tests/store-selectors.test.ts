@@ -474,10 +474,16 @@ describe('store selectors', () => {
       settings: [{ key: 'theme', value: 'light' }],
       leaveRecords: [{ id: 'leave-1' }],
       classSchedules: [{ id: 'schedule-1' }],
+      shortDramas: [{ id: 'drama-1' }],
+      shortDramaGroups: [{ id: 'group-1' }, { id: 'group-2' }],
+      shortDramaAssignments: [{ id: 'assignment-1' }],
     })
 
     expect(summary).toEqual({
       classScheduleCount: 1,
+      shortDramaAssignmentCount: 1,
+      shortDramaCount: 1,
+      shortDramaGroupCount: 2,
       projectCount: 1,
       taskCount: 2,
       personCount: 1,

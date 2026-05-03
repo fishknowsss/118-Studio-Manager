@@ -2,6 +2,7 @@ import { openDB } from './db'
 import { store, type LegacyPerson, type LegacyProject, type LegacyTask } from './store'
 import { shiftLocalDateKey } from './utils'
 import { restoreCloudSnapshotOnBoot } from '../features/sync/bootstrapSync'
+import { isCloudSyncConfigured } from '../features/sync/syncApi'
 import { initializeSyncableViewState } from '../features/persistence/syncableViewState'
 import { hasBackupContent } from '../features/sync/syncShared'
 import { db } from './db'
@@ -56,14 +57,16 @@ export async function initializeAppData() {
   await openDB()
   await store.loadAll()
   const localBackup = await db.exportAll()
+  const cloudSyncConfigured = isCloudSyncConfigured()
 
   if (!hasBackupContent(localBackup)) {
-    try {
-      const restored = await restoreCloudSnapshotOnBoot()
-      if (!restored) {
-        await seedDemoData()
+    if (cloudSyncConfigured) {
+      try {
+        await restoreCloudSnapshotOnBoot()
+      } catch (error) {
+        console.warn('[118SM] 云端首启恢复失败，保留空本地数据:', error)
       }
-    } catch {
+    } else {
       await seedDemoData()
     }
   }

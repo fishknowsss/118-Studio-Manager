@@ -1,7 +1,7 @@
 import { buildBackupPayload, BACKUP_COLLECTION_NAMES, normalizeImportedBackup, type BackupPayload } from './utils'
 
 const DB_NAME = 'studio118db'
-const DB_VERSION = 5
+const DB_VERSION = 6
 
 let dbInstance: IDBDatabase | null = null
 
@@ -12,6 +12,26 @@ export function ensureClassSchedulesStore(db: IDBDatabase) {
   scheduleStore.createIndex('personId', 'personId', { unique: false })
   scheduleStore.createIndex('dayOfWeek', 'dayOfWeek', { unique: false })
   return scheduleStore
+}
+
+export function ensureShortDramaStores(db: IDBDatabase) {
+  if (!db.objectStoreNames.contains('shortDramas')) {
+    const dramaStore = db.createObjectStore('shortDramas', { keyPath: 'id' })
+    dramaStore.createIndex('status', 'status', { unique: false })
+  }
+
+  if (!db.objectStoreNames.contains('shortDramaGroups')) {
+    const groupStore = db.createObjectStore('shortDramaGroups', { keyPath: 'id' })
+    groupStore.createIndex('dramaId', 'dramaId', { unique: false })
+    groupStore.createIndex('leaderId', 'leaderId', { unique: false })
+  }
+
+  if (!db.objectStoreNames.contains('shortDramaAssignments')) {
+    const assignmentStore = db.createObjectStore('shortDramaAssignments', { keyPath: 'id' })
+    assignmentStore.createIndex('dramaId', 'dramaId', { unique: false })
+    assignmentStore.createIndex('groupId', 'groupId', { unique: false })
+    assignmentStore.createIndex('status', 'status', { unique: false })
+  }
 }
 
 export async function openDB() {
@@ -61,6 +81,7 @@ export async function openDB() {
       }
 
       ensureClassSchedulesStore(db)
+      ensureShortDramaStores(db)
 
       if (oldVersion >= 4 && oldVersion < 5 && db.objectStoreNames.contains('productivityRecords')) {
         db.deleteObjectStore('productivityRecords')

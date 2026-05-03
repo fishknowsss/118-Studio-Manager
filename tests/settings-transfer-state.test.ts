@@ -40,6 +40,9 @@ describe('settings transfer state persistence', () => {
         settingsCount: 0,
         leaveRecordCount: 0,
         classScheduleCount: 14,
+        shortDramaCount: 1,
+        shortDramaGroupCount: 2,
+        shortDramaAssignmentCount: 8,
       },
     })
 
@@ -53,6 +56,9 @@ describe('settings transfer state persistence', () => {
         settingsCount: 0,
         leaveRecordCount: 0,
         classScheduleCount: 14,
+        shortDramaCount: 1,
+        shortDramaGroupCount: 2,
+        shortDramaAssignmentCount: 8,
       },
     })
   })

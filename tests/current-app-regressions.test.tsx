@@ -215,6 +215,15 @@ describe('current app regressions', () => {
     expect(styleSource).toMatch(/\.date-picker-day\.selected\s*\{/)
   })
 
+  it('keeps mobile shell changes scoped to the phone breakpoint', () => {
+    const styleSource = readFileSync(join(process.cwd(), 'css/style.css'), 'utf8')
+
+    expect(styleSource).toMatch(/@media \(max-width:\s*720px\)\s*\{[\s\S]*\.app-shell\s*\{[\s\S]*grid-template-columns:\s*1fr;/)
+    expect(styleSource).toMatch(/@media \(max-width:\s*720px\)\s*\{[\s\S]*\.sidebar\s*\{[\s\S]*position:\s*fixed;[\s\S]*bottom:\s*0;/)
+    expect(styleSource).toMatch(/@media \(max-width:\s*720px\)\s*\{[\s\S]*\.main-content\s*\{[\s\S]*padding-bottom:\s*var\(--mobile-nav-h\);/)
+    expect(styleSource).toMatch(/\.app-shell\s*\{[\s\S]*grid-template-columns:\s*var\(--sidebar-w\) 1fr;/)
+  })
+
   it('opens a custom date picker from the task dialog and writes the selected deadline', () => {
     const people = [{ id: 'person-1', name: '成员1', gender: 'male' as const, status: 'active' as const }]
     const projects = [{ id: 'project-1', name: '项目 A', status: 'active' as const }]
@@ -472,6 +481,51 @@ describe('current app regressions', () => {
     expect(styleSource).toMatch(/\.assignee-chip\.selected:has\(\.assignee-chip-avatar\.male\)\s*\{[\s\S]*color:\s*#225cff;/)
     expect(styleSource).toMatch(/\.assignee-chip\.selected:has\(\.assignee-chip-avatar\.female\)\s*\{[\s\S]*color:\s*#dd3f69;/)
     expect(styleSource).not.toMatch(/\.pdp-avatar\s*\{[\s\S]*linear-gradient/)
+  })
+
+  it('registers the short drama module as an independent sidebar view', () => {
+    const appSource = readFileSync(join(process.cwd(), 'src/App.tsx'), 'utf8')
+    const shortDramaSourcePath = join(process.cwd(), 'src/views/ShortDrama.tsx')
+
+    expect(existsSync(shortDramaSourcePath)).toBe(true)
+    expect(appSource).toMatch(/shortDrama:\s*ShortDrama/)
+    expect(appSource).toMatch(/label="短剧"/)
+    expect(appSource).toMatch(/#shortDrama/)
+    expect(appSource).toMatch(/M5 7h14/)
+    expect(appSource).not.toMatch(/M10 13l4/)
+  })
+
+  it('keeps short drama interactions direct and avoids a stacked card-table layout', () => {
+    const shortDramaSource = readFileSync(join(process.cwd(), 'src/views/ShortDrama.tsx'), 'utf8')
+    const quickDialogSourcePath = join(process.cwd(), 'src/features/short-drama/ShortDramaQuickAssignmentDialog.tsx')
+    const styleSource = readFileSync(join(process.cwd(), 'css/style.css'), 'utf8')
+
+    expect(existsSync(quickDialogSourcePath)).toBe(true)
+    expect(shortDramaSource).toMatch(/short-drama-board/)
+    expect(shortDramaSource).toMatch(/short-drama-overview-strip/)
+    expect(shortDramaSource).toMatch(/buildShortDramaGroupLanes/)
+    expect(shortDramaSource).toMatch(/ShortDramaQuickAssignmentDialog/)
+    expect(shortDramaSource).toMatch(/updateAssignmentStatus/)
+    expect(shortDramaSource).toMatch(/short-drama-assignment-row/)
+    expect(shortDramaSource).toMatch(/short-drama-status-select/)
+    expect(shortDramaSource).not.toMatch(/short-drama-status-actions/)
+    expect(shortDramaSource).toMatch(/建小组/)
+    expect(shortDramaSource).toMatch(/分配集数/)
+    expect(shortDramaSource).not.toMatch(/short-drama-table/)
+    expect(shortDramaSource).not.toMatch(/short-drama-stats/)
+    expect(styleSource).toMatch(/\.short-drama-board/)
+    expect(styleSource).toMatch(/\.short-drama-assignment-row/)
+    expect(styleSource).not.toMatch(/\.short-drama-stats/)
+  })
+
+  it('uses the task assignee picker pattern for short drama group members', () => {
+    const groupDialogSource = readFileSync(join(process.cwd(), 'src/features/short-drama/ShortDramaGroupDialog.tsx'), 'utf8')
+
+    expect(groupDialogSource).toMatch(/PersonGenderAvatar/)
+    expect(groupDialogSource).toMatch(/task-assignee-picker/)
+    expect(groupDialogSource).toMatch(/task-assignee-pagination/)
+    expect(groupDialogSource).toMatch(/getMemberColumns/)
+    expect(groupDialogSource).not.toMatch(/short-drama-check-grid/)
   })
 
   it('executes context menu actions and closes after clicking an item', () => {
@@ -792,11 +846,13 @@ describe('current app regressions', () => {
     expect(syncSharedSource).toMatch(/payload\.classSchedules\?\.length/)
     expect(syncProviderSource).toMatch(/store\.leaveRecords\.length > 0/)
     expect(syncProviderSource).toMatch(/store\.classSchedules\.length > 0/)
+    expect(syncProviderSource).toMatch(/store\.shortDramas\.length > 0/)
     expect(bootstrapSource).toMatch(/const localBackup = await db\.exportAll\(\)/)
     expect(bootstrapSource).toMatch(/if \(!hasBackupContent\(localBackup\)\)/)
     expect(settingsSource).toMatch(/currentSummary\.settingsCount/)
     expect(settingsSource).toMatch(/currentSummary\.leaveRecordCount/)
     expect(settingsSource).toMatch(/currentSummary\.classScheduleCount/)
+    expect(settingsSource).toMatch(/currentSummary\.shortDramaCount/)
   })
 
   it('uses node24-compatible GitHub Pages actions in deploy workflow', () => {

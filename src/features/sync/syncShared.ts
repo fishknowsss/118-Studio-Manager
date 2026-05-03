@@ -26,7 +26,10 @@ export function hasBackupContent(payload: BackupPayload) {
     payload.logs.length > 0 ||
     payload.settings.length > 0 ||
     payload.leaveRecords.length > 0 ||
-    (payload.classSchedules?.length ?? 0) > 0
+    (payload.classSchedules?.length ?? 0) > 0 ||
+    (payload.shortDramas?.length ?? 0) > 0 ||
+    (payload.shortDramaGroups?.length ?? 0) > 0 ||
+    (payload.shortDramaAssignments?.length ?? 0) > 0
   )
 }
 

@@ -13,6 +13,9 @@ export type BackupPayload = {
   settings: BackupRecord[]
   leaveRecords: BackupRecord[]
   classSchedules: BackupRecord[]
+  shortDramas: BackupRecord[]
+  shortDramaGroups: BackupRecord[]
+  shortDramaAssignments: BackupRecord[]
 }
 
 /**
@@ -21,10 +24,21 @@ export type BackupPayload = {
  * clearAll / exportAll / importAll / buildBackupPayload / normalizeImportedBackup
  * 都会自动包含。
  */
-export const BACKUP_COLLECTION_NAMES = ['projects', 'tasks', 'people', 'logs', 'settings', 'leaveRecords', 'classSchedules'] as const
+export const BACKUP_COLLECTION_NAMES = [
+  'projects',
+  'tasks',
+  'people',
+  'logs',
+  'settings',
+  'leaveRecords',
+  'classSchedules',
+  'shortDramas',
+  'shortDramaGroups',
+  'shortDramaAssignments',
+] as const
 export type BackupCollectionName = (typeof BACKUP_COLLECTION_NAMES)[number]
 
-export const BACKUP_SCHEMA_VERSION = 4
+export const BACKUP_SCHEMA_VERSION = 5
 
 const PROJECT_BACKUP_KEYS = new Set(['createdAt', 'ddl', 'description', 'id', 'name', 'priority', 'status', 'updatedAt'])
 
@@ -265,6 +279,9 @@ export function buildBackupPayload(data: Partial<BackupPayload>): BackupPayload 
     settings: normalizeBackupCollection(data.settings),
     leaveRecords: normalizeBackupCollection(data.leaveRecords),
     classSchedules: normalizeBackupCollection(data.classSchedules),
+    shortDramas: normalizeBackupCollection(data.shortDramas),
+    shortDramaGroups: normalizeBackupCollection(data.shortDramaGroups),
+    shortDramaAssignments: normalizeBackupCollection(data.shortDramaAssignments),
   }
 }
 

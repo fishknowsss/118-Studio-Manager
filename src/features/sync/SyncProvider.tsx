@@ -65,6 +65,9 @@ function hasLocalData() {
     store.logs.length > 0 ||
     store.leaveRecords.length > 0 ||
     store.classSchedules.length > 0 ||
+    store.shortDramas.length > 0 ||
+    store.shortDramaGroups.length > 0 ||
+    store.shortDramaAssignments.length > 0 ||
     readBriefs().length > 0 ||
     readAccounts().length > 0 ||
     readFolders().length > 0

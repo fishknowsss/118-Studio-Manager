@@ -6,6 +6,7 @@ export const PROJECT_PRIORITIES = ['urgent', 'high', 'medium', 'low'] as const
 export const TASK_STATUSES = ['todo', 'in-progress', 'done', 'blocked'] as const
 export const PERSON_STATUSES = ['active', 'inactive'] as const
 export const PERSON_GENDERS = ['male', 'female', 'other'] as const
+export const SHORT_DRAMA_PROGRESS_STATUSES = ['not-started', 'in-progress', 'review', 'revision', 'done'] as const
 
 export type ProjectStatus = (typeof PROJECT_STATUSES)[number]
 export type ProjectPriority = (typeof PROJECT_PRIORITIES)[number]
@@ -13,6 +14,7 @@ export type TaskStatus = (typeof TASK_STATUSES)[number]
 export type TaskPriority = ProjectPriority
 export type PersonStatus = (typeof PERSON_STATUSES)[number]
 export type PersonGender = (typeof PERSON_GENDERS)[number]
+export type ShortDramaProgressStatus = (typeof SHORT_DRAMA_PROGRESS_STATUSES)[number]
 
 export type LegacyEntity = {
   id: string
@@ -110,13 +112,59 @@ export type ClassScheduleEntry = LegacyEntity & {
   sourceFileName?: string
 }
 
+export type ShortDrama = LegacyEntity & {
+  title?: string
+  totalEpisodes?: number | null
+  status?: ShortDramaProgressStatus
+  startDate?: string | null
+  endDate?: string | null
+  notes?: string
+}
+
+export type ShortDramaGroup = LegacyEntity & {
+  dramaId: string
+  name?: string
+  memberIds: string[]
+  leaderId?: string | null
+  sortOrder?: number
+  notes?: string
+}
+
+export type ShortDramaAssignmentAllocation = {
+  personId: string
+  episodes?: string
+  estimatedHours?: number | null
+  actualHours?: number | null
+  notes?: string
+}
+
+export type ShortDramaAssignment = LegacyEntity & {
+  dramaId: string
+  groupId?: string | null
+  episodes?: string
+  producerIds: string[]
+  ownerId?: string | null
+  status?: ShortDramaProgressStatus
+  estimatedHours?: number | null
+  actualHours?: number | null
+  startDate?: string | null
+  endDate?: string | null
+  finishedDurationSeconds?: number | null
+  allocations: ShortDramaAssignmentAllocation[]
+  notes?: string
+}
+
 export function buildPersonDeletionPatch(
   personId: string,
   tasks: LegacyTask[],
   leaveRecords: LeaveRecord[],
   classSchedules: ClassScheduleEntry[],
+  shortDramaGroups: ShortDramaGroup[] = [],
+  shortDramaAssignments: ShortDramaAssignment[] = [],
 ) {
   const updatedTasks: LegacyTask[] = []
+  const updatedShortDramaGroups: ShortDramaGroup[] = []
+  const updatedShortDramaAssignments: ShortDramaAssignment[] = []
   const nextTasks = tasks.map((task) => {
     const ids = getTaskAssigneeIds(task)
     if (!ids.includes(personId)) return task
@@ -134,11 +182,41 @@ export function buildPersonDeletionPatch(
   const classScheduleIds = classSchedules
     .filter((entry) => entry.personId === personId)
     .map((entry) => entry.id)
+  const nextShortDramaGroups = shortDramaGroups.map((group) => {
+    if (!group.memberIds.includes(personId) && group.leaderId !== personId) return group
+    const updated = {
+      ...group,
+      leaderId: group.leaderId === personId ? null : group.leaderId,
+      memberIds: group.memberIds.filter((memberId) => memberId !== personId),
+      updatedAt: now(),
+    }
+    updatedShortDramaGroups.push(updated)
+    return updated
+  })
+  const nextShortDramaAssignments = shortDramaAssignments.map((assignment) => {
+    const hasPerson = assignment.producerIds.includes(personId) ||
+      assignment.ownerId === personId ||
+      assignment.allocations.some((allocation) => allocation.personId === personId)
+    if (!hasPerson) return assignment
+    const updated = {
+      ...assignment,
+      allocations: assignment.allocations.filter((allocation) => allocation.personId !== personId),
+      ownerId: assignment.ownerId === personId ? null : assignment.ownerId,
+      producerIds: assignment.producerIds.filter((producerId) => producerId !== personId),
+      updatedAt: now(),
+    }
+    updatedShortDramaAssignments.push(updated)
+    return updated
+  })
 
   return {
     classScheduleIds,
     leaveRecordIds,
     nextTasks,
+    nextShortDramaAssignments,
+    nextShortDramaGroups,
+    updatedShortDramaAssignments,
+    updatedShortDramaGroups,
     updatedTasks,
   }
 }
@@ -172,6 +250,9 @@ export const store = {
   logs: [] as LegacyLog[],
   leaveRecords: [] as LeaveRecord[],
   classSchedules: [] as ClassScheduleEntry[],
+  shortDramas: [] as ShortDrama[],
+  shortDramaGroups: [] as ShortDramaGroup[],
+  shortDramaAssignments: [] as ShortDramaAssignment[],
   version: 0,
 
   subscribe(listener: () => void) {
@@ -184,13 +265,16 @@ export const store = {
   },
 
   async loadAll() {
-    const [rawProjects, rawTasks, people, logs, leaveRecords, classSchedules] = await Promise.all([
+    const [rawProjects, rawTasks, people, logs, leaveRecords, classSchedules, shortDramas, shortDramaGroups, shortDramaAssignments] = await Promise.all([
       db.getAll('projects') as Promise<ProjectRecord[]>,
       db.getAll('tasks') as Promise<LegacyTask[]>,
       db.getAll('people') as Promise<LegacyPerson[]>,
       db.getAll('logs') as Promise<LegacyLog[]>,
       db.getAll('leaveRecords') as Promise<LeaveRecord[]>,
       db.getAll('classSchedules') as Promise<ClassScheduleEntry[]>,
+      db.getAll('shortDramas') as Promise<ShortDrama[]>,
+      db.getAll('shortDramaGroups') as Promise<ShortDramaGroup[]>,
+      db.getAll('shortDramaAssignments') as Promise<ShortDramaAssignment[]>,
     ])
     const projects = rawProjects.map((project) => sanitizeProjectRecord(project))
     const projectsNeedCleanup = rawProjects.some((project) => projectNeedsNormalization(project))
@@ -209,6 +293,13 @@ export const store = {
     this.logs = logs
     this.leaveRecords = leaveRecords
     this.classSchedules = classSchedules
+    this.shortDramas = shortDramas
+    this.shortDramaGroups = shortDramaGroups.map((group) => ({ ...group, memberIds: group.memberIds || [] }))
+    this.shortDramaAssignments = shortDramaAssignments.map((assignment) => ({
+      ...assignment,
+      allocations: assignment.allocations || [],
+      producerIds: assignment.producerIds || [],
+    }))
     emitStoreUpdated()
   },
 
@@ -290,17 +381,21 @@ export const store = {
   },
 
   async deletePerson(id: string) {
-    const patch = buildPersonDeletionPatch(id, this.tasks, this.leaveRecords, this.classSchedules)
-    await db.runTransaction(['people', 'tasks', 'leaveRecords', 'classSchedules'], 'readwrite', (stores) => {
+    const patch = buildPersonDeletionPatch(id, this.tasks, this.leaveRecords, this.classSchedules, this.shortDramaGroups, this.shortDramaAssignments)
+    await db.runTransaction(['people', 'tasks', 'leaveRecords', 'classSchedules', 'shortDramaGroups', 'shortDramaAssignments'], 'readwrite', (stores) => {
       stores.people.delete(id)
       for (const task of patch.updatedTasks) stores.tasks.put(task)
       for (const leaveId of patch.leaveRecordIds) stores.leaveRecords.delete(leaveId)
       for (const scheduleId of patch.classScheduleIds) stores.classSchedules.delete(scheduleId)
+      for (const group of patch.updatedShortDramaGroups) stores.shortDramaGroups.put(group)
+      for (const assignment of patch.updatedShortDramaAssignments) stores.shortDramaAssignments.put(assignment)
     })
     this.tasks = patch.nextTasks
     this.people = this.people.filter(person => person.id !== id)
     this.leaveRecords = this.leaveRecords.filter((record) => record.personId !== id)
     this.classSchedules = this.classSchedules.filter((entry) => entry.personId !== id)
+    this.shortDramaGroups = patch.nextShortDramaGroups
+    this.shortDramaAssignments = patch.nextShortDramaAssignments
     emitStoreUpdated({ type: 'person', action: 'delete', id })
   },
 
@@ -395,5 +490,81 @@ export const store = {
 
     this.classSchedules = this.classSchedules.filter((entry) => entry.personId !== personId)
     emitStoreUpdated({ type: 'classSchedule', action: 'delete-person', id: personId })
+  },
+
+  async saveShortDrama(drama: ShortDrama) {
+    await db.put('shortDramas', drama)
+    const index = this.shortDramas.findIndex(item => item.id === drama.id)
+    if (index >= 0) {
+      const next = [...this.shortDramas]
+      next[index] = drama
+      this.shortDramas = next
+    } else {
+      this.shortDramas = [...this.shortDramas, drama]
+    }
+    emitStoreUpdated({ type: 'shortDrama', action: 'save', id: drama.id })
+  },
+
+  async deleteShortDrama(id: string) {
+    const groupIds = this.shortDramaGroups.filter((group) => group.dramaId === id).map((group) => group.id)
+    const assignmentIds = this.shortDramaAssignments.filter((assignment) => assignment.dramaId === id).map((assignment) => assignment.id)
+    await db.runTransaction(['shortDramas', 'shortDramaGroups', 'shortDramaAssignments'], 'readwrite', (stores) => {
+      stores.shortDramas.delete(id)
+      for (const groupId of groupIds) stores.shortDramaGroups.delete(groupId)
+      for (const assignmentId of assignmentIds) stores.shortDramaAssignments.delete(assignmentId)
+    })
+    this.shortDramas = this.shortDramas.filter((drama) => drama.id !== id)
+    this.shortDramaGroups = this.shortDramaGroups.filter((group) => group.dramaId !== id)
+    this.shortDramaAssignments = this.shortDramaAssignments.filter((assignment) => assignment.dramaId !== id)
+    emitStoreUpdated({ type: 'shortDrama', action: 'delete', id })
+  },
+
+  async saveShortDramaGroup(group: ShortDramaGroup) {
+    await db.put('shortDramaGroups', group)
+    const index = this.shortDramaGroups.findIndex(item => item.id === group.id)
+    if (index >= 0) {
+      const next = [...this.shortDramaGroups]
+      next[index] = group
+      this.shortDramaGroups = next
+    } else {
+      this.shortDramaGroups = [...this.shortDramaGroups, group]
+    }
+    emitStoreUpdated({ type: 'shortDramaGroup', action: 'save', id: group.id })
+  },
+
+  async deleteShortDramaGroup(id: string) {
+    const updatedAssignments = this.shortDramaAssignments
+      .filter((assignment) => assignment.groupId === id)
+      .map((assignment) => ({ ...assignment, groupId: null, updatedAt: now() }))
+    await db.runTransaction(['shortDramaGroups', 'shortDramaAssignments'], 'readwrite', (stores) => {
+      stores.shortDramaGroups.delete(id)
+      for (const assignment of updatedAssignments) stores.shortDramaAssignments.put(assignment)
+    })
+    this.shortDramaGroups = this.shortDramaGroups.filter((group) => group.id !== id)
+    this.shortDramaAssignments = this.shortDramaAssignments.map((assignment) =>
+      assignment.groupId === id
+        ? updatedAssignments.find((item) => item.id === assignment.id) || assignment
+        : assignment,
+    )
+    emitStoreUpdated({ type: 'shortDramaGroup', action: 'delete', id })
+  },
+
+  async saveShortDramaAssignment(assignment: ShortDramaAssignment) {
+    await db.put('shortDramaAssignments', assignment)
+    const index = this.shortDramaAssignments.findIndex(item => item.id === assignment.id)
+    if (index >= 0) {
+      const next = [...this.shortDramaAssignments]
+      next[index] = assignment
+      this.shortDramaAssignments = next
+    } else {
+      this.shortDramaAssignments = [...this.shortDramaAssignments, assignment]
+    }
+    emitStoreUpdated({ type: 'shortDramaAssignment', action: 'save', id: assignment.id })
+  },
+
+  async deleteShortDramaAssignment(id: string) {
+    await db.delete('shortDramaAssignments', id)
+    this.shortDramaAssignments = this.shortDramaAssignments.filter((assignment) => assignment.id !== id)
+    emitStoreUpdated({ type: 'shortDramaAssignment', action: 'delete', id })
   },
 }

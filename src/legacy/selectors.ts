@@ -36,6 +36,9 @@ type BackupSummary = {
   personCount: number
   projectCount: number
   settingsCount: number
+  shortDramaAssignmentCount: number
+  shortDramaCount: number
+  shortDramaGroupCount: number
   taskCount: number
 }
 
@@ -938,6 +941,9 @@ export function buildBackupSummary(data: Partial<BackupPayload> | Record<string,
     personCount: Array.isArray(payload.people) ? payload.people.length : 0,
     projectCount: Array.isArray(payload.projects) ? payload.projects.length : 0,
     settingsCount: Array.isArray(payload.settings) ? payload.settings.length : 0,
+    shortDramaAssignmentCount: Array.isArray(payload.shortDramaAssignments) ? payload.shortDramaAssignments.length : 0,
+    shortDramaCount: Array.isArray(payload.shortDramas) ? payload.shortDramas.length : 0,
+    shortDramaGroupCount: Array.isArray(payload.shortDramaGroups) ? payload.shortDramaGroups.length : 0,
     taskCount: Array.isArray(payload.tasks) ? payload.tasks.length : 0,
   } satisfies BackupSummary
 }

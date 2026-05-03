@@ -1,8 +1,8 @@
 import { expect, test, type Page } from '@playwright/test'
 
 const DB_NAME = 'studio118db'
-const DB_VERSION = 5
-const STORE_NAMES = ['projects', 'tasks', 'people', 'logs', 'settings', 'leaveRecords', 'classSchedules']
+const DB_VERSION = 6
+const STORE_NAMES = ['projects', 'tasks', 'people', 'logs', 'settings', 'leaveRecords', 'classSchedules', 'shortDramas', 'shortDramaGroups', 'shortDramaAssignments']
 
 async function seedScheduleData(page: Page) {
   await page.evaluate(

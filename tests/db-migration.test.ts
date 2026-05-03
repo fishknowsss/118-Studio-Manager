@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest'
-import { ensureClassSchedulesStore } from '../src/legacy/db'
+import { ensureClassSchedulesStore, ensureShortDramaStores } from '../src/legacy/db'
 
 function createUpgradeDb(existingStores: string[]) {
   const names = [...existingStores]
@@ -44,5 +44,23 @@ describe('IndexedDB migrations', () => {
     ensureClassSchedulesStore(upgradeDb.db)
 
     expect(upgradeDb.createObjectStore).not.toHaveBeenCalled()
+  })
+
+  it('creates short drama stores with lookup indexes', () => {
+    const upgradeDb = createUpgradeDb(['projects', 'tasks', 'people'])
+
+    ensureShortDramaStores(upgradeDb.db)
+
+    expect(upgradeDb.createObjectStore).toHaveBeenCalledWith('shortDramas', { keyPath: 'id' })
+    expect(upgradeDb.createObjectStore).toHaveBeenCalledWith('shortDramaGroups', { keyPath: 'id' })
+    expect(upgradeDb.createObjectStore).toHaveBeenCalledWith('shortDramaAssignments', { keyPath: 'id' })
+    expect(upgradeDb.createdIndexes).toEqual([
+      ['status', 'status', { unique: false }],
+      ['dramaId', 'dramaId', { unique: false }],
+      ['leaderId', 'leaderId', { unique: false }],
+      ['dramaId', 'dramaId', { unique: false }],
+      ['groupId', 'groupId', { unique: false }],
+      ['status', 'status', { unique: false }],
+    ])
   })
 })

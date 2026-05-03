@@ -50,12 +50,15 @@ function formatTransferSummary(summary: ReturnType<typeof buildBackupSummary>) {
     `${summary.settingsCount} 设置`,
     `${summary.leaveRecordCount} 请假`,
     `${summary.classScheduleCount} 课表`,
+    `${summary.shortDramaCount} 短剧`,
+    `${summary.shortDramaGroupCount} 剧组`,
+    `${summary.shortDramaAssignmentCount} 分配`,
   ].join(' · ')
 }
 
 export function Settings() {
   const store = useLegacyStoreSnapshot()
-  const { projects, tasks, people, logs, leaveRecords, classSchedules } = store
+  const { projects, tasks, people, logs, leaveRecords, classSchedules, shortDramas, shortDramaGroups, shortDramaAssignments } = store
   const { toast } = useToast()
   const { confirm } = useConfirm()
   useSyncExternalStore(subscribeUndoHistory, getUndoHistorySnapshot)
@@ -80,6 +83,9 @@ export function Settings() {
     settings: [],
     leaveRecords,
     classSchedules,
+    shortDramas,
+    shortDramaGroups,
+    shortDramaAssignments,
   }))
   const entityMaps = useMemo(() => buildEntityMaps(projects, tasks, people), [people, projects, tasks])
   const needsBackup = useMemo(() => getNeedsBackup(logs, projects, todayDate), [logs, projects, todayDate])
@@ -106,6 +112,9 @@ export function Settings() {
             settings: [],
             leaveRecords,
             classSchedules,
+            shortDramas,
+            shortDramaGroups,
+            shortDramaAssignments,
           }))
         }
       })
@@ -113,7 +122,7 @@ export function Settings() {
     return () => {
       cancelled = true
     }
-  }, [accounts, briefs, classSchedules, folders, leaveRecords, logs, people, projects, tasks])
+  }, [accounts, briefs, classSchedules, folders, leaveRecords, logs, people, projects, shortDramaAssignments, shortDramaGroups, shortDramas, tasks])
 
   const formatUndoTime = (value: string) => {
     const date = new Date(value)
@@ -367,6 +376,9 @@ export function Settings() {
                 <div className="settings-summary-item"><span>设置</span><strong>{currentSummary.settingsCount}</strong></div>
                 <div className="settings-summary-item"><span>请假</span><strong>{currentSummary.leaveRecordCount}</strong></div>
                 <div className="settings-summary-item"><span>课表</span><strong>{currentSummary.classScheduleCount}</strong></div>
+                <div className="settings-summary-item"><span>短剧</span><strong>{currentSummary.shortDramaCount}</strong></div>
+                <div className="settings-summary-item"><span>剧组</span><strong>{currentSummary.shortDramaGroupCount}</strong></div>
+                <div className="settings-summary-item"><span>分配</span><strong>{currentSummary.shortDramaAssignmentCount}</strong></div>
               </div>
               {transferState ? (
                 <div className="settings-transfer-note">

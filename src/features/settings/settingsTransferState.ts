@@ -10,6 +10,9 @@ export type PersistedTransferState = {
     settingsCount: number
     leaveRecordCount: number
     classScheduleCount: number
+    shortDramaCount: number
+    shortDramaGroupCount: number
+    shortDramaAssignmentCount: number
   }
 }
 
@@ -41,6 +44,9 @@ export function readPersistedTransferState(): PersistedTransferState | null {
         settingsCount: Number(parsed.summary?.settingsCount) || 0,
         leaveRecordCount: Number(parsed.summary?.leaveRecordCount) || 0,
         classScheduleCount: Number(parsed.summary?.classScheduleCount) || 0,
+        shortDramaCount: Number(parsed.summary?.shortDramaCount) || 0,
+        shortDramaGroupCount: Number(parsed.summary?.shortDramaGroupCount) || 0,
+        shortDramaAssignmentCount: Number(parsed.summary?.shortDramaAssignmentCount) || 0,
       },
     }
   } catch {
