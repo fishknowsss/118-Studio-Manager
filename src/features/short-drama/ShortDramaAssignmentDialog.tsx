@@ -41,9 +41,12 @@ export function ShortDramaAssignmentDialog({
     () => groups.find((group) => group.id === (assignment?.groupId || initialGroupId)),
     [assignment?.groupId, groups, initialGroupId],
   )
+  const initialProducerIds = assignment?.allocations.length
+    ? assignment.allocations.map((allocation) => allocation.personId)
+    : assignment?.producerIds || initialGroup?.memberIds || []
   const [episodes, setEpisodes] = useState(assignment?.episodes || '')
   const [groupId, setGroupId] = useState(assignment?.groupId || initialGroupId || '')
-  const [producerIds, setProducerIds] = useState<string[]>(assignment?.producerIds || initialGroup?.memberIds || [])
+  const [producerIds, setProducerIds] = useState<string[]>(initialProducerIds)
   const [ownerId, setOwnerId] = useState(assignment?.ownerId || initialGroup?.leaderId || '')
   const [status, setStatus] = useState(assignment?.status || 'not-started')
   const [estimatedHours, setEstimatedHours] = useState(numericText(assignment?.estimatedHours))
@@ -54,8 +57,17 @@ export function ShortDramaAssignmentDialog({
   const [notes, setNotes] = useState(assignment?.notes || '')
   const [showDetails, setShowDetails] = useState(false)
   const [allocations, setAllocations] = useState<ShortDramaAssignmentAllocation[]>(
-    assignment?.allocations || initialGroup?.memberIds.map((personId) => ({ personId })) || [],
+    assignment?.allocations.length
+      ? assignment.allocations
+      : initialProducerIds.map((personId) => ({ personId })),
   )
+  const candidatePeople = useMemo(() => {
+    const group = groups.find((item) => item.id === groupId)
+    if (!group) return activePeople
+    const groupMemberIds = new Set(group.memberIds)
+    const grouped = activePeople.filter((person) => groupMemberIds.has(person.id))
+    return grouped.length > 0 ? grouped : activePeople
+  }, [activePeople, groupId, groups])
 
   const selectedAllocations = producerIds.map((personId) => (
     allocations.find((allocation) => allocation.personId === personId) || { personId }
@@ -124,7 +136,7 @@ export function ShortDramaAssignmentDialog({
       groupId: groupId || null,
       notes: notes.trim(),
       ownerId: ownerId || null,
-      producerIds,
+      producerIds: cleanAllocations.map((allocation) => allocation.personId),
       startDate,
       status,
     })
@@ -140,7 +152,7 @@ export function ShortDramaAssignmentDialog({
       footer={(
         <>
           <button className="btn btn-secondary" type="button" onClick={onClose}>取消</button>
-          <button className="btn btn-primary" type="button" onClick={() => void handleSubmit()} disabled={!episodes.trim()}>保存</button>
+          <button className="btn btn-primary" type="button" onClick={() => void handleSubmit()} disabled={!episodes.trim() || producerIds.length === 0}>保存</button>
         </>
       )}
     >
@@ -165,32 +177,65 @@ export function ShortDramaAssignmentDialog({
           <label className="form-label" htmlFor="short-drama-assignment-duration">成片时长</label>
           <input id="short-drama-assignment-duration" className="form-input" value={durationText} onChange={(event) => setDurationText(event.target.value)} placeholder="1:30" />
         </div>
+        <div className="form-field">
+          <label className="form-label" htmlFor="short-drama-assignment-owner">负责人</label>
+          <select id="short-drama-assignment-owner" className="form-input" value={ownerId} onChange={(event) => setOwnerId(event.target.value)}>
+            <option value="">未指定</option>
+            {activePeople.map((person) => (
+              <option key={person.id} value={person.id}>{person.name || '未命名'}</option>
+            ))}
+          </select>
+        </div>
+        <div className="form-field">
+          <label className="form-label" htmlFor="short-drama-assignment-group">小组</label>
+          <select id="short-drama-assignment-group" className="form-input" value={groupId} onChange={(event) => handleGroupChange(event.target.value)}>
+            <option value="">未分组</option>
+            {groups.map((group) => (
+              <option key={group.id} value={group.id}>{group.name || '未命名'}</option>
+            ))}
+          </select>
+        </div>
+        <div className="form-field span2">
+          <span className="form-label">制作人</span>
+          <div className="short-drama-person-picker">
+            {candidatePeople.map((person) => (
+              <button
+                key={person.id}
+                className={`short-drama-person-chip${producerIds.includes(person.id) ? ' selected' : ''}`}
+                type="button"
+                onClick={() => toggleProducer(person.id)}
+              >
+                {person.name || '未命名'}
+              </button>
+            ))}
+          </div>
+        </div>
+        {selectedAllocations.length > 0 ? (
+          <div className="form-field span2">
+            <span className="form-label">人员拆分</span>
+            <div className="short-drama-allocation-list">
+              {selectedAllocations.map((allocation) => {
+                const person = activePeople.find((item) => item.id === allocation.personId)
+                return (
+                  <div key={allocation.personId} className="short-drama-allocation-row">
+                    <strong>{person?.name || '未命名'}</strong>
+                    <input className="form-input" value={allocation.episodes || ''} onChange={(event) => updateAllocation(allocation.personId, { episodes: event.target.value })} placeholder="集数" />
+                    <input className="form-input" type="number" min="0" value={numericText(allocation.estimatedHours)} onChange={(event) => updateAllocation(allocation.personId, { estimatedHours: toNumberOrNull(event.target.value) })} placeholder="预计" />
+                    <input className="form-input" type="number" min="0" value={numericText(allocation.actualHours)} onChange={(event) => updateAllocation(allocation.personId, { actualHours: toNumberOrNull(event.target.value) })} placeholder="实际" />
+                  </div>
+                )
+              })}
+            </div>
+          </div>
+        ) : null}
         <div className="form-field span2">
           <button className="btn btn-secondary btn-sm" type="button" onClick={() => setShowDetails((value) => !value)}>
-            {showDetails ? '收起' : '详细'}
+            {showDetails ? '收起' : '更多'}
           </button>
         </div>
 
         {showDetails ? (
           <>
-            <div className="form-field">
-              <label className="form-label" htmlFor="short-drama-assignment-group">小组</label>
-              <select id="short-drama-assignment-group" className="form-input" value={groupId} onChange={(event) => handleGroupChange(event.target.value)}>
-                <option value="">未分组</option>
-                {groups.map((group) => (
-                  <option key={group.id} value={group.id}>{group.name || '未命名'}</option>
-                ))}
-              </select>
-            </div>
-            <div className="form-field">
-              <label className="form-label" htmlFor="short-drama-assignment-owner">负责人</label>
-              <select id="short-drama-assignment-owner" className="form-input" value={ownerId} onChange={(event) => setOwnerId(event.target.value)}>
-                <option value="">未指定</option>
-                {activePeople.map((person) => (
-                  <option key={person.id} value={person.id}>{person.name || '未命名'}</option>
-                ))}
-              </select>
-            </div>
             <div className="form-field">
               <label className="form-label" htmlFor="short-drama-assignment-estimated">预计工时</label>
               <input id="short-drama-assignment-estimated" className="form-input" type="number" min="0" value={estimatedHours} onChange={(event) => setEstimatedHours(event.target.value)} />
@@ -201,35 +246,6 @@ export function ShortDramaAssignmentDialog({
             <div className="form-field">
           <DatePicker id="short-drama-assignment-end" label="完成日期" value={endDate} onChange={setEndDate} />
             </div>
-            <div className="form-field">
-              <span className="form-label">制作人</span>
-              <div className="short-drama-check-grid short-drama-check-grid--tight">
-                {activePeople.map((person) => (
-                  <label key={person.id} className={`short-drama-check${producerIds.includes(person.id) ? ' selected' : ''}`}>
-                    <input type="checkbox" checked={producerIds.includes(person.id)} onChange={() => toggleProducer(person.id)} />
-                    <span>{person.name || '未命名'}</span>
-                  </label>
-                ))}
-              </div>
-            </div>
-            {selectedAllocations.length > 0 ? (
-              <div className="form-field span2">
-                <span className="form-label">人员拆分</span>
-                <div className="short-drama-allocation-list">
-                  {selectedAllocations.map((allocation) => {
-                    const person = activePeople.find((item) => item.id === allocation.personId)
-                    return (
-                      <div key={allocation.personId} className="short-drama-allocation-row">
-                        <strong>{person?.name || '未命名'}</strong>
-                        <input className="form-input" value={allocation.episodes || ''} onChange={(event) => updateAllocation(allocation.personId, { episodes: event.target.value })} placeholder="集数" />
-                        <input className="form-input" type="number" min="0" value={numericText(allocation.estimatedHours)} onChange={(event) => updateAllocation(allocation.personId, { estimatedHours: toNumberOrNull(event.target.value) })} placeholder="预计" />
-                        <input className="form-input" type="number" min="0" value={numericText(allocation.actualHours)} onChange={(event) => updateAllocation(allocation.personId, { actualHours: toNumberOrNull(event.target.value) })} placeholder="实际" />
-                      </div>
-                    )
-                  })}
-                </div>
-              </div>
-            ) : null}
             <div className="form-field span2">
               <label className="form-label" htmlFor="short-drama-assignment-notes">备注</label>
               <textarea id="short-drama-assignment-notes" className="form-input" value={notes} onChange={(event) => setNotes(event.target.value)} />

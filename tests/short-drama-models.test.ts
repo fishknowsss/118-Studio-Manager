@@ -3,6 +3,7 @@ import {
   buildShortDramaAssignmentDefaults,
   buildShortDramaAssignmentRows,
   buildShortDramaGroupLanes,
+  buildShortDramaPersonSummaries,
   buildShortDramaStats,
   formatDurationSeconds,
 } from '../src/features/short-drama/shortDramaModels'
@@ -114,6 +115,33 @@ describe('short drama models', () => {
     })
   })
 
+  it('uses per-person allocations as the primary production assignees', () => {
+    const rows = buildShortDramaAssignmentRows([
+      {
+        id: 'assignment-person-first',
+        dramaId: 'drama-1',
+        groupId: 'group-1',
+        episodes: '1-4',
+        producerIds: ['person-3'],
+        ownerId: 'person-1',
+        status: 'in-progress',
+        estimatedHours: 8,
+        actualHours: 2,
+        finishedDurationSeconds: null,
+        allocations: [
+          { personId: 'person-1', episodes: '1-2', estimatedHours: 4 },
+          { personId: 'person-2', episodes: '3-4', estimatedHours: 4 },
+        ],
+      },
+    ], groups, people, 'drama-1')
+
+    expect(rows[0]).toMatchObject({
+      ownerName: '张三',
+      producerNames: '张三、李四',
+      allocationText: '张三 1-2集 · 李四 3-4集',
+    })
+  })
+
   it('groups assignment cards into simple production lanes', () => {
     const lanes = buildShortDramaGroupLanes(assignments, groups, people, 'drama-1')
 
@@ -133,6 +161,27 @@ describe('short drama models', () => {
       ownerName: '张三',
       producerNames: '张三、李四',
       statusLabel: '已完成',
+    })
+  })
+
+  it('summarizes assignments by production person for quick scanning', () => {
+    const summaries = buildShortDramaPersonSummaries(assignments, groups, people, 'drama-1')
+
+    expect(summaries).toHaveLength(3)
+    expect(summaries[0]).toMatchObject({
+      id: 'person-3',
+      name: '王五',
+      assignmentCount: 1,
+      episodeCount: 3,
+      estimatedHours: 18,
+      actualHours: 6,
+      reviewCount: 1,
+      groupNames: 'A组',
+    })
+    expect(summaries.find((person) => person.id === 'person-1')).toMatchObject({
+      assignmentCount: 1,
+      episodeCount: 2,
+      doneCount: 1,
     })
   })
 

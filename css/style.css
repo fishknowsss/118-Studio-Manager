@@ -5871,6 +5871,58 @@ html[data-easter-mode='konami'] .squid-mark {
   font-variant-numeric: tabular-nums;
 }
 
+.short-drama-person-strip {
+  display: flex;
+  gap: 8px;
+  padding: 0 0 14px;
+  border-bottom: 1px solid var(--c-border-light);
+  overflow-x: auto;
+}
+
+.short-drama-person-summary {
+  flex: 0 0 auto;
+  min-width: 118px;
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 5px 8px;
+  align-items: center;
+  padding: 8px 10px;
+  border: 1px solid var(--c-border-light);
+  border-radius: var(--r-sm);
+  background: var(--c-bg);
+  color: var(--c-text-2);
+  text-align: left;
+  transition: border-color .14s, background .14s, color .14s;
+}
+
+.short-drama-person-summary:hover {
+  border-color: rgba(65, 102, 245, .32);
+  background: var(--c-primary-light);
+  color: var(--c-primary);
+}
+
+.short-drama-person-summary strong {
+  min-width: 0;
+  color: var(--c-text);
+  font-size: 13px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.short-drama-person-summary span,
+.short-drama-person-summary em {
+  font-size: 12px;
+  font-style: normal;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.short-drama-person-summary em {
+  grid-column: 1 / -1;
+  color: var(--c-soon);
+}
+
 .short-drama-next-step {
   display: flex;
   align-items: center;
@@ -5942,7 +5994,7 @@ html[data-easter-mode='konami'] .squid-mark {
 .short-drama-assignment-row {
   min-width: 0;
   display: grid;
-  grid-template-columns: minmax(120px, 1.1fr) minmax(180px, 1.7fr) minmax(110px, .8fr) 118px auto;
+  grid-template-columns: minmax(120px, 1.05fr) minmax(180px, 1.45fr) minmax(110px, .8fr) 118px auto;
   align-items: center;
   gap: 10px;
   padding: 9px 10px;
@@ -5980,6 +6032,25 @@ html[data-easter-mode='konami'] .squid-mark {
   font-size: 13px;
   color: var(--c-text-2);
   line-height: 1.45;
+}
+
+.short-drama-assignment-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+}
+
+.short-drama-assignment-chips span {
+  max-width: 96px;
+  min-height: 24px;
+  display: inline-flex;
+  align-items: center;
+  padding: 0 8px;
+  border-radius: var(--r-sm);
+  background: var(--c-surface);
+  color: var(--c-text);
+  font-size: 12px;
+  font-weight: 700;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -6051,8 +6122,121 @@ html[data-easter-mode='konami'] .squid-mark {
   gap: 14px;
 }
 
-.short-drama-quick-form .form-field:first-child {
+.short-drama-quick-form .span2 {
   grid-column: 1 / -1;
+}
+
+.short-drama-person-picker {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 8px;
+  border: 1px solid var(--c-border-light);
+  border-radius: var(--r-md);
+  background: var(--c-bg);
+}
+
+.short-drama-person-chip {
+  min-height: 30px;
+  padding: 0 11px;
+  border: 1px solid var(--c-border-light);
+  border-radius: var(--r-sm);
+  background: var(--c-surface);
+  color: var(--c-text-2);
+  font-size: 13px;
+  font-weight: 700;
+  transition: background .14s, border-color .14s, color .14s;
+}
+
+.short-drama-person-chip:hover {
+  border-color: rgba(65, 102, 245, .32);
+  color: var(--c-primary);
+}
+
+.short-drama-person-chip.selected {
+  border-color: rgba(65, 102, 245, .4);
+  background: var(--c-primary-light);
+  color: var(--c-primary);
+}
+
+.short-drama-person-range-list {
+  display: grid;
+  gap: 8px;
+  max-height: min(46vh, 380px);
+  overflow-y: auto;
+  padding: 8px;
+  border: 1px solid var(--c-border-light);
+  border-radius: var(--r-md);
+  background: var(--c-bg);
+}
+
+.short-drama-person-range {
+  display: grid;
+  grid-template-columns: minmax(96px, 1fr) 84px 84px 78px;
+  gap: 8px;
+  align-items: center;
+  padding: 8px;
+  border: 1px solid var(--c-border-light);
+  border-radius: var(--r-sm);
+  background: var(--c-surface);
+}
+
+.short-drama-person-range-head {
+  display: grid;
+  grid-template-columns: minmax(96px, 1fr) 84px 84px 78px;
+  gap: 8px;
+  padding: 0 8px 2px;
+  color: var(--c-text-2);
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.short-drama-person-range:not(.selected) {
+  cursor: pointer;
+}
+
+.short-drama-person-range.selected {
+  border-color: rgba(65, 102, 245, .36);
+  background: var(--c-primary-light);
+}
+
+.short-drama-person-range-name {
+  min-width: 0;
+  height: 32px;
+  padding: 0 10px;
+  border-radius: var(--r-sm);
+  background: var(--c-bg);
+  color: var(--c-text);
+  font-size: 13px;
+  font-weight: 800;
+  text-align: left;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.short-drama-person-range.selected .short-drama-person-range-name {
+  color: var(--c-primary);
+}
+
+.short-drama-person-range .form-input {
+  height: 32px;
+  min-height: 32px;
+  padding: 0 8px;
+}
+
+.short-drama-person-range .form-input:disabled {
+  opacity: .45;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+.short-drama-person-range span {
+  color: var(--c-text-2);
+  font-size: 12px;
+  font-weight: 800;
+  text-align: right;
+  white-space: nowrap;
 }
 
 .short-drama-check-grid {
@@ -6148,6 +6332,19 @@ html[data-easter-mode='konami'] .squid-mark {
 
   .short-drama-allocation-row {
     grid-template-columns: 1fr;
+  }
+
+  .short-drama-person-range {
+    grid-template-columns: 1fr 72px 72px;
+  }
+
+  .short-drama-person-range-head {
+    display: none;
+  }
+
+  .short-drama-person-range span {
+    grid-column: 1 / -1;
+    text-align: left;
   }
 }
 

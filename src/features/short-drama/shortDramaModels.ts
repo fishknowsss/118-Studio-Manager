@@ -28,6 +28,7 @@ export type ShortDramaStats = {
 
 export type ShortDramaAssignmentRow = {
   actualHours: number
+  allocationText: string
   durationText: string
   endDate: string
   episodes: string
@@ -56,6 +57,18 @@ export type ShortDramaGroupLaneModel = {
   memberNames: string
 }
 
+export type ShortDramaPersonSummary = {
+  actualHours: number
+  assignmentCount: number
+  doneCount: number
+  episodeCount: number
+  estimatedHours: number
+  groupNames: string
+  id: string
+  name: string
+  reviewCount: number
+}
+
 export type ShortDramaAssignmentDefaults = {
   allocations: ShortDramaAssignment['allocations']
   estimatedHours: number | null
@@ -73,6 +86,26 @@ function clampStatus(value: string | null | undefined): ShortDramaProgressStatus
   return SHORT_DRAMA_PROGRESS_ORDER.includes(value as ShortDramaProgressStatus)
     ? value as ShortDramaProgressStatus
     : 'not-started'
+}
+
+function buildProductionPersonIds(assignment: ShortDramaAssignment) {
+  const allocationPersonIds = assignment.allocations
+    .map((allocation) => allocation.personId)
+    .filter(Boolean)
+  return allocationPersonIds.length > 0 ? allocationPersonIds : assignment.producerIds
+}
+
+function buildAllocationText(assignment: ShortDramaAssignment, personById: Map<string, LegacyPerson>) {
+  const items = assignment.allocations
+    .map((allocation) => {
+      const name = personById.get(allocation.personId)?.name || ''
+      if (!name) return ''
+      const episodes = allocation.episodes?.trim()
+      return episodes ? `${name} ${episodes}集` : name
+    })
+    .filter(Boolean)
+
+  return items.join(' · ')
 }
 
 export function formatDurationSeconds(value: number | null | undefined) {
@@ -173,13 +206,14 @@ export function buildShortDramaAssignmentRows(
       const status = clampStatus(assignment.status)
       const estimatedHours = numberValue(assignment.estimatedHours)
       const actualHours = numberValue(assignment.actualHours)
-      const producerNames = assignment.producerIds
+      const producerNames = buildProductionPersonIds(assignment)
         .map((id) => personById.get(id)?.name || '')
         .filter(Boolean)
         .join('、')
 
       return {
         actualHours,
+        allocationText: buildAllocationText(assignment, personById),
         durationText: formatDurationSeconds(assignment.finishedDurationSeconds),
         endDate: assignment.endDate || '',
         episodes: assignment.episodes || '',
@@ -252,6 +286,66 @@ export function buildShortDramaGroupLanes(
   }
 
   return lanes
+}
+
+export function buildShortDramaPersonSummaries(
+  assignments: ShortDramaAssignment[],
+  groups: ShortDramaGroup[],
+  people: LegacyPerson[],
+  dramaId: string,
+): ShortDramaPersonSummary[] {
+  const groupById = new Map(groups.map((group) => [group.id, group]))
+  const personById = new Map(people.map((person) => [person.id, person]))
+  const summaries = new Map<string, ShortDramaPersonSummary>()
+
+  for (const assignment of assignments) {
+    if (assignment.dramaId !== dramaId) continue
+    const productionPersonIds = buildProductionPersonIds(assignment)
+    const personIds = productionPersonIds.length > 0
+      ? productionPersonIds
+      : assignment.ownerId ? [assignment.ownerId] : []
+    const status = clampStatus(assignment.status)
+    const groupName = assignment.groupId ? groupById.get(assignment.groupId)?.name || '' : '未分组'
+
+    for (const personId of personIds) {
+      const person = personById.get(personId)
+      if (!person || person.status === 'inactive') continue
+      const allocation = assignment.allocations.find((item) => item.personId === personId)
+      const episodeCount = parseEpisodeCount(allocation?.episodes || assignment.episodes)
+      const estimatedHours = numberValue(allocation?.estimatedHours ?? assignment.estimatedHours)
+      const actualHours = numberValue(allocation?.actualHours ?? assignment.actualHours)
+      const current = summaries.get(personId) || {
+        actualHours: 0,
+        assignmentCount: 0,
+        doneCount: 0,
+        episodeCount: 0,
+        estimatedHours: 0,
+        groupNames: '',
+        id: personId,
+        name: person.name || '未命名',
+        reviewCount: 0,
+      }
+      const groupNames = new Set(current.groupNames ? current.groupNames.split('、') : [])
+      if (groupName) groupNames.add(groupName)
+
+      summaries.set(personId, {
+        ...current,
+        actualHours: current.actualHours + actualHours,
+        assignmentCount: current.assignmentCount + 1,
+        doneCount: current.doneCount + (status === 'done' ? 1 : 0),
+        episodeCount: current.episodeCount + episodeCount,
+        estimatedHours: current.estimatedHours + estimatedHours,
+        groupNames: Array.from(groupNames).join('、'),
+        reviewCount: current.reviewCount + (status === 'review' || status === 'revision' ? 1 : 0),
+      })
+    }
+  }
+
+  return Array.from(summaries.values()).sort((left, right) => {
+    if (right.reviewCount !== left.reviewCount) return right.reviewCount - left.reviewCount
+    if (right.episodeCount !== left.episodeCount) return right.episodeCount - left.episodeCount
+    return left.name.localeCompare(right.name, 'zh-CN')
+  })
 }
 
 export function buildShortDramaAssignmentDefaults({

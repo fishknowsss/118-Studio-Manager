@@ -7,6 +7,7 @@ import { ShortDramaGroupDialog } from '../features/short-drama/ShortDramaGroupDi
 import { ShortDramaQuickAssignmentDialog } from '../features/short-drama/ShortDramaQuickAssignmentDialog'
 import {
   buildShortDramaGroupLanes,
+  buildShortDramaPersonSummaries,
   buildShortDramaStats,
   SHORT_DRAMA_PROGRESS_LABELS,
   type ShortDramaAssignmentCardModel,
@@ -46,13 +47,25 @@ function AssignmentCard({
   onEdit: (assignment: ShortDramaAssignment | null) => void
   onStatusChange: (assignmentId: string, status: ShortDramaProgressStatus) => void
 }) {
+  const producerNames = card.producerNames === '未分配' ? [] : card.producerNames.split('、').filter(Boolean)
+
   return (
     <article className="short-drama-assignment-row">
       <div className="short-drama-assignment-title">
         <strong>{card.title}</strong>
-        <span>{card.ownerName || '未指定负责人'}</span>
+        <span>负责：{card.ownerName || '未指定'}</span>
       </div>
-      <div className="short-drama-assignment-people">{card.producerNames}</div>
+      <div className="short-drama-assignment-people">
+        {producerNames.length > 0 ? (
+          <div className="short-drama-assignment-chips" aria-label={`制作人：${card.producerNames}`}>
+            {producerNames.map((name) => (
+              <span key={name}>{name}</span>
+            ))}
+          </div>
+        ) : (
+          <span>未分配</span>
+        )}
+      </div>
       <div className="short-drama-assignment-metrics">
         <span>{card.hoursText}</span>
         <span>{card.durationText}</span>
@@ -85,6 +98,7 @@ export function ShortDrama() {
   const [editingGroup, setEditingGroup] = useState<ShortDramaGroup | null | undefined>(undefined)
   const [editingAssignment, setEditingAssignment] = useState<ShortDramaAssignment | null | undefined>(undefined)
   const [quickAssignmentGroupId, setQuickAssignmentGroupId] = useState<string | null | undefined>(undefined)
+  const [quickAssignmentPersonId, setQuickAssignmentPersonId] = useState<string | null>(null)
 
   const selectedDrama = useMemo(
     () => shortDramas.find((drama) => drama.id === selectedDramaId) || shortDramas[0] || null,
@@ -109,13 +123,24 @@ export function ShortDrama() {
     () => selectedDrama ? buildShortDramaGroupLanes(shortDramaAssignments, selectedGroups, people, selectedDrama.id) : [],
     [people, selectedDrama, selectedGroups, shortDramaAssignments],
   )
+  const personSummaries = useMemo(
+    () => selectedDrama
+      ? buildShortDramaPersonSummaries(shortDramaAssignments, selectedGroups, people, selectedDrama.id)
+      : [],
+    [people, selectedDrama, selectedGroups, shortDramaAssignments],
+  )
 
-  const openQuickAssignmentDialog = (groupId: string | null = null) => {
-    setQuickAssignmentGroupId(groupId)
+  const openQuickAssignmentDialog = (groupId: string | null = null, personId: string | null = null) => {
+    const fallbackGroupId = personId
+      ? selectedGroups.find((group) => group.memberIds.includes(personId))?.id || groupId
+      : groupId
+    setQuickAssignmentGroupId(fallbackGroupId || null)
+    setQuickAssignmentPersonId(personId)
   }
 
   const closeQuickAssignmentDialog = () => {
     setQuickAssignmentGroupId(undefined)
+    setQuickAssignmentPersonId(null)
   }
 
   const handleDeleteDrama = async () => {
@@ -197,7 +222,7 @@ export function ShortDrama() {
                   <div className="short-drama-board-actions">
                     <button className="btn btn-secondary btn-sm" type="button" onClick={() => setEditingDrama(selectedDrama)}>编辑</button>
                     <button className="btn btn-secondary btn-sm" type="button" onClick={() => setEditingGroup(null)}>建小组</button>
-                    <button className="btn btn-primary btn-sm" type="button" onClick={() => openQuickAssignmentDialog(null)}>分配集数</button>
+                    <button className="btn btn-primary btn-sm" type="button" onClick={() => openQuickAssignmentDialog(null)}>分配给人</button>
                     <button className="btn btn-ghost btn-sm short-drama-danger-action" type="button" onClick={() => void handleDeleteDrama()}>删除</button>
                   </div>
                 </div>
@@ -211,12 +236,30 @@ export function ShortDrama() {
                   <span><strong>{stats.statusCounts.review}</strong> 待审核</span>
                 </div>
 
+                {personSummaries.length > 0 ? (
+                  <div className="short-drama-person-strip" aria-label="人员分配概览">
+                    {personSummaries.map((person) => (
+                      <button
+                        key={person.id}
+                        className="short-drama-person-summary"
+                        type="button"
+                        onClick={() => openQuickAssignmentDialog(null, person.id)}
+                      >
+                        <strong>{person.name}</strong>
+                        <span>{person.episodeCount} 集</span>
+                        <span>{person.assignmentCount} 条</span>
+                        {person.reviewCount > 0 ? <em>{person.reviewCount} 待处理</em> : null}
+                      </button>
+                    ))}
+                  </div>
+                ) : null}
+
                 {selectedGroups.length === 0 && selectedAssignments.length === 0 ? (
                   <div className="short-drama-next-step">
                     <strong>先把制作单元建起来。</strong>
                     <div className="short-drama-next-actions">
                       <button className="btn btn-secondary" type="button" onClick={() => setEditingGroup(null)}>建小组</button>
-                      <button className="btn btn-primary" type="button" onClick={() => openQuickAssignmentDialog(null)}>分配集数</button>
+                      <button className="btn btn-primary" type="button" onClick={() => openQuickAssignmentDialog(null)}>分配给人</button>
                     </div>
                   </div>
                 ) : null}
@@ -247,7 +290,7 @@ export function ShortDrama() {
                         </div>
 
                         {lane.cards.length === 0 ? (
-                          <div className="short-drama-lane-empty">给这个小组分配集数。</div>
+                          <div className="short-drama-lane-empty">给人员分配集数。</div>
                         ) : (
                           <div className="short-drama-assignment-list">
                             {lane.cards.map((card) => (
@@ -300,6 +343,9 @@ export function ShortDrama() {
           dramaId={selectedDrama.id}
           groups={selectedGroups}
           initialGroupId={quickAssignmentGroupId}
+          initialPersonId={quickAssignmentPersonId}
+          people={people}
+          totalEpisodes={selectedDrama.totalEpisodes}
           onClose={closeQuickAssignmentDialog}
         />
       ) : null}
