@@ -8365,6 +8365,37 @@ select.form-input { cursor: pointer; }
   margin-bottom: 12px;
 }
 
+.project-detail-panel > .pdp-meta-row {
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 12px;
+}
+
+.project-detail-panel > .pdp-meta-row .pdp-meta {
+  margin-bottom: 0;
+}
+
+.pdp-project-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.project-action-copy {
+  color: var(--c-text-2);
+  font-size: var(--fs-base);
+  line-height: 1.6;
+}
+
+.project-delay-modal {
+  max-width: 420px;
+}
+
+.project-delay-form {
+  grid-template-columns: 1fr;
+}
+
 .pdp-desc {
   font-size: 14px;
   color: var(--c-text-2);

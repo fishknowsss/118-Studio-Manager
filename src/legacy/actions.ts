@@ -220,6 +220,39 @@ export async function updateProjectStatus(projectId: string, status: ProjectStat
   })
 }
 
+export async function completeProject(projectId: string, completeOpenTasks = false) {
+  const project = store.getProject(projectId)
+  if (!project) return null
+
+  return await runWithUndo(`完成项目「${project.name || '未命名项目'}」`, async () => {
+    const timestamp = now()
+    const updatedProject = { ...project, status: 'completed' as ProjectStatus, updatedAt: timestamp }
+    await store.saveProject(updatedProject)
+
+    if (completeOpenTasks) {
+      const openTasks = store.tasksForProject(projectId).filter((task) => task.status !== 'done')
+      for (const task of openTasks) {
+        await store.saveTask({ ...task, status: 'done', updatedAt: timestamp })
+      }
+    }
+
+    await store.addLog(`完成项目「${project.name}」`)
+    return updatedProject
+  })
+}
+
+export async function updateProjectDeadline(projectId: string, ddl: string | null) {
+  const project = store.getProject(projectId)
+  if (!project) return null
+
+  return await runWithUndo(`延期项目「${project.name || '未命名项目'}」`, async () => {
+    const updated = { ...project, ddl, updatedAt: now() }
+    await store.saveProject(updated)
+    await store.addLog(`延期项目「${project.name}」`)
+    return updated
+  })
+}
+
 export async function updateTaskQuickField(taskId: string, patch: Partial<LegacyTask>) {
   const task = store.getTask(taskId)
   if (!task) return null
