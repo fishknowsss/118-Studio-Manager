@@ -90,8 +90,10 @@ describe('dashboard panels', () => {
     expect(cards).toHaveLength(2)
     expect(placeholders).toHaveLength(14)
     expect(firstCard?.textContent).toContain('王浩然')
-    expect(firstCardTaskLabel?.textContent).toBe('渲染输出终版确…+1')
+    expect(firstCardTaskLabel?.textContent).toBe('渲染输出终版确认结果+1')
+    expect(firstCardTaskLabel?.querySelector('.person-assignment-task-extra')?.textContent).toBe('+1')
     expect(firstCardSkills?.[0]?.textContent).toBe('Cinema 4D')
+    expect(firstCard?.querySelector('.person-assignment-skills')?.classList.contains('has-skill-overflow')).toBe(false)
     expect(secondCard?.textContent).toContain('佳宁')
     expect(secondCard?.textContent).toContain('After Effects')
     expect(maleMark?.textContent).toBe('♂')
@@ -362,6 +364,20 @@ describe('dashboard panels', () => {
     expect(panelSource).toMatch(/\}, \[page,\s*pagePeople\]\)/)
     expect(panelSource).not.toMatch(/pagePeopleKey/)
     expect(panelSource).toMatch(/\.animate\(\[/)
+  })
+
+  it('keeps the person card task title wide and centers hidden skill count at the bottom', () => {
+    const styleSource = readFileSync(join(process.cwd(), 'css/style.css'), 'utf8')
+    const cardSource = readFileSync(join(process.cwd(), 'src/features/dashboard/PersonAssignmentCard.tsx'), 'utf8')
+    const taskCountRule = styleSource.match(/\.person-assignment-count\s*\{[^}]*\}/)?.[0] ?? ''
+    const skillOverflowRule = styleSource.match(/\.person-assignment-skills-overflow\s*\{[^}]*\}/)?.[0] ?? ''
+
+    expect(taskCountRule).not.toMatch(/max-width:\s*calc\(100%\s*-\s*24px\)/)
+    expect(cardSource).toMatch(/has-skill-overflow/)
+    expect(skillOverflowRule).toMatch(/position:\s*absolute/)
+    expect(skillOverflowRule).toMatch(/left:\s*50%/)
+    expect(skillOverflowRule).toMatch(/bottom:\s*8px/)
+    expect(skillOverflowRule).toMatch(/transform:\s*translateX\(-50%\)/)
   })
 
   it('keeps task rows and people cards wired for two-way assignment drag targets when task people are missing', () => {

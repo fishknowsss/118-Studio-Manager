@@ -40,9 +40,7 @@ export function PersonAssignmentCard({
   const hiddenSkillCount = Math.max(0, model.skills.length - visibleSkills.length)
   const isTaskLabelEmpty = model.topInProgressTaskLabel === '暂无进行中'
   const hiddenTaskCount = Math.max(0, model.taskCount - 1)
-  const taskLabel = isTaskLabelEmpty
-    ? model.topInProgressTaskLabel
-    : `${model.topInProgressTaskLabel}${hiddenTaskCount > 0 ? `+${hiddenTaskCount}` : ''}`
+  const extraTaskLabel = !isTaskLabelEmpty && hiddenTaskCount > 0 ? `+${hiddenTaskCount}` : ''
   const genderTone = getPersonGenderTone(model.genderLabel)
   const genderSymbol = getPersonGenderSymbol(model.genderLabel)
   const statusKind = model.isOnLeaveToday ? 'leave' : model.isPresent ? 'present' : null
@@ -86,10 +84,13 @@ export function PersonAssignmentCard({
           <div className="person-assignment-name">{model.name}</div>
           {statusKind ? <PersonStatusMark kind={statusKind} /> : null}
         </div>
-        <div className={`person-assignment-count ${isTaskLabelEmpty ? 'is-empty' : ''}`}>{taskLabel}</div>
+        <div className={`person-assignment-count ${isTaskLabelEmpty ? 'is-empty' : ''}`}>
+          <span className="person-assignment-task-title">{model.topInProgressTaskLabel}</span>
+          {extraTaskLabel ? <span className="person-assignment-task-extra">{extraTaskLabel}</span> : null}
+        </div>
       </div>
 
-      <div className="person-assignment-skills">
+      <div className={`person-assignment-skills ${hiddenSkillCount > 0 ? 'has-skill-overflow' : ''}`}>
         {model.skills.length > 0
           ? (
             <>

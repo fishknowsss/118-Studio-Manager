@@ -1880,6 +1880,9 @@ html[data-easter-mode='konami'] .assignee-chip.selected:has(.assignee-chip-avata
   overflow: hidden;
   will-change: transform;
 }
+.person-assignment-card:has(.person-assignment-skills.has-skill-overflow) {
+  padding-bottom: 26px;
+}
 .person-assignment-card:hover {
   box-shadow: var(--shadow-md);
   transform: translateY(-2px);
@@ -1971,15 +1974,25 @@ html[data-easter-mode='konami'] .assignee-chip.selected:has(.assignee-chip-avata
   animation: person-status-pulse 2.4s ease-in-out infinite;
 }
 .person-assignment-count {
+  display: flex;
+  align-items: center;
   font-size: 12px;
   color: var(--c-text-2);
+  min-width: 0;
+  overflow: hidden;
+  line-height: 1.35;
+}
+.person-assignment-count.is-empty {
+  color: var(--c-text-3);
+}
+.person-assignment-task-title {
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
-.person-assignment-count.is-empty {
-  color: var(--c-text-3);
+.person-assignment-task-extra {
+  flex-shrink: 0;
 }
 .person-assignment-skills {
   display: grid;
@@ -2012,6 +2025,10 @@ html[data-easter-mode='konami'] .assignee-chip.selected:has(.assignee-chip-avata
   letter-spacing: -0.03em;
 }
 .person-assignment-skills-overflow {
+  position: absolute;
+  left: 50%;
+  bottom: 8px;
+  transform: translateX(-50%);
   padding: 1px 6px;
   border-radius: 999px;
   background: var(--c-border-light);
@@ -2019,8 +2036,6 @@ html[data-easter-mode='konami'] .assignee-chip.selected:has(.assignee-chip-avata
   font-size: 10px;
   line-height: 1.2;
   font-weight: 600;
-  justify-self: end;
-  align-self: start;
 }
 .person-assignment-empty-skill {
   font-size: 11px;
@@ -4850,6 +4865,16 @@ html[data-easter-mode='konami'] .squid-mark {
   grid-template-rows: repeat(4, minmax(0, 1fr));
   gap: 12px;
 }
+@keyframes productivity-slide-in-down {
+  from { transform: translateY(48px); opacity: 0; }
+  to   { transform: translateY(0);    opacity: 1; }
+}
+@keyframes productivity-slide-in-up {
+  from { transform: translateY(-48px); opacity: 0; }
+  to   { transform: translateY(0);     opacity: 1; }
+}
+.productivity-grid--slide-down { animation: productivity-slide-in-down .38s cubic-bezier(0.25, 0.8, 0.25, 1) both; }
+.productivity-grid--slide-up   { animation: productivity-slide-in-up   .38s cubic-bezier(0.25, 0.8, 0.25, 1) both; }
 .productivity-person-card,
 .productivity-card-placeholder {
   min-width: 0;

@@ -625,8 +625,7 @@ function comparePersonHighlightTask(left: LegacyTask, right: LegacyTask) {
 
 function formatPersonHighlightTaskLabel(title: string | undefined) {
   const source = (title || '').trim() || '未命名'
-  const chars = Array.from(source)
-    return chars.length <= 7 ? source : `${chars.slice(0, 7).join('')}…`
+  return source
 }
 
 export function buildPersonCardModels(

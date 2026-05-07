@@ -466,6 +466,8 @@ function ProductivityCardsView({
   onFlip: (personId: string) => void
 }) {
   const placeholders = Math.max(0, PAGE_SIZE - pageModels.length)
+  const [slideDir, setSlideDir] = useState<'down' | 'up' | null>(null)
+  const [animKey, setAnimKey] = useState(0)
   const contentRef = useRef<HTMLDivElement>(null)
   const wheelAccum = useRef(0)
   const wheelLock = useRef(false)
@@ -485,6 +487,8 @@ function ProductivityCardsView({
       setPage((current) => {
         const next = current + dir
         if (next < 0 || next >= totalPages) return current
+        setSlideDir(next > current ? 'down' : 'up')
+        setAnimKey((key) => key + 1)
         return next
       })
     }
@@ -492,10 +496,21 @@ function ProductivityCardsView({
     return () => el.removeEventListener('wheel', onWheel)
   }, [setPage, totalPages])
 
+  const goToPage = (next: number) => {
+    if (next === page) return
+    setSlideDir(next > page ? 'down' : 'up')
+    setAnimKey((key) => key + 1)
+    setPage(next)
+  }
+
+  const gridClass = slideDir
+    ? `productivity-card-grid productivity-grid--slide-${slideDir}`
+    : 'productivity-card-grid'
+
   return (
     <div className="productivity-cards-shell">
       <div className="productivity-card-stage" ref={contentRef}>
-        <div className="productivity-card-grid">
+        <div key={animKey} className={gridClass}>
           {pageModels.map((person) => (
             <button
               key={person.id}
@@ -544,7 +559,7 @@ function ProductivityCardsView({
               className={`productivity-page-dot${index === page ? ' productivity-page-dot--active' : ''}`}
               type="button"
               aria-label={`第 ${index + 1} 页`}
-              onClick={() => setPage(index)}
+              onClick={() => goToPage(index)}
             />
           ))}
         </div>

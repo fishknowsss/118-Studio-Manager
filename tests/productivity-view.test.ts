@@ -75,6 +75,20 @@ describe('productivity view', () => {
     expect(storeSource).not.toMatch(/saveProductivityRecord/)
   })
 
+  it('animates card paging in the same direction as wheel navigation', () => {
+    const source = readFileSync(join(process.cwd(), 'src/views/Productivity.tsx'), 'utf8')
+    const styleSource = readFileSync(join(process.cwd(), 'css/style.css'), 'utf8')
+
+    expect(source).toMatch(/setSlideDir\(next > current \? 'down' : 'up'\)/)
+    expect(source).toMatch(/setAnimKey/)
+    expect(source).toMatch(/key=\{animKey\}/)
+    expect(source).toMatch(/productivity-grid--slide-\$\{slideDir\}/)
+    expect(styleSource).toMatch(/@keyframes productivity-slide-in-down/)
+    expect(styleSource).toMatch(/@keyframes productivity-slide-in-up/)
+    expect(styleSource).toMatch(/\.productivity-grid--slide-down/)
+    expect(styleSource).toMatch(/\.productivity-grid--slide-up/)
+  })
+
   it('summarizes imported schedules by person for management actions', () => {
     const summaries = buildScheduleOwnerSummaries(
       [
