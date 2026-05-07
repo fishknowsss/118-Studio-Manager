@@ -85,6 +85,42 @@ describe('current app regressions', () => {
     expect(csv).toContain('"张三, 李四"')
   })
 
+  it('keeps settings data summary focused on core records', () => {
+    const source = readFileSync(join(process.cwd(), 'src/views/Settings.tsx'), 'utf8')
+    const currentDataSection = source.slice(
+      source.indexOf('<div className="settings-section-title">当前数据</div>'),
+      source.indexOf('<div className="settings-section-title">关于</div>'),
+    )
+
+    expect(currentDataSection).toContain('currentSummary.projectCount')
+    expect(currentDataSection).toContain('currentSummary.taskCount')
+    expect(currentDataSection).toContain('currentSummary.personCount')
+    expect(currentDataSection).toContain('currentSummary.logCount')
+    expect(currentDataSection).not.toContain('currentSummary.settingsCount')
+    expect(currentDataSection).not.toContain('currentSummary.leaveRecordCount')
+    expect(currentDataSection).not.toContain('currentSummary.classScheduleCount')
+    expect(currentDataSection).not.toContain('currentSummary.shortDramaCount')
+    expect(currentDataSection).not.toContain('currentSummary.shortDramaGroupCount')
+    expect(currentDataSection).not.toContain('currentSummary.shortDramaAssignmentCount')
+    expect(source).toContain('<span className="badge badge-active">V1.3.0</span>')
+  })
+
+  it('keeps long settings operation logs readable with the undo action in the corner', () => {
+    const stylesheet = readFileSync(join(process.cwd(), 'css/style.css'), 'utf8')
+    const logStyles = stylesheet.slice(
+      stylesheet.indexOf('.log-list'),
+      stylesheet.indexOf('/* ─── Misc'),
+    )
+
+    expect(logStyles).toMatch(/\.log-item\s*\{[^}]*position:\s*relative/)
+    expect(logStyles).toMatch(/\.log-item\s*\{[^}]*align-items:\s*stretch/)
+    expect(logStyles).toMatch(/\.log-item-main\s*\{[^}]*flex-direction:\s*column/)
+    expect(logStyles).toMatch(/\.log-text\s*\{[^}]*line-height:\s*1\.45/)
+    expect(logStyles).toMatch(/\.log-undo-btn\s*\{[^}]*position:\s*absolute/)
+    expect(logStyles).toMatch(/\.log-undo-btn\s*\{[^}]*top:\s*8px/)
+    expect(logStyles).toMatch(/\.log-undo-btn\s*\{[^}]*right:\s*8px/)
+  })
+
   it('closes the React dialog exactly once on direct backdrop click', () => {
     const onClose = vi.fn()
     const container = document.createElement('div')
@@ -860,7 +896,7 @@ describe('current app regressions', () => {
     expect(dashboardSource).not.toMatch(/mini-cal-header/)
   })
 
-  it('treats synced support records as first-class backup data across bootstrap and settings UI', () => {
+  it('treats synced support records as first-class backup data across bootstrap and settings summary reads', () => {
     const bootstrapSource = readFileSync(join(process.cwd(), 'src/legacy/bootstrap.ts'), 'utf8')
     const syncProviderSource = readFileSync(join(process.cwd(), 'src/features/sync/SyncProvider.tsx'), 'utf8')
     const syncSharedSource = readFileSync(join(process.cwd(), 'src/features/sync/syncShared.ts'), 'utf8')
@@ -873,10 +909,10 @@ describe('current app regressions', () => {
     expect(syncProviderSource).toMatch(/store\.shortDramas\.length > 0/)
     expect(bootstrapSource).toMatch(/const localBackup = await db\.exportAll\(\)/)
     expect(bootstrapSource).toMatch(/if \(!hasBackupContent\(localBackup\)\)/)
-    expect(settingsSource).toMatch(/currentSummary\.settingsCount/)
-    expect(settingsSource).toMatch(/currentSummary\.leaveRecordCount/)
-    expect(settingsSource).toMatch(/currentSummary\.classScheduleCount/)
-    expect(settingsSource).toMatch(/currentSummary\.shortDramaCount/)
+    expect(settingsSource).toMatch(/setCurrentSummary\(buildBackupSummary\(data\)\)/)
+    expect(settingsSource).toMatch(/leaveRecords/)
+    expect(settingsSource).toMatch(/classSchedules/)
+    expect(settingsSource).toMatch(/shortDramas/)
   })
 
   it('uses node24-compatible GitHub Pages actions in deploy workflow', () => {

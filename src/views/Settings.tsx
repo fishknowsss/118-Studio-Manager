@@ -47,12 +47,6 @@ function formatTransferSummary(summary: ReturnType<typeof buildBackupSummary>) {
     `${summary.taskCount} 任务`,
     `${summary.personCount} 人员`,
     `${summary.logCount} 日志`,
-    `${summary.settingsCount} 设置`,
-    `${summary.leaveRecordCount} 请假`,
-    `${summary.classScheduleCount} 课表`,
-    `${summary.shortDramaCount} 短剧`,
-    `${summary.shortDramaGroupCount} 剧组`,
-    `${summary.shortDramaAssignmentCount} 分配`,
   ].join(' · ')
 }
 
@@ -373,12 +367,6 @@ export function Settings() {
                 <div className="settings-summary-item"><span>任务</span><strong>{currentSummary.taskCount}</strong></div>
                 <div className="settings-summary-item"><span>人员</span><strong>{currentSummary.personCount}</strong></div>
                 <div className="settings-summary-item"><span>日志</span><strong>{currentSummary.logCount}</strong></div>
-                <div className="settings-summary-item"><span>设置</span><strong>{currentSummary.settingsCount}</strong></div>
-                <div className="settings-summary-item"><span>请假</span><strong>{currentSummary.leaveRecordCount}</strong></div>
-                <div className="settings-summary-item"><span>课表</span><strong>{currentSummary.classScheduleCount}</strong></div>
-                <div className="settings-summary-item"><span>短剧</span><strong>{currentSummary.shortDramaCount}</strong></div>
-                <div className="settings-summary-item"><span>剧组</span><strong>{currentSummary.shortDramaGroupCount}</strong></div>
-                <div className="settings-summary-item"><span>分配</span><strong>{currentSummary.shortDramaAssignmentCount}</strong></div>
               </div>
               {transferState ? (
                 <div className="settings-transfer-note">
@@ -396,7 +384,7 @@ export function Settings() {
                   <div className="settings-row-desc">本地优先，数据存于 IndexedDB，可选接入 Cloudflare Worker 云同步。</div>
                 </div>
                 <div className="settings-row-action">
-                  <span className="badge badge-active">v1.1</span>
+                  <span className="badge badge-active">V1.3.0</span>
                 </div>
               </div>
             </div>

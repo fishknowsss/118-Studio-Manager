@@ -2079,8 +2079,8 @@ html[data-easter-mode='konami'] .assignee-chip.selected:has(.assignee-chip-avata
 .mini-cal-grid-wrap {
   background: var(--c-surface);
   border-radius: var(--r-lg);
-  padding: 8px 6px 10px;
-  flex: 1;
+  padding: 10px 8px 8px;
+  flex: 0 0 auto;
   min-height: 0;
   display: flex;
   flex-direction: column;
@@ -2089,8 +2089,8 @@ html[data-easter-mode='konami'] .assignee-chip.selected:has(.assignee-chip-avata
   display: grid;
   grid-template-columns: repeat(7, minmax(0, 1fr));
   column-gap: 1px;
-  row-gap: 2px;
-  flex: 1;
+  row-gap: 1px;
+  flex: 0 0 auto;
   min-width: 0;
   align-content: start;
 }
@@ -2105,10 +2105,13 @@ html[data-easter-mode='konami'] .assignee-chip.selected:has(.assignee-chip-avata
 }
 .mini-cal-day {
   aspect-ratio: 1;
+  width: 100%;
+  box-sizing: border-box;
+  justify-self: center;
   display: flex;
   align-items: center;
   justify-content: center;
-  border-radius: var(--r-md);
+  border-radius: 6px;
   font-size: 12px;
   font-weight: 500;
   color: var(--c-text-2);
@@ -2117,26 +2120,27 @@ html[data-easter-mode='konami'] .assignee-chip.selected:has(.assignee-chip-avata
   transition: background .14s, color .14s, font-weight .14s, transform .14s, box-shadow .14s;
 }
 .mini-cal-day:hover:not(.today):not(.other-month) {
-  background: var(--c-primary-light);
+  background: rgba(65, 102, 245, .08);
   color: var(--c-primary);
   font-weight: 700;
-  transform: scale(1.1);
-  box-shadow: 0 2px 8px rgba(65, 102, 245, .13);
+  transform: none;
+  box-shadow: inset 0 0 0 1px rgba(65, 102, 245, .28);
   z-index: 1;
 }
 .mini-cal-day:not(.today):not(.other-month) {
-  box-shadow: 0 0 0 1px var(--c-border);
+  background: color-mix(in srgb, var(--c-surface) 76%, var(--c-bg));
+  box-shadow: inset 0 0 0 1px var(--c-border-light);
 }
 .mini-cal-day.today {
   background: var(--c-primary-light);
   color: var(--c-primary);
   font-weight: 700;
-  border-radius: var(--r-md);
-  box-shadow: 0 0 0 1.5px var(--c-primary), 0 0 10px rgba(65, 102, 245, .45);
+  border-radius: 8px;
+  box-shadow: inset 0 0 0 1.5px var(--c-primary), 0 6px 14px rgba(65, 102, 245, .16);
 }
 .mini-cal-day.today:hover {
   background: rgba(65, 102, 245, 0.25);
-  transform: scale(1.08);
+  transform: none;
 }
 .mini-cal-day.other-month { color: var(--c-text-3); opacity: .35; }
 .mini-cal-day.has-events::after {
@@ -7526,32 +7530,43 @@ select.form-input { cursor: pointer; }
 .log-item {
   font-size: var(--fs-xs);
   color: var(--c-text-3);
-  padding: 4px 8px;
+  padding: 8px 10px;
   border-radius: var(--r-sm);
   display: flex;
   gap: 8px;
-  align-items: center;
+  align-items: stretch;
+  position: relative;
 }
 .log-item-main {
   min-width: 0;
   flex: 1;
   display: flex;
-  align-items: center;
-  gap: 8px;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 7px;
 }
 .log-item:hover { background: var(--c-bg); }
 .log-time { color: var(--c-text-3); flex-shrink: 0; }
-.log-text { flex: 1; }
+.log-text {
+  flex: 1;
+  color: var(--c-text-2);
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+}
 .log-item-undo {
   border: 1px solid var(--c-border-light);
   background: var(--c-surface);
-  padding: 6px 8px;
+  padding: 8px 82px 10px 10px;
+  min-height: 78px;
 }
 .log-item-undo:hover {
   border-color: var(--c-border);
 }
 .log-undo-btn {
   flex-shrink: 0;
+  position: absolute;
+  top: 8px;
+  right: 8px;
 }
 
 /* ─── Misc ───────────────────────────────────────────── */
