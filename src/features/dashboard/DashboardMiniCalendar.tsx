@@ -9,6 +9,7 @@ export function DashboardMiniCalendar({
   onNextMonth,
   onOpenDate,
   onPrevMonth,
+  onResetToToday,
 }: {
   draggingPersonId: string | null
   model: DashboardMiniCalendarModel
@@ -17,6 +18,7 @@ export function DashboardMiniCalendar({
   onNextMonth: () => void
   onOpenDate: (dateKey: string, ox: number, oy: number) => void
   onPrevMonth: () => void
+  onResetToToday: () => void
 }) {
   const [dragOverDate, setDragOverDate] = useState<string | null>(null)
 
@@ -110,6 +112,12 @@ export function DashboardMiniCalendar({
           </div>
         </div>
         <div className="mini-cal-nav" aria-label="切换月份">
+          <button className="mini-cal-btn" title="回到今日" type="button" onClick={onResetToToday}>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M19 12a7 7 0 1 1-2.05-4.95" />
+              <path d="M19 5v5h-5" />
+            </svg>
+          </button>
           <button className="mini-cal-btn" title="上月" type="button" onClick={onPrevMonth}>
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="15 18 9 12 15 6" /></svg>
           </button>

@@ -860,6 +860,16 @@ describe('current app regressions', () => {
     expect(miniCalendarSource).toMatch(/markerKind/)
   })
 
+  it('keeps the mini calendar navigation able to return to today', () => {
+    const dashboardSource = readFileSync(join(process.cwd(), 'src/views/Dashboard.tsx'), 'utf8')
+    const miniCalendarSource = readFileSync(join(process.cwd(), 'src/features/dashboard/DashboardMiniCalendar.tsx'), 'utf8')
+
+    expect(miniCalendarSource).toMatch(/onResetToToday/)
+    expect(miniCalendarSource).toMatch(/title="回到今日"/)
+    expect(dashboardSource).toMatch(/onResetToToday/)
+    expect(dashboardSource).toMatch(/setCalDate\(new Date\(dateObj\.getFullYear\(\), dateObj\.getMonth\(\), 1\)\)/)
+  })
+
   it('keeps dashboard assignment drag feedback state-driven and split into dedicated panels', () => {
     const dashboardSource = readFileSync(join(process.cwd(), 'src/views/Dashboard.tsx'), 'utf8')
 

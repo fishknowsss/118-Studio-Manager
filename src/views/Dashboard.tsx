@@ -330,6 +330,7 @@ export function Dashboard() {
           onNextMonth={() => setCalDate((prev) => new Date(prev.getFullYear(), prev.getMonth() + 1, 1))}
           onOpenDate={handleOpenDate}
           onPrevMonth={() => setCalDate((prev) => new Date(prev.getFullYear(), prev.getMonth() - 1, 1))}
+          onResetToToday={() => setCalDate(new Date(dateObj.getFullYear(), dateObj.getMonth(), 1))}
         />
       </div>
 
