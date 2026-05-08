@@ -48,9 +48,13 @@
 - 课表视图：支持导入课程表 PDF、手动添加课程、按成员筛选、按学期周查看。
 - 课表数据会进入完整备份和云同步集合。
 
-| 浅色 | 深色 |
+| 工效卡片 · 浅色 | 工效卡片 · 深色 |
 |---|---|
 | ![工效浅色](docs/screenshots/vc-productivity-light.png) | ![工效深色](docs/screenshots/vc-productivity-dark.png) |
+
+| 课表视图 · 浅色 | 课表视图 · 深色 |
+|---|---|
+| ![课表浅色](docs/screenshots/vc-productivity-schedule-light.png) | ![课表深色](docs/screenshots/vc-productivity-schedule-dark.png) |
 
 ### 短剧
 
