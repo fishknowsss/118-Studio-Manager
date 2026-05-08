@@ -1283,7 +1283,7 @@ html[data-easter-mode='konami'] .assignee-chip.selected:has(.assignee-chip-avata
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 8px;
   align-content: start;
-  overflow: hidden;
+  overflow: visible;
 }
 .focus-secondary-list:not(.focus-secondary-list--two-rows):not(.focus-secondary-list--three-cols) > .focus-card {
   height: 102px;
@@ -1317,7 +1317,7 @@ html[data-easter-mode='konami'] .assignee-chip.selected:has(.assignee-chip-avata
   overflow: hidden;
   transition: transform .22s ease-out, box-shadow .22s ease;
 }
-.focus-card:hover { transform: translateY(-3px); box-shadow: var(--shadow-lg); }
+.focus-card:hover { z-index: 1; transform: translateY(-3px); box-shadow: var(--shadow-lg); }
 .focus-card.focus-overdue { background: var(--c-rose-bg); border-left-color: var(--c-rose); }
 .focus-card.focus-critical { background: var(--c-overdue-bg); border-left-color: var(--c-overdue); }
 .focus-card.focus-strong   { background: var(--c-today-bg);   border-left-color: var(--c-today); }
