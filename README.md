@@ -1,19 +1,32 @@
 # 118 Studio Manager VC
 
-118 Studio Manager VC 是一个本地优先的工作室管理工具，面向小型视频、设计和内容团队。它把每日排班、项目推进、人员状态、甲方资料、账号素材、关系图谱、工效课表和备份同步放在一个浏览器应用里。
+118 Studio Manager VC 是一个本地优先的工作室管理工具，面向小型视频、设计和内容团队。它把每日排班、项目推进、人员状态、甲方资料、账号素材、短剧制作、关系图谱、工效课表和备份同步放在一个浏览器应用里。
 
-当前 `vc` 分支是主力版本。数据默认保存在浏览器 IndexedDB，不依赖传统后端；需要多设备备份时，可选接入自托管的 Cloudflare Worker 同步服务。
+当前版本：`v1.3.1`。数据默认保存在浏览器 IndexedDB，不依赖传统后端；需要多设备备份时，可选接入自托管的 Cloudflare Worker 同步服务。
 
 ---
 
-## 当前功能
+## 功能概览
+
+| 模块 | 用途 |
+|---|---|
+| 首页 | 今日焦点、任务池、人员分配、迷你日历和快速搜索 |
+| 资料 | 甲方要求、账号密码、素材与工具账号集中维护 |
+| 工效 | 成员工效卡、课表 PDF 导入、课程管理和周视图 |
+| 短剧 | 短剧项目、制作小组、分集任务和工时分配 |
+| 图谱 | 项目、任务、人员关系可视化 |
+| 工具 | 常用外部工具入口 |
+| 设置 | 导入导出、云同步、数据摘要和版本信息 |
+
+## 示例截图
+
+截图基于当前 `vc` 分支页面状态重新生成，覆盖主导航中的实际入口。
 
 ### 首页
 
 - 今日控制台：项目焦点、任务池、人员分配、迷你日历和语句区。
 - 支持任务快速编辑、拖拽分配、隐藏已完成任务、展开项目或人员详情。
-- 人员区支持在岗/请假状态、请假记录、分页展示和排序记忆。
-- 顶部搜索可快速定位项目、任务和人员。
+- 迷你日历会区分项目截止、任务截止、任务数量和拖拽落点。
 
 | 浅色 | 深色 |
 |---|---|
@@ -39,6 +52,16 @@
 |---|---|
 | ![工效浅色](docs/screenshots/vc-productivity-light.png) | ![工效深色](docs/screenshots/vc-productivity-dark.png) |
 
+### 短剧
+
+- 管理短剧项目、小组、分集制作任务和负责人。
+- 支持记录制作进度、预计工时、实际工时、成片时长和人员分工。
+- 短剧数据已纳入完整备份和云同步集合。
+
+| 浅色 | 深色 |
+|---|---|
+| ![短剧浅色](docs/screenshots/vc-short-drama-light.png) | ![短剧深色](docs/screenshots/vc-short-drama-dark.png) |
+
 ### 图谱
 
 - 基于项目、任务和人员生成关系图。
@@ -62,7 +85,7 @@
 
 - JSON 完整导出/导入，项目和任务 CSV 导出。
 - 可选 Cloudflare Worker 云同步、手动同步并备份、云端恢复本地。
-- 当前数据摘要覆盖项目、任务、人员、日志、设置、请假和课表。
+- 当前数据摘要覆盖项目、任务、人员、日志、设置、请假、课表和短剧。
 - 最近操作支持可撤回编辑；清空数据等危险操作会二次确认。
 
 | 浅色 | 深色 |
@@ -84,20 +107,26 @@
 | `settings` | 可同步的视图状态、资料、账号、文件夹和界面记忆 |
 | `leaveRecords` | 人员请假日期 |
 | `classSchedules` | 工效课表数据 |
+| `shortDramas` | 短剧项目信息 |
+| `shortDramaGroups` | 短剧制作小组 |
+| `shortDramaAssignments` | 短剧分集任务与人员分工 |
 
 当前备份 schema：
 
 ```jsonc
 {
-  "schemaVersion": 4,
-  "exportedAt": "2026-04-30T12:00:00.000Z",
+  "schemaVersion": 5,
+  "exportedAt": "2026-05-08T12:00:00.000Z",
   "projects": [],
   "tasks": [],
   "people": [],
   "logs": [],
   "settings": [],
   "leaveRecords": [],
-  "classSchedules": []
+  "classSchedules": [],
+  "shortDramas": [],
+  "shortDramaGroups": [],
+  "shortDramaAssignments": []
 }
 ```
 
@@ -154,7 +183,7 @@ PUT /data
 ```text
 src/
 ├── App.tsx                     # 应用壳、主题、导航和 hash 路由
-├── views/                      # 首页、资料、工效、图谱、工具、设置
+├── views/                      # 首页、资料、工效、短剧、图谱、工具、设置
 ├── features/                   # 各业务域组件和状态工具
 ├── components/                 # 通用弹窗、反馈、菜单和头像组件
 ├── content/                    # 固定内容
@@ -166,7 +195,7 @@ src/
     └── utils.ts                # 日期、备份、CSV 和格式化工具
 ```
 
-当前主导航只暴露 6 个入口：`dashboard`、`materials`、`productivity`、`graph`、`tools`、`settings`。旧 hash `#people` 会转到图谱，`#calendar` 会转到首页。
+当前主导航暴露 7 个入口：`dashboard`、`materials`、`productivity`、`shortDrama`、`graph`、`tools`、`settings`。旧 hash `#people` 会转到图谱，`#calendar` 会转到首页。
 
 ---
 
@@ -221,7 +250,7 @@ npm run test:e2e
 npm run preview
 ```
 
-现有测试覆盖同步、数据库迁移、资料文件夹排序、Dashboard 面板、图谱布局、课表解析、设置转移状态、当前应用回归和彩蛋模式。
+现有测试覆盖同步、数据库迁移、资料文件夹排序、Dashboard 面板、图谱布局、课表解析、短剧备份、设置转移状态、当前应用回归和彩蛋模式。
 
 ---
 

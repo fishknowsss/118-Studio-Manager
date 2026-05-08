@@ -16,10 +16,12 @@ import { PersonDetailPanel } from '../features/dashboard/PersonDetailPanel'
 import { ProjectDetailPanel } from '../features/dashboard/ProjectDetailPanel'
 import { TaskPoolPanel } from '../features/dashboard/TaskPoolPanel'
 import { ExpandPanel } from '../components/ui/ExpandPanel'
+import { useToast } from '../components/feedback/ToastProvider'
 import { usePlanner } from '../features/planner/PlannerProvider'
 import { TaskDialog } from '../features/tasks/TaskDialog'
-import { assignTaskToPerson } from '../legacy/actions'
+import { assignTaskToPerson, updateTaskQuickField } from '../legacy/actions'
 import {
+  buildTaskDatePatch,
   buildDashboardHeaderModel,
   buildDashboardFocusCards,
   buildDashboardMiniCalendarModel,
@@ -67,6 +69,7 @@ export function Dashboard() {
   const store = useLegacyStoreSnapshot()
   const { projects, tasks, people } = store
   const { openPlanner } = usePlanner()
+  const { toast } = useToast()
   const dashboardPersonPanelState = useSyncExternalStore(
     subscribeDashboardPersonPanelState,
     readDashboardPersonPanelState,
@@ -109,8 +112,8 @@ export function Dashboard() {
   const eventMap = useMemo(() => buildProjectEventSummaryMap(projects, todayStr), [projects, todayStr])
   const headerModel = useMemo(() => buildDashboardHeaderModel(dateObj), [dateObj])
   const calendarModel = useMemo(
-    () => buildDashboardMiniCalendarModel(calDate, eventMap, todayStr, leaveDates),
-    [calDate, eventMap, todayStr, leaveDates],
+    () => buildDashboardMiniCalendarModel(calDate, eventMap, todayStr, leaveDates, tasks),
+    [calDate, eventMap, todayStr, leaveDates, tasks],
   )
 
   const focusProj = topProjects[0] as LegacyProject | undefined
@@ -208,6 +211,15 @@ export function Dashboard() {
     }
     // 拖入时打开请假弹窗
     setLeaveDialogDate(dateKey)
+    clearDragState()
+  }
+
+  const handleDropTaskToDate = (taskId: string, dateKey: string) => {
+    const task = store.getTask(taskId)
+    if (!task) { clearDragState(); return }
+    void updateTaskQuickField(taskId, buildTaskDatePatch(task, dateKey)).then((updated) => {
+      if (updated) toast(`已安排到 ${dateKey.slice(5).replace('-', '月')}日`, 'success')
+    })
     clearDragState()
   }
 
@@ -324,8 +336,10 @@ export function Dashboard() {
         />
         <DashboardMiniCalendar
           draggingPersonId={draggingPersonId}
+          draggingTaskId={draggingTaskId}
           model={calendarModel}
           onDropPersonToDate={handleDropPersonToDate}
+          onDropTaskToDate={handleDropTaskToDate}
           onExpand={(ox, oy) => setExpandedPanel({ type: 'calendar', ox, oy })}
           onNextMonth={() => setCalDate((prev) => new Date(prev.getFullYear(), prev.getMonth() + 1, 1))}
           onOpenDate={handleOpenDate}

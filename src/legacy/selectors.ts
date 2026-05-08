@@ -81,6 +81,10 @@ export type DashboardHeaderModel = {
 export type DashboardMiniCalendarDay = {
   dateKey: string
   dayOfMonth: number
+  deadlineKind: 'project' | 'task' | 'both' | ''
+  deadlineTone?: ProjectDeadlineToneKey | ''
+  dueTaskCount: number
+  hasDeadline: boolean
   hasEvents: boolean
   hasLeave: boolean
   hasUrgent: boolean
@@ -88,6 +92,10 @@ export type DashboardMiniCalendarDay = {
   isToday: boolean
   markerKind?: 'ddl' | ''
   markerTone?: ProjectDeadlineToneKey | ''
+  taskCount: number
+  totalHours: number
+  urgentTaskCount: number
+  workloadLevel: DateWorkloadLevel
 }
 
 export type DashboardMiniCalendarModel = {
@@ -117,6 +125,38 @@ export type ProjectEventSummary = {
   markerKind?: 'ddl' | ''
   markerTone?: ProjectDeadlineToneKey | ''
   urgent: boolean
+}
+
+export type DateWorkloadLevel = 'empty' | 'light' | 'medium' | 'heavy'
+
+export type DatePlannerTaskModel = {
+  assigneeNames: string[]
+  dateText: string
+  dueInDays: number | null
+  estimatedHours: number | null
+  id: string
+  isDueToday: boolean
+  isOverdue: boolean
+  priorityKey: string
+  priorityLabel: string
+  projectName: string
+  statusKey: string
+  statusLabel: string
+  title: string
+}
+
+export type DatePlannerModel = {
+  availablePeopleCount: number
+  dateKey: string
+  leaveNames: string[]
+  summary: {
+    dueCount: number
+    taskCount: number
+    totalHours: number
+    urgentCount: number
+  }
+  tasks: DatePlannerTaskModel[]
+  urgentTasks: DatePlannerTaskModel[]
 }
 
 export type ProjectCardModel = {
@@ -220,6 +260,46 @@ function daysFromReference(dateStr: string | null | undefined, referenceDate: st
   const reference = parseLocalDateKey(referenceDate)
   if (!target || !reference) return null
   return Math.round((target.getTime() - reference.getTime()) / 86400000)
+}
+
+function inclusiveDateDuration(startDate: string, endDate: string) {
+  const start = parseLocalDateKey(startDate)
+  const end = parseLocalDateKey(endDate)
+  if (!start || !end) return 0
+  return Math.max(0, Math.round((end.getTime() - start.getTime()) / 86400000))
+}
+
+function taskTouchesDate(task: LegacyTask, dateKey: string) {
+  if (task.status === 'done') return false
+  if (task.scheduledDate === dateKey || task.endDate === dateKey) return true
+  if (task.status === 'in-progress' && task.endDate && dateKey <= task.endDate) return true
+  if (!task.startDate || !task.endDate) return false
+  return task.startDate <= dateKey && dateKey <= task.endDate
+}
+
+function getTaskWorkloadLevel(taskCount: number, totalHours: number): DateWorkloadLevel {
+  if (taskCount <= 0) return 'empty'
+  if (taskCount >= 6 || totalHours >= 8) return 'heavy'
+  if (taskCount >= 2 || totalHours >= 4) return 'medium'
+  return 'light'
+}
+
+function getDateDeadlineTone(dateKey: string, referenceDate: string): ProjectDeadlineToneKey {
+  const daysLeft = daysFromReference(dateKey, referenceDate)
+  if (daysLeft === null) return 'focus-neutral'
+  if (daysLeft < 0) return 'focus-overdue'
+  if (daysLeft <= 1) return 'focus-critical'
+  if (daysLeft <= 7) return 'focus-strong'
+  if (daysLeft <= 14) return 'focus-medium'
+  return 'focus-neutral'
+}
+
+function comparePlannerTasks(left: DatePlannerTaskModel, right: DatePlannerTaskModel) {
+  if (left.isOverdue !== right.isOverdue) return left.isOverdue ? -1 : 1
+  if (left.isDueToday !== right.isDueToday) return left.isDueToday ? -1 : 1
+  const priorityGap = (PRIORITY_ORDER[left.priorityKey] ?? 2) - (PRIORITY_ORDER[right.priorityKey] ?? 2)
+  if (priorityGap !== 0) return priorityGap
+  return (left.dueInDays ?? 9999) - (right.dueInDays ?? 9999)
 }
 
 function compareProjectDeadline(left: LegacyProject, right: LegacyProject) {
@@ -382,21 +462,40 @@ export function buildDashboardMiniCalendarModel(
   eventMap: Record<string, ProjectEventSummary>,
   todayStr: string,
   leaveDates: Set<string> = new Set(),
+  tasks: LegacyTask[] = [],
 ): DashboardMiniCalendarModel {
   const days = getCalendarDays(currentMonth.getFullYear(), currentMonth.getMonth()).map(({ date, otherMonth }) => {
     const dateKey = coerceToLocalDateKey(date) || shiftLocalDateKey(date, 0)
     const eventSummary = eventMap[dateKey]
+    const dayTasks = tasks.filter((task) => taskTouchesDate(task, dateKey))
+    const dueTaskCount = tasks.filter((task) => task.status !== 'done' && task.endDate === dateKey).length
+    const hasProjectDeadline = Boolean(eventSummary?.hasDdl)
+    const hasTaskDeadline = dueTaskCount > 0
+    const totalHours = dayTasks.reduce((sum, task) => sum + (task.estimatedHours || 0), 0)
+    const urgentTaskCount = dayTasks.filter((task) => {
+      if (task.priority === 'urgent') return true
+      const daysLeft = daysFromReference(task.endDate, todayStr)
+      return daysLeft !== null && daysLeft <= 1
+    }).length
 
     return {
       dateKey,
       dayOfMonth: date.getDate(),
-      hasEvents: Boolean(eventSummary?.hasDdl),
+      deadlineKind: hasProjectDeadline && hasTaskDeadline ? 'both' : hasProjectDeadline ? 'project' : hasTaskDeadline ? 'task' : '',
+      deadlineTone: eventSummary?.markerTone || (dueTaskCount > 0 ? getDateDeadlineTone(dateKey, todayStr) : ''),
+      dueTaskCount,
+      hasDeadline: Boolean(hasProjectDeadline || hasTaskDeadline),
+      hasEvents: Boolean(eventSummary?.hasDdl || dayTasks.length > 0),
       hasLeave: leaveDates.has(dateKey),
-      hasUrgent: Boolean(eventSummary?.urgent),
+      hasUrgent: Boolean(eventSummary?.urgent || urgentTaskCount > 0),
       isOtherMonth: otherMonth,
       isToday: dateKey === todayStr,
       markerKind: eventSummary?.markerKind || '',
       markerTone: eventSummary?.markerTone || '',
+      taskCount: dayTasks.length,
+      totalHours,
+      urgentTaskCount,
+      workloadLevel: getTaskWorkloadLevel(dayTasks.length, totalHours),
     } satisfies DashboardMiniCalendarDay
   })
 
@@ -404,6 +503,77 @@ export function buildDashboardMiniCalendarModel(
     days,
     title: `${currentMonth.getFullYear()} · ${DASHBOARD_MONTH_LABELS[currentMonth.getMonth()]}`,
     weekdays: MINI_CALENDAR_WEEKDAYS,
+  }
+}
+
+export function buildTaskDatePatch(task: LegacyTask, dateKey: string): Pick<LegacyTask, 'endDate' | 'scheduledDate' | 'startDate'> {
+  const startDate = task.startDate || task.scheduledDate || task.endDate || dateKey
+  const endDate = task.endDate || startDate
+  const durationDays = inclusiveDateDuration(startDate, endDate)
+  const nextEndDate = shiftLocalDateKey(parseLocalDateKey(dateKey) ?? new Date(), durationDays)
+
+  return {
+    endDate: nextEndDate,
+    scheduledDate: dateKey,
+    startDate: dateKey,
+  }
+}
+
+export function buildDatePlannerModel(
+  dateKey: string,
+  projects: LegacyProject[],
+  tasks: LegacyTask[],
+  people: LegacyPerson[],
+  leaveRecords: { personId: string; date: string }[],
+  referenceDate = dateKey,
+): DatePlannerModel {
+  const projectsById = Object.fromEntries(projects.map((project) => [project.id, project]))
+  const peopleById = Object.fromEntries(people.map((person) => [person.id, person]))
+  const leavePersonIds = new Set(leaveRecords.filter((record) => record.date === dateKey).map((record) => record.personId))
+  const leaveNames = [...leavePersonIds].map((personId) => peopleById[personId]?.name || '未知成员')
+  const availablePeopleCount = people.filter((person) => person.status === 'active' && !leavePersonIds.has(person.id)).length
+
+  const plannerTasks = tasks
+    .filter((task) => taskTouchesDate(task, dateKey))
+    .map((task): DatePlannerTaskModel => {
+      const assigneeNames = getTaskAssigneeIds(task).map((personId) => peopleById[personId]?.name || '未知成员')
+      const dueInDays = daysFromReference(task.endDate, referenceDate)
+      return {
+        assigneeNames,
+        dateText: task.startDate && task.endDate
+          ? `${formatSlashDate(task.startDate)} - ${formatSlashDate(task.endDate)}`
+          : formatSlashDate(task.scheduledDate || task.endDate || null),
+        dueInDays,
+        estimatedHours: task.estimatedHours ?? null,
+        id: task.id,
+        isDueToday: task.endDate === dateKey,
+        isOverdue: dueInDays !== null && dueInDays < 0,
+        priorityKey: task.priority || 'medium',
+        priorityLabel: PRIORITY_LABELS[task.priority || 'medium'] ?? task.priority ?? '中',
+        projectName: task.projectId ? projectsById[task.projectId]?.name || '未关联项目' : '未关联项目',
+        statusKey: task.status || 'todo',
+        statusLabel: STATUS_LABELS[task.status || 'todo'] ?? task.status ?? '待处理',
+        title: task.title || '未命名任务',
+      }
+    })
+    .sort(comparePlannerTasks)
+
+  const urgentTasks = plannerTasks
+    .filter((task) => task.isOverdue || task.isDueToday || task.priorityKey === 'urgent' || task.priorityKey === 'high')
+    .slice(0, 5)
+
+  return {
+    availablePeopleCount,
+    dateKey,
+    leaveNames,
+    summary: {
+      dueCount: plannerTasks.filter((task) => task.isDueToday).length,
+      taskCount: plannerTasks.length,
+      totalHours: plannerTasks.reduce((sum, task) => sum + (task.estimatedHours || 0), 0),
+      urgentCount: urgentTasks.length,
+    },
+    tasks: plannerTasks,
+    urgentTasks,
   }
 }
 

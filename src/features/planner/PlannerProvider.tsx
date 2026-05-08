@@ -2,9 +2,9 @@
 
 import { createContext, useContext, useMemo, useState, type ReactNode } from 'react'
 import { ExpandPanel } from '../../components/ui/ExpandPanel'
-import { buildProjectDeadlineToneMap, buildProjectEventSummaryMap, getActivePeople, getProjectEventsForDate, sortProjectsByDeadlineTone } from '../../legacy/selectors'
-import { type LegacyProject, getTaskAssigneeIds } from '../../legacy/store'
-import { ddlLabel, formatDate, shiftLocalDateKey, parseLocalDateKey, weekdayLabel, STATUS_LABELS } from '../../legacy/utils'
+import { buildDatePlannerModel, buildProjectDeadlineToneMap, buildProjectEventSummaryMap, getActivePeople, getProjectEventsForDate, sortProjectsByDeadlineTone, type DatePlannerTaskModel } from '../../legacy/selectors'
+import { type LegacyProject } from '../../legacy/store'
+import { ddlLabel, formatDate, shiftLocalDateKey, parseLocalDateKey, weekdayLabel } from '../../legacy/utils'
 import { useLegacyStoreSnapshot } from '../../legacy/useLegacyStore'
 import { useTodayKey } from '../../legacy/useTodayDate'
 import { LeaveDialog } from '../dashboard/LeaveDialog'
@@ -73,28 +73,16 @@ function PlannerDrawer({
   const eventMap = buildProjectEventSummaryMap(storeSnapshot.projects, todayStr)
   const events = getProjectEventsForDate(eventMap, dateStr)
 
-  // Tasks scheduled for this day, enriched with project + assignee
-  const todayTasks = useMemo(() =>
-    storeSnapshot.tasks
-      .filter((t) => t.scheduledDate === dateStr)
-      .map((t) => ({
-        ...t,
-        project: t.projectId ? storeSnapshot.getProject(t.projectId) : null,
-        assignee: getTaskAssigneeIds(t).length > 0 ? storeSnapshot.getPerson(getTaskAssigneeIds(t)[0]) : null,
-      })),
-    [storeSnapshot, dateStr],
-  )
-
-  // Tasks due on this day (endDate) that aren't done
-  const dueTodayTasks = useMemo(() =>
-    storeSnapshot.tasks
-      .filter((t) => t.endDate === dateStr && t.status !== 'done')
-      .map((t) => ({
-        ...t,
-        project: t.projectId ? storeSnapshot.getProject(t.projectId) : null,
-        assignee: getTaskAssigneeIds(t).length > 0 ? storeSnapshot.getPerson(getTaskAssigneeIds(t)[0]) : null,
-      })),
-    [storeSnapshot, dateStr],
+  const plannerModel = useMemo(
+    () => buildDatePlannerModel(
+      dateStr,
+      storeSnapshot.projects,
+      storeSnapshot.tasks,
+      storeSnapshot.people,
+      storeSnapshot.leaveRecords,
+      dateStr,
+    ),
+    [dateStr, storeSnapshot],
   )
 
   // Upcoming DDL projects within 14 days from selected date
@@ -132,42 +120,27 @@ function PlannerDrawer({
         {/* 当日摘要 */}
         <div className="planner-stats-row">
           <div className="planner-stat">
-            <span className="planner-stat-num">{todayTasks.length}</span>
-            <span className="planner-stat-label">已排任务</span>
+            <span className="planner-stat-num">{plannerModel.summary.taskCount}</span>
+            <span className="planner-stat-label">当天任务</span>
           </div>
           <div className="planner-stat">
-            <span className={`planner-stat-num${dueTodayTasks.length > 0 ? ' warn' : ''}`}>{dueTodayTasks.length}</span>
+            <span className={`planner-stat-num${plannerModel.summary.dueCount > 0 ? ' warn' : ''}`}>{plannerModel.summary.dueCount}</span>
             <span className="planner-stat-label">今日截止</span>
           </div>
           <div className="planner-stat">
-            <span className="planner-stat-num">{activePeople.length}</span>
-            <span className="planner-stat-label">可用成员</span>
+            <span className="planner-stat-num">{plannerModel.summary.totalHours}</span>
+            <span className="planner-stat-label">预计工时</span>
           </div>
           <div className="planner-stat">
-            <span className="planner-stat-num">{upcomingDdlProjects.length}</span>
-            <span className="planner-stat-label">临近截止</span>
+            <span className="planner-stat-num">{plannerModel.availablePeopleCount}</span>
+            <span className="planner-stat-label">可用成员</span>
           </div>
         </div>
 
-        {/* 今日截止任务 */}
-        {dueTodayTasks.length > 0 ? (
+        {plannerModel.urgentTasks.length > 0 ? (
           <div className="planner-section">
-            <div className="planner-section-title">今日截止</div>
-            {dueTodayTasks.map((task) => (
-              <div key={task.id} className="planner-due-row">
-                <div className={`task-check${task.status === 'in-progress' ? ' in-progress' : ''}`} />
-                <div className="planner-due-info">
-                  <span className="planner-due-title">{task.title}</span>
-                  <div className="planner-due-meta">
-                    {task.project ? <span className="planner-task-project">{task.project.name}</span> : null}
-                    {task.assignee
-                      ? <span className="planner-due-assignee">@{task.assignee.name}</span>
-                      : <span className="planner-due-unassigned">未分配</span>}
-                    <span className="task-status-chip">{STATUS_LABELS[task.status || 'todo'] ?? task.status}</span>
-                  </div>
-                </div>
-              </div>
-            ))}
+            <div className="planner-section-title">最紧迫</div>
+            {plannerModel.urgentTasks.map((task) => <PlannerTaskRow key={task.id} task={task} strong />)}
           </div>
         ) : null}
 
@@ -201,25 +174,11 @@ function PlannerDrawer({
 
         {/* 今日任务 */}
         <div className="planner-section">
-          <div className="planner-section-title">今日任务</div>
-          {todayTasks.length === 0 ? (
-            <div className="text-muted text-sm">当天暂无排期任务</div>
+          <div className="planner-section-title">当天任务</div>
+          {plannerModel.tasks.length === 0 ? (
+            <div className="planner-empty-note">把任务拖到这天，或新建任务</div>
           ) : (
-            todayTasks.map((task) => (
-              <div key={task.id} className="planner-due-row">
-                <div className={`task-check${task.status === 'done' ? ' done' : task.status === 'in-progress' ? ' in-progress' : ''}`} />
-                <div className="planner-due-info">
-                  <span className="planner-due-title">{task.title}</span>
-                  <div className="planner-due-meta">
-                    {task.project ? <span className="planner-task-project">{task.project.name}</span> : null}
-                    {task.assignee
-                      ? <span className="planner-due-assignee">@{task.assignee.name}</span>
-                      : <span className="planner-due-unassigned">未分配</span>}
-                    <span className="task-status-chip">{STATUS_LABELS[task.status || 'todo'] ?? task.status}</span>
-                  </div>
-                </div>
-              </div>
-            ))
+            plannerModel.tasks.map((task) => <PlannerTaskRow key={task.id} task={task} />)
           )}
         </div>
 
@@ -282,5 +241,33 @@ function PlannerDrawer({
         })()}
       </div>
     </ExpandPanel>
+  )
+}
+
+function PlannerTaskRow({ task, strong = false }: { task: DatePlannerTaskModel; strong?: boolean }) {
+  const assigneeText = task.assigneeNames.length > 0 ? `@${task.assigneeNames.slice(0, 2).join('、')}` : '未分配'
+  const deadlineText = task.isOverdue
+    ? '已逾期'
+    : task.isDueToday
+      ? '今天截止'
+      : task.dueInDays === null
+        ? '未设截止'
+        : `${task.dueInDays}天后截止`
+
+  return (
+    <div className={`planner-due-row ${strong ? 'is-urgent' : ''}`}>
+      <div className={`task-check${task.statusKey === 'done' ? ' done' : task.statusKey === 'in-progress' ? ' in-progress' : ''}`} />
+      <div className="planner-due-info">
+        <span className="planner-due-title">{task.title}</span>
+        <div className="planner-due-meta">
+          <span className="planner-task-project">{task.projectName}</span>
+          <span className={task.assigneeNames.length > 0 ? 'planner-due-assignee' : 'planner-due-unassigned'}>{assigneeText}</span>
+          <span className="task-status-chip">{task.statusLabel}</span>
+          <span className={`planner-date-chip ${task.isDueToday || task.isOverdue ? 'warn' : ''}`}>{deadlineText}</span>
+          {task.estimatedHours ? <span className="planner-date-chip">{task.estimatedHours}h</span> : null}
+          {task.dateText ? <span className="planner-date-chip">{task.dateText}</span> : null}
+        </div>
+      </div>
+    </div>
   )
 }

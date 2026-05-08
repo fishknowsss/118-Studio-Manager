@@ -102,7 +102,7 @@ describe('current app regressions', () => {
     expect(currentDataSection).not.toContain('currentSummary.shortDramaCount')
     expect(currentDataSection).not.toContain('currentSummary.shortDramaGroupCount')
     expect(currentDataSection).not.toContain('currentSummary.shortDramaAssignmentCount')
-    expect(source).toContain('<span className="badge badge-active">V1.3.0</span>')
+    expect(source).toContain('<span className="badge badge-active">V1.3.1</span>')
   })
 
   it('keeps long settings operation logs readable with the undo action in the corner', () => {
@@ -856,8 +856,8 @@ describe('current app regressions', () => {
     expect(plannerSource).toMatch(/buildProjectEventSummaryMap/)
     expect(plannerSource).toMatch(/getProjectEventsForDate/)
     expect(calendarSource).toMatch(/toneKey/)
-    expect(miniCalendarSource).toMatch(/markerTone/)
-    expect(miniCalendarSource).toMatch(/markerKind/)
+    expect(miniCalendarSource).toMatch(/deadlineTone/)
+    expect(miniCalendarSource).toMatch(/hasDeadline/)
   })
 
   it('keeps the mini calendar navigation able to return to today', () => {

@@ -3,6 +3,8 @@ import {
   buildBackupSummary,
   buildDashboardHeaderModel,
   buildDashboardMiniCalendarModel,
+  buildDatePlannerModel,
+  buildTaskDatePatch,
   buildCalendarEventMap,
   buildDashboardFocusCards,
   buildEntityMaps,
@@ -185,7 +187,7 @@ describe('store selectors', () => {
     })
   })
 
-  it('builds dashboard mini calendar cells and event flags from one selector', () => {
+  it('builds dashboard mini calendar cells with workload and event flags from one selector', () => {
     const model = buildDashboardMiniCalendarModel(
       new Date('2026-04-12T10:00:00+08:00'),
       {
@@ -205,6 +207,12 @@ describe('store selectors', () => {
         },
       },
       '2026-04-12',
+      new Set(['2026-04-18']),
+      [
+        { id: 'task-1', title: '当天拍摄', scheduledDate: '2026-04-12', status: 'todo', estimatedHours: 2 },
+        { id: 'task-2', title: '跨日剪辑', startDate: '2026-04-11', endDate: '2026-04-13', status: 'in-progress', estimatedHours: 4 },
+        { id: 'task-3', title: '已完成', scheduledDate: '2026-04-12', status: 'done', estimatedHours: 8 },
+      ],
     )
 
     expect(model.title).toBe('2026 · 四月')
@@ -215,11 +223,13 @@ describe('store selectors', () => {
       dateKey: '2026-04-12',
       dayOfMonth: 12,
       hasEvents: true,
-      hasUrgent: false,
+      hasUrgent: true,
       isOtherMonth: false,
       isToday: true,
       markerKind: 'ddl',
       markerTone: 'focus-calm',
+      taskCount: 2,
+      workloadLevel: 'medium',
     })
 
     const urgentCell = model.days.find((day) => day.dateKey === '2026-04-18')
@@ -228,6 +238,96 @@ describe('store selectors', () => {
       hasUrgent: true,
       markerKind: 'ddl',
       markerTone: 'focus-critical',
+    })
+  })
+
+  it('builds date planner tasks from scheduled and active date ranges', () => {
+    const model = buildDatePlannerModel(
+      '2026-04-12',
+      [
+        { id: 'project-1', name: '短片', ddl: '2026-04-14' },
+      ],
+      [
+        { id: 'task-1', title: '当天拍摄', scheduledDate: '2026-04-12', status: 'todo', priority: 'medium', estimatedHours: 2 },
+        { id: 'task-2', title: '跨日剪辑', startDate: '2026-04-10', endDate: '2026-04-15', status: 'in-progress', priority: 'high', estimatedHours: 4, projectId: 'project-1' },
+        { id: 'task-3', title: '今日截止', endDate: '2026-04-12', status: 'todo', priority: 'urgent', estimatedHours: 1 },
+        { id: 'task-4', title: '已完成跨日', startDate: '2026-04-10', endDate: '2026-04-15', status: 'done', priority: 'urgent' },
+      ],
+      [{ id: 'person-1', name: '张三', status: 'active' }],
+      [],
+      '2026-04-12',
+    )
+
+    expect(model.tasks.map((task) => task.id)).toEqual(['task-3', 'task-2', 'task-1'])
+    expect(model.urgentTasks.map((task) => task.id)).toEqual(['task-3', 'task-2'])
+    expect(model.summary).toMatchObject({
+      dueCount: 1,
+      taskCount: 3,
+      totalHours: 7,
+    })
+  })
+
+  it('shows in-progress tasks before their deadline even without a start date', () => {
+    const model = buildDatePlannerModel(
+      '2026-04-08',
+      [],
+      [
+        { id: 'task-1', title: '10号截止任务', endDate: '2026-04-10', status: 'in-progress', priority: 'high', estimatedHours: 3 },
+        { id: 'task-2', title: '未开始远期任务', endDate: '2026-04-10', status: 'todo', priority: 'medium' },
+      ],
+      [],
+      [],
+      '2026-04-08',
+    )
+
+    expect(model.tasks.map((task) => task.id)).toEqual(['task-1'])
+    expect(model.tasks[0]).toMatchObject({
+      dateText: '2026/4/10',
+      dueInDays: 2,
+      title: '10号截止任务',
+    })
+  })
+
+  it('separates active task count from actual deadline markers in mini calendar', () => {
+    const model = buildDashboardMiniCalendarModel(
+      new Date('2026-04-01T10:00:00+08:00'),
+      {},
+      '2026-04-08',
+      new Set(),
+      [
+        { id: 'task-1', title: '10号截止任务', endDate: '2026-04-10', status: 'in-progress', priority: 'high' },
+      ],
+    )
+
+    expect(model.days.find((day) => day.dateKey === '2026-04-08')).toMatchObject({
+      deadlineKind: '',
+      hasDeadline: false,
+      taskCount: 1,
+    })
+    expect(model.days.find((day) => day.dateKey === '2026-04-10')).toMatchObject({
+      deadlineKind: 'task',
+      hasDeadline: true,
+      taskCount: 1,
+    })
+  })
+
+  it('moves task date while preserving its duration', () => {
+    expect(buildTaskDatePatch({
+      id: 'task-1',
+      title: '跨日任务',
+      startDate: '2026-04-10',
+      endDate: '2026-04-12',
+      scheduledDate: '2026-04-10',
+    }, '2026-05-02')).toEqual({
+      startDate: '2026-05-02',
+      endDate: '2026-05-04',
+      scheduledDate: '2026-05-02',
+    })
+
+    expect(buildTaskDatePatch({ id: 'task-2', title: '未排期' }, '2026-05-02')).toEqual({
+      startDate: '2026-05-02',
+      endDate: '2026-05-02',
+      scheduledDate: '2026-05-02',
     })
   })
 

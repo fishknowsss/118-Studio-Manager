@@ -384,7 +384,7 @@ export function Settings() {
                   <div className="settings-row-desc">本地优先，数据存于 IndexedDB，可选接入 Cloudflare Worker 云同步。</div>
                 </div>
                 <div className="settings-row-action">
-                  <span className="badge badge-active">V1.3.0</span>
+                  <span className="badge badge-active">V1.3.1</span>
                 </div>
               </div>
             </div>
