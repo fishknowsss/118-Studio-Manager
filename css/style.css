@@ -168,7 +168,94 @@
 
 /* 小日历格子包裹层：深色下用 surface 避免与背景同色 */
 [data-theme='dark'] .mini-cal-grid-wrap {
-  background: var(--c-surface);
+  background: #1c293a;
+  box-shadow: inset 0 0 0 1px rgba(148, 163, 184, 0.08);
+}
+[data-theme='dark'] .mini-cal-dow {
+  color: rgba(148, 163, 184, 0.82);
+}
+[data-theme='dark'] .mini-cal-day:not(.today):not(.other-month) {
+  background: linear-gradient(180deg, rgba(45, 58, 78, 0.82), rgba(31, 43, 61, 0.92));
+  box-shadow:
+    inset 0 0 0 1px rgba(148, 163, 184, 0.16),
+    0 1px 2px rgba(2, 6, 23, 0.24);
+  color: rgba(226, 232, 240, 0.9);
+}
+[data-theme='dark'] .mini-cal-day:hover:not(.today):not(.other-month) {
+  background: linear-gradient(180deg, rgba(56, 72, 96, 0.96), rgba(37, 52, 74, 0.98));
+  color: rgba(248, 250, 252, 0.96);
+  box-shadow:
+    inset 0 0 0 1.5px rgba(96, 165, 250, 0.42),
+    0 8px 18px rgba(2, 6, 23, 0.22);
+}
+[data-theme='dark'] .mini-cal-day.today {
+  background: rgba(65, 102, 245, 0.22);
+  color: #6f95ff;
+  box-shadow:
+    inset 0 0 0 2px rgba(65, 102, 245, 0.86),
+    0 8px 18px rgba(2, 6, 23, 0.2);
+}
+[data-theme='dark'] .mini-cal-day.today:hover {
+  background: rgba(65, 102, 245, 0.28);
+  box-shadow:
+    inset 0 0 0 2px rgba(96, 165, 250, 0.9),
+    0 10px 22px rgba(2, 6, 23, 0.26);
+}
+[data-theme='dark'] .mini-cal-day.other-month {
+  color: rgba(100, 116, 139, 0.78);
+}
+[data-theme='dark'] .mini-cal-day.deadline-project.focus-overdue:not(.other-month),
+[data-theme='dark'] .mini-cal-day.deadline-both.focus-overdue:not(.other-month) {
+  box-shadow: inset 0 0 0 2px #fb4c70, 0 0 0 1px rgba(251, 76, 112, 0.08), 0 6px 14px rgba(2, 6, 23, 0.2);
+}
+[data-theme='dark'] .mini-cal-day.deadline-project.focus-critical:not(.other-month),
+[data-theme='dark'] .mini-cal-day.deadline-both.focus-critical:not(.other-month) {
+  box-shadow: inset 0 0 0 2px #ff4d4d, 0 0 0 1px rgba(255, 77, 77, 0.08), 0 6px 14px rgba(2, 6, 23, 0.2);
+}
+[data-theme='dark'] .mini-cal-day.deadline-project.focus-strong:not(.other-month),
+[data-theme='dark'] .mini-cal-day.deadline-both.focus-strong:not(.other-month) {
+  box-shadow: inset 0 0 0 2px #fb923c, 0 0 0 1px rgba(251, 146, 60, 0.08), 0 6px 14px rgba(2, 6, 23, 0.18);
+}
+[data-theme='dark'] .mini-cal-day.deadline-project.focus-medium:not(.other-month),
+[data-theme='dark'] .mini-cal-day.deadline-both.focus-medium:not(.other-month) {
+  box-shadow: inset 0 0 0 2px #facc15, 0 0 0 1px rgba(250, 204, 21, 0.08);
+}
+[data-theme='dark'] .mini-cal-day.deadline-project.focus-calm:not(.other-month),
+[data-theme='dark'] .mini-cal-day.deadline-both.focus-calm:not(.other-month) {
+  box-shadow: inset 0 0 0 2px #6f95ff, 0 0 0 1px rgba(111, 149, 255, 0.08);
+}
+[data-theme='dark'] .mini-cal-day.deadline-project.focus-neutral:not(.other-month),
+[data-theme='dark'] .mini-cal-day.deadline-both.focus-neutral:not(.other-month) {
+  box-shadow: inset 0 0 0 2px rgba(203, 213, 225, 0.78), 0 0 0 1px rgba(203, 213, 225, 0.06);
+}
+[data-theme='dark'] .mini-cal-day.deadline-project.urg-done:not(.other-month),
+[data-theme='dark'] .mini-cal-day.deadline-both.urg-done:not(.other-month) {
+  box-shadow: inset 0 0 0 2px #34d399, 0 0 0 1px rgba(52, 211, 153, 0.08);
+}
+[data-theme='dark'] .mini-cal-day.deadline-project.focus-overdue:hover:not(.other-month),
+[data-theme='dark'] .mini-cal-day.deadline-both.focus-overdue:hover:not(.other-month) {
+  box-shadow: inset 0 0 0 2px #fb4c70, 0 10px 22px rgba(251, 76, 112, 0.16);
+}
+[data-theme='dark'] .mini-cal-day.deadline-project.focus-critical:hover:not(.other-month),
+[data-theme='dark'] .mini-cal-day.deadline-both.focus-critical:hover:not(.other-month) {
+  box-shadow: inset 0 0 0 2px #ff4d4d, 0 10px 22px rgba(255, 77, 77, 0.16);
+}
+[data-theme='dark'] .mini-cal-task-deadline-mark {
+  background:
+    linear-gradient(180deg, rgba(244, 63, 94, 0.82), rgba(244, 63, 94, 0.82)) top left / calc(100% - 9px) 1px no-repeat,
+    linear-gradient(180deg, rgba(244, 63, 94, 0.82), rgba(244, 63, 94, 0.82)) top right / 1px calc(100% - 9px) no-repeat,
+    linear-gradient(180deg, rgba(244, 63, 94, 0.82), rgba(244, 63, 94, 0.82)) bottom left / 1px calc(100% - 9px) no-repeat,
+    linear-gradient(180deg, rgba(244, 63, 94, 0.82), rgba(244, 63, 94, 0.82)) bottom right / calc(100% - 9px) 1px no-repeat;
+}
+[data-theme='dark'] .mini-cal-day.deadline-both .mini-cal-task-deadline-mark {
+  background:
+    linear-gradient(180deg, rgba(244, 63, 94, 0.76), rgba(244, 63, 94, 0.76)) top left / calc(100% - 8px) 1px no-repeat,
+    linear-gradient(180deg, rgba(244, 63, 94, 0.76), rgba(244, 63, 94, 0.76)) top right / 1px calc(100% - 8px) no-repeat,
+    linear-gradient(180deg, rgba(244, 63, 94, 0.76), rgba(244, 63, 94, 0.76)) bottom left / 1px calc(100% - 8px) no-repeat,
+    linear-gradient(180deg, rgba(244, 63, 94, 0.76), rgba(244, 63, 94, 0.76)) bottom right / calc(100% - 8px) 1px no-repeat;
+}
+[data-theme='dark'] .cal-legend-frame {
+  border-color: #f43f5e;
 }
 
 /* ─── Reset ──────────────────────────────────────────── */
