@@ -48,6 +48,27 @@ describe('dashboard panels', () => {
     expect(styleSource).toMatch(/\.dash-bottom\s*\{[\s\S]*grid-template-columns:\s*minmax\(0,\s*1fr\)\s+minmax\(0,\s*1fr\)\s+minmax\(280px,\s*0\.88fr\)/)
   })
 
+  it('keeps desktop dashboard sections inside a single viewport frame', () => {
+    const styleSource = readFileSync(join(process.cwd(), 'css/style.css'), 'utf8')
+
+    expect(styleSource).toMatch(/\.dash-date-block\s*\{[\s\S]*flex:\s*0 0 auto;/)
+    expect(styleSource).toMatch(/\.dash-date-block\s*\{[\s\S]*justify-self:\s*start;/)
+    expect(styleSource).toMatch(/\.dash-date-big\s*\{[\s\S]*white-space:\s*nowrap;/)
+    expect(styleSource).toMatch(/@media \(min-width:\s*721px\) and \(max-width:\s*1180px\)/)
+    expect(styleSource).toMatch(/--dash-header-fit-h:\s*clamp\(52px,\s*8dvh,\s*76px\);/)
+    expect(styleSource).toMatch(/--dash-focus-fit-h:\s*230px;/)
+    expect(styleSource).toMatch(/\.focus-cards,[\s\S]*\.focus-cards--wide\s*\{[\s\S]*height:\s*170px;/)
+    expect(styleSource).toMatch(/\.dashboard\s*\{[\s\S]*grid-template-rows:\s*var\(--dash-header-fit-h\) var\(--dash-focus-fit-h\) minmax\(0,\s*1fr\);/)
+    expect(styleSource).toMatch(/\.dash-bottom\s*\{[\s\S]*grid-template-columns:\s*minmax\(0,\s*1fr\)\s+minmax\(0,\s*1fr\)\s+minmax\(280px,\s*0\.88fr\)/)
+    expect(styleSource).toMatch(/@media \(min-width:\s*721px\) and \(max-width:\s*980px\)/)
+    expect(styleSource).toMatch(/@media \(min-width:\s*721px\) and \(max-width:\s*1180px\) and \(max-height:\s*760px\)/)
+    expect(styleSource).toMatch(/\.people-panel-body\s*\{[\s\S]*overflow:\s*hidden;/)
+    expect(styleSource).toMatch(/\.people-assignment-grid\s*\{[\s\S]*grid-template-rows:\s*repeat\(4,\s*minmax\(0,\s*1fr\)\);/)
+    expect(styleSource).toMatch(/\.mini-cal-grid\s*\{[\s\S]*grid-template-rows:\s*auto repeat\(6,\s*minmax\(0,\s*1fr\)\);/)
+    expect(styleSource).toMatch(/@media \(min-width:\s*721px\) and \(max-height:\s*820px\)/)
+    expect(styleSource).toMatch(/\.mini-cal-day\s*\{[\s\S]*aspect-ratio:\s*auto;/)
+  })
+
   it('renders people assignment as a 4x4 card grid with reserved slots', () => {
     const people: LegacyPerson[] = [
       { id: 'person-1', name: '王浩然', gender: 'male', status: 'active', skills: ['Cinema 4D', '建模'] },

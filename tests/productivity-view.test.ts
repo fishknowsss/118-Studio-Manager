@@ -345,8 +345,11 @@ describe('productivity view', () => {
     expect(parserSource).not.toMatch(/cdn\.jsdelivr\.net/)
     expect(parserSource).toMatch(/cMapUrl:\s*getPdfCMapUrl\(\)/)
     expect(parserSource).toMatch(/cMapPacked:\s*true/)
+    expect(parserSource).toMatch(/workerSrc\s*=\s*getPdfWorkerUrl\(\)/)
+    expect(parserSource).not.toMatch(/pdf\.worker\.mjs\?url/)
     expect(viteConfigSource).toMatch(/pdfjsCMapPlugin/)
     expect(viteConfigSource).toMatch(/pdfjs\/cmaps/)
+    expect(viteConfigSource).toMatch(/pdfjs\/pdf\.worker\.mjs/)
   })
 
   it('parses the current school schedule text item shape', () => {

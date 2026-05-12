@@ -1,5 +1,5 @@
 import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs'
-import { dirname, join } from 'node:path'
+import { basename, dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { defineConfig } from 'vitest/config'
 import react from '@vitejs/plugin-react'
@@ -7,9 +7,11 @@ import type { Plugin } from 'vite'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 const PDFJS_CMAP_ROUTE = '/pdfjs/cmaps/'
+const PDFJS_WORKER_ROUTE = '/pdfjs/pdf.worker.mjs'
 
 function pdfjsCMapPlugin(): Plugin {
   const cMapDir = join(__dirname, 'node_modules/pdfjs-dist/cmaps')
+  const workerFilePath = join(__dirname, 'node_modules/pdfjs-dist/legacy/build/pdf.worker.mjs')
 
   return {
     name: 'local-pdfjs-cmaps',
@@ -17,6 +19,13 @@ function pdfjsCMapPlugin(): Plugin {
       server.middlewares.use((req, res, next) => {
         const requestPath = decodeURIComponent((req.url || '').split('?')[0] || '')
         const basePath = server.config.base.replace(/\/?$/, '/')
+        const workerPaths = Array.from(new Set([PDFJS_WORKER_ROUTE, `${basePath}pdfjs/pdf.worker.mjs`]))
+        if (workerPaths.includes(requestPath)) {
+          res.setHeader('Content-Type', 'text/javascript')
+          res.end(readFileSync(workerFilePath))
+          return
+        }
+
         const routePrefixes = Array.from(new Set([PDFJS_CMAP_ROUTE, `${basePath}pdfjs/cmaps/`]))
         const routePrefix = routePrefixes.find((prefix) => requestPath.startsWith(prefix))
 
@@ -54,7 +63,25 @@ function pdfjsCMapPlugin(): Plugin {
           source: readFileSync(filePath),
         })
       }
+
+      this.emitFile({
+        type: 'asset',
+        fileName: 'pdfjs/pdf.worker.mjs',
+        source: readFileSync(workerFilePath),
+      })
     },
+  }
+}
+
+function manualChunks(id: string) {
+  if (id.includes('/node_modules/react') || id.includes('/node_modules/scheduler')) {
+    return 'vendor-react'
+  }
+  if (id.includes('/node_modules/pdfjs-dist')) {
+    return 'pdfjs'
+  }
+  if (id.includes('/src/views/')) {
+    return `view-${basename(id).replace(/\.[^.]+$/, '').toLowerCase()}`
   }
 }
 
@@ -66,6 +93,13 @@ export default defineConfig(({ command }) => ({
   resolve: {
     alias: {
       '@': '/src',
+    },
+  },
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks,
+      },
     },
   },
   test: {

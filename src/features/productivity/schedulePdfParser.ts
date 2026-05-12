@@ -145,6 +145,11 @@ function getPdfCMapUrl() {
   return `${baseUrl.replace(/\/?$/, '/')}pdfjs/cmaps/`
 }
 
+function getPdfWorkerUrl() {
+  const baseUrl = import.meta.env.BASE_URL || '/'
+  return `${baseUrl.replace(/\/?$/, '/')}pdfjs/pdf.worker.mjs`
+}
+
 export function parseScheduleTextItems(items: ScheduleTextItem[]): ParsedSchedulePdf {
   const normalizedItems = items
     .map((item) => ({ ...item, str: normalizeText(item.str) }))
@@ -213,12 +218,9 @@ export function parseScheduleTextItems(items: ScheduleTextItem[]): ParsedSchedul
 }
 
 export async function extractSchedulePdf(file: File) {
-  const [pdfjsLib, workerModule] = await Promise.all([
-    import('pdfjs-dist/legacy/build/pdf.mjs'),
-    import('pdfjs-dist/legacy/build/pdf.worker.mjs?url'),
-  ])
+  const pdfjsLib = await import('pdfjs-dist/legacy/build/pdf.mjs')
 
-  pdfjsLib.GlobalWorkerOptions.workerSrc = workerModule.default
+  pdfjsLib.GlobalWorkerOptions.workerSrc = getPdfWorkerUrl()
 
   const data = new Uint8Array(await file.arrayBuffer())
   const loadingTask = pdfjsLib.getDocument({
