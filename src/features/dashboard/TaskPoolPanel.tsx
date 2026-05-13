@@ -181,6 +181,11 @@ export function TaskPoolPanel({
     return `${visibleNames} +${people.length - 3}`
   }
 
+  const formatFullAssigneeText = (people: LegacyPerson[]) => {
+    if (people.length === 0) return '未分配'
+    return people.map((person) => person.name || '未命名').join('、')
+  }
+
   return (
     <div className="panel" ref={panelRef}>
       <div
@@ -338,8 +343,14 @@ export function TaskPoolPanel({
             </div>
 
             <div className="task-detail-card-meta">
-              <span><b>负责人</b>{formatAssigneeText(detailTask.people ?? [])}</span>
-              <span><b>工时</b>{detailTask.estimatedHours ? `${detailTask.estimatedHours} 小时` : '未填写'}</span>
+              <span className={`task-detail-card-meta-item is-assignees ${(detailTask.people ?? []).length === 0 ? 'is-empty' : ''}`}>
+                <b>负责人</b>
+                <span className="task-detail-card-meta-value">{formatFullAssigneeText(detailTask.people ?? [])}</span>
+              </span>
+              <span className="task-detail-card-meta-item">
+                <b>工时</b>
+                <span className="task-detail-card-meta-value">{detailTask.estimatedHours ? `${detailTask.estimatedHours} 小时` : '未填写'}</span>
+              </span>
             </div>
 
             <div className="task-detail-card-description">
