@@ -995,6 +995,7 @@ html[data-easter-mode='konami'] .assignee-chip.selected:has(.assignee-chip-avata
   align-items: center;
   justify-content: space-between;
   flex-shrink: 0;
+  position: relative;
 }
 .dash-header-left {
   display: flex;
@@ -1013,6 +1014,46 @@ html[data-easter-mode='konami'] .assignee-chip.selected:has(.assignee-chip-avata
   align-items: center;
   gap: 10px;
   min-width: 0;
+}
+.dash-resource-slot {
+  position: absolute;
+  left: 50%;
+  top: 0;
+  height: 100%;
+  transform: translateX(-50%);
+  z-index: 4;
+}
+.dash-resource-hotspot {
+  width: clamp(88px, 11vw, 156px);
+  height: 100%;
+  display: block;
+  border: 0;
+  padding: 0;
+  background: transparent;
+  cursor: pointer;
+}
+.dash-resource-hotspot:focus-visible {
+  outline: 2px solid var(--c-primary);
+  outline-offset: -8px;
+}
+.dash-resource-editor {
+  position: absolute;
+  top: calc(100% - 8px);
+  left: 50%;
+  width: min(420px, calc(100vw - 40px));
+  transform: translateX(-50%);
+  padding: 12px;
+  background: var(--c-surface);
+  border: 1px solid var(--c-border);
+  border-radius: var(--r-lg);
+  box-shadow: var(--shadow-lg);
+  display: grid;
+  gap: 8px;
+}
+.dash-resource-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 6px;
 }
 .dash-date-big {
   display: inline-block;
@@ -2985,6 +3026,12 @@ html[data-easter-mode='konami'] .assignee-chip.selected:has(.assignee-chip-avata
   justify-content: space-between;
   gap: 10px;
 }
+.brief-card-main {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+}
 .brief-card-meta {
   display: flex;
   align-items: center;
@@ -3029,23 +3076,7 @@ html[data-easter-mode='konami'] .assignee-chip.selected:has(.assignee-chip-avata
   font-size: var(--fs-2xs);
   font-weight: 700;
   color: var(--c-text-3);
-  text-transform: uppercase;
-  letter-spacing: .06em;
   margin-bottom: 5px;
-}
-.brief-requirements {
-  font-size: var(--fs-base);
-  line-height: 1.65;
-  color: var(--c-text);
-  display: -webkit-box;
-  -webkit-line-clamp: 4;
-  line-clamp: 4;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-}
-.brief-requirements.expanded {
-  display: block;
-  overflow: visible;
 }
 .brief-section-body {
   font-size: var(--fs-base);
@@ -3053,23 +3084,27 @@ html[data-easter-mode='konami'] .assignee-chip.selected:has(.assignee-chip-avata
   color: var(--c-text);
   white-space: pre-wrap;
 }
-.brief-toggle {
-  font-size: var(--fs-sm);
-  font-weight: 500;
-  color: var(--c-primary);
-  background: none;
-  border: none;
-  padding: 2px 0;
-  cursor: pointer;
-  align-self: flex-start;
-  opacity: .8;
+.brief-ref-strip {
+  display: flex;
+  align-items: flex-start;
+  gap: 9px;
+  padding: 8px 10px;
+  background: color-mix(in srgb, var(--c-primary-light) 62%, var(--c-surface));
+  border: 1px solid rgba(65,102,245,.18);
+  border-radius: var(--r-md);
 }
-.brief-toggle:hover { opacity: 1; text-decoration: underline; }
+.brief-ref-title {
+  flex: 0 0 auto;
+  font-size: var(--fs-xs);
+  font-weight: 700;
+  color: var(--c-primary);
+  line-height: 24px;
+}
 .brief-ref-links {
   display: flex;
   flex-wrap: wrap;
   gap: 6px;
-  margin-top: 2px;
+  min-width: 0;
 }
 .brief-ref-link {
   display: inline-flex;
@@ -3080,11 +3115,17 @@ html[data-easter-mode='konami'] .assignee-chip.selected:has(.assignee-chip-avata
   padding: 3px 9px;
   border-radius: var(--r-sm);
   border: 1px solid rgba(65,102,245,.2);
-  background: var(--c-primary-light);
+  background: var(--c-surface);
 }
 .brief-ref-link:hover { border-color: var(--c-primary); }
 
 /* ClientBriefDialog 内的参考链接行 */
+.brief-ref-field {
+  padding: 12px;
+  background: color-mix(in srgb, var(--c-primary-light) 55%, var(--c-surface));
+  border: 1px solid rgba(65,102,245,.18);
+  border-radius: var(--r-lg);
+}
 .brief-ref-head {
   display: flex;
   align-items: center;
@@ -3104,6 +3145,19 @@ html[data-easter-mode='konami'] .assignee-chip.selected:has(.assignee-chip-avata
 }
 .brief-ref-label { min-width: 0; }
 .brief-ref-url   { min-width: 0; }
+.brief-ref-empty {
+  min-height: 42px;
+  border: 1px dashed rgba(65,102,245,.26);
+  border-radius: var(--r-md);
+  display: flex;
+  align-items: center;
+  padding: 0 12px;
+  color: var(--c-text-3);
+  font-size: var(--fs-sm);
+}
+.brief-requirements-input {
+  min-height: 56px;
+}
 
 /* ─── 账号密码：平台文件夹 ── */
 /* ── 平台卡片网格 ── */

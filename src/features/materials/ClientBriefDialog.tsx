@@ -134,13 +134,51 @@ export function ClientBriefDialog({ brief, projectOptions, onSave, onClose }: Pr
           />
         </div>
 
+        {/* 参考链接 */}
+        <div className="form-field span2 brief-ref-field">
+          <div className="brief-ref-head">
+            <label className="form-label">参考资料/表格</label>
+            <button className="btn btn-xs btn-ghost" type="button" onClick={addRef}>+ 添加</button>
+          </div>
+          {refs.length === 0 ? (
+            <div className="brief-ref-empty">添加链接或表格，团队会优先看到</div>
+          ) : (
+            <div className="brief-ref-list">
+              {refs.map((ref, index) => (
+                <div key={index} className="brief-ref-row">
+                  <input
+                    className="form-input brief-ref-label"
+                    placeholder="名称，例：竞品参考"
+                    value={ref.label}
+                    onChange={(e) => updateRef(index, { label: e.target.value })}
+                  />
+                  <input
+                    className="form-input brief-ref-url"
+                    placeholder="https://"
+                    value={ref.url}
+                    onChange={(e) => updateRef(index, { url: e.target.value })}
+                  />
+                  <button
+                    className="btn btn-xs btn-danger"
+                    type="button"
+                    onClick={() => removeRef(index)}
+                    aria-label="删除此链接"
+                  >
+                    ✕
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
         {/* 核心需求 */}
         <div className="form-field span2">
           <label className="form-label" htmlFor="brief-requirements">核心需求 *</label>
           <textarea
             id="brief-requirements"
-            className="form-input"
-            rows={4}
+            className="form-input brief-requirements-input"
+            rows={2}
             placeholder="描述甲方的核心诉求、目标受众、交付物要求等…"
             value={requirements}
             onChange={(e) => setRequirements(e.target.value)}
@@ -171,44 +209,6 @@ export function ClientBriefDialog({ brief, projectOptions, onSave, onClose }: Pr
             value={prohibitions}
             onChange={(e) => setProhibitions(e.target.value)}
           />
-        </div>
-
-        {/* 参考链接 */}
-        <div className="form-field span2">
-          <div className="brief-ref-head">
-            <label className="form-label">参考资料链接</label>
-            <button className="btn btn-xs btn-ghost" type="button" onClick={addRef}>+ 添加</button>
-          </div>
-          {refs.length === 0 ? (
-            <div className="text-muted text-sm">暂无参考链接，点「添加」新增</div>
-          ) : (
-            <div className="brief-ref-list">
-              {refs.map((ref, index) => (
-                <div key={index} className="brief-ref-row">
-                  <input
-                    className="form-input brief-ref-label"
-                    placeholder="名称，例：竞品参考"
-                    value={ref.label}
-                    onChange={(e) => updateRef(index, { label: e.target.value })}
-                  />
-                  <input
-                    className="form-input brief-ref-url"
-                    placeholder="https://"
-                    value={ref.url}
-                    onChange={(e) => updateRef(index, { url: e.target.value })}
-                  />
-                  <button
-                    className="btn btn-xs btn-danger"
-                    type="button"
-                    onClick={() => removeRef(index)}
-                    aria-label="删除此链接"
-                  >
-                    ✕
-                  </button>
-                </div>
-              ))}
-            </div>
-          )}
         </div>
       </div>
     </Dialog>

@@ -536,59 +536,19 @@ function BriefCard({
   onEdit: () => void
   onDelete: () => void
 }) {
-  const [expanded, setExpanded] = useState(false)
-
   return (
     <div className="brief-card">
       <div className="brief-card-head">
-        <div className="brief-card-meta">
-          {brief.projectName ? (
-            <span className="brief-project-badge">{brief.projectName}</span>
-          ) : null}
-          <span className="brief-client-name">{brief.clientName}</span>
-        </div>
-        <div className="brief-card-actions">
-          <button className="btn btn-xs btn-secondary" type="button" onClick={onEdit}>编辑</button>
-          <button className="btn btn-xs btn-danger" type="button" onClick={onDelete}>删除</button>
-        </div>
-      </div>
-
-      <div className="brief-section">
-        <div className="brief-section-label">核心需求</div>
-        <div className={`brief-requirements${expanded ? ' expanded' : ''}`}>
-          {brief.requirements}
-        </div>
-      </div>
-
-      {(brief.styleNotes || brief.prohibitions || brief.referenceUrls.length > 0) && (
-        <button
-          className="brief-toggle"
-          type="button"
-          onClick={() => setExpanded((v) => !v)}
-        >
-          {expanded ? '收起详情 ↑' : '展开详情 ↓'}
-        </button>
-      )}
-
-      {expanded ? (
-        <>
-          {brief.styleNotes ? (
-            <div className="brief-section">
-              <div className="brief-section-label">风格偏好</div>
-              <div className="brief-section-body">{brief.styleNotes}</div>
-            </div>
-          ) : null}
-
-          {brief.prohibitions ? (
-            <div className="brief-section brief-section-danger">
-              <div className="brief-section-label">禁忌事项</div>
-              <div className="brief-section-body">{brief.prohibitions}</div>
-            </div>
-          ) : null}
-
+        <div className="brief-card-main">
+          <div className="brief-card-meta">
+            {brief.projectName ? (
+              <span className="brief-project-badge">{brief.projectName}</span>
+            ) : null}
+            <span className="brief-client-name">{brief.clientName}</span>
+          </div>
           {brief.referenceUrls.length > 0 ? (
-            <div className="brief-section">
-              <div className="brief-section-label">参考资料</div>
+            <div className="brief-ref-strip" aria-label="参考资料/表格">
+              <div className="brief-ref-title">参考资料/表格</div>
               <div className="brief-ref-links">
                 {brief.referenceUrls.map((ref, index) => (
                   <a
@@ -599,7 +559,7 @@ function BriefCard({
                     className="brief-ref-link"
                   >
                     {ref.label}
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="11" height="11">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="11" height="11" aria-hidden="true">
                       <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
                       <polyline points="15 3 21 3 21 9" />
                       <line x1="10" y1="14" x2="21" y2="3" />
@@ -609,7 +569,30 @@ function BriefCard({
               </div>
             </div>
           ) : null}
-        </>
+        </div>
+        <div className="brief-card-actions">
+          <button className="btn btn-xs btn-secondary" type="button" onClick={onEdit}>编辑</button>
+          <button className="btn btn-xs btn-danger" type="button" onClick={onDelete}>删除</button>
+        </div>
+      </div>
+
+      <div className="brief-section">
+        <div className="brief-section-label">核心需求</div>
+        <div className="brief-section-body">{brief.requirements}</div>
+      </div>
+
+      {brief.styleNotes ? (
+        <div className="brief-section">
+          <div className="brief-section-label">风格偏好</div>
+          <div className="brief-section-body">{brief.styleNotes}</div>
+        </div>
+      ) : null}
+
+      {brief.prohibitions ? (
+        <div className="brief-section brief-section-danger">
+          <div className="brief-section-label">禁忌事项</div>
+          <div className="brief-section-body">{brief.prohibitions}</div>
+        </div>
       ) : null}
     </div>
   )

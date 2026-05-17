@@ -1,6 +1,11 @@
-import { useState, type KeyboardEvent } from 'react'
+import { useState, useSyncExternalStore, type FormEvent, type KeyboardEvent, type MouseEvent } from 'react'
 import type { DashboardHeaderModel, QuickJumpSearchItem } from '../../legacy/selectors'
 import { QuoteBlock } from './QuoteBlock'
+import {
+  readHomeResourceLinkState,
+  subscribeHomeResourceLinkState,
+  writeHomeResourceLink,
+} from './homeResourceState'
 
 export function DashboardHeader({
   model,
@@ -17,8 +22,38 @@ export function DashboardHeader({
 }) {
   const [searchOpen, setSearchOpen] = useState(false)
   const [activeIndex, setActiveIndex] = useState(0)
+  const [resourceEditorOpen, setResourceEditorOpen] = useState(false)
+  const homeResourceLink = useSyncExternalStore(
+    subscribeHomeResourceLinkState,
+    readHomeResourceLinkState,
+  )
+  const [draftResourceUrl, setDraftResourceUrl] = useState(homeResourceLink.url)
 
   const showDropdown = searchOpen && searchQuery.trim().length > 0
+
+  const openResourceEditor = () => {
+    setDraftResourceUrl(homeResourceLink.url)
+    setResourceEditorOpen(true)
+  }
+
+  const handleResourceContextMenu = (event: MouseEvent<HTMLButtonElement>) => {
+    event.preventDefault()
+    openResourceEditor()
+  }
+
+  const handleResourceOpen = () => {
+    if (!homeResourceLink.url) {
+      openResourceEditor()
+      return
+    }
+    window.open(homeResourceLink.url, '_blank', 'noopener,noreferrer')
+  }
+
+  const saveResourceLink = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault()
+    writeHomeResourceLink(draftResourceUrl)
+    setResourceEditorOpen(false)
+  }
 
   const handleSearchKeyDown = (event: KeyboardEvent<HTMLInputElement>) => {
     if (!showDropdown) {
@@ -112,6 +147,47 @@ export function DashboardHeader({
             </div>
           ) : null}
         </div>
+      </div>
+
+      <div className="dash-resource-slot">
+        <button
+          className="dash-resource-hotspot"
+          type="button"
+          aria-label="总资料"
+          onClick={handleResourceOpen}
+          onContextMenu={handleResourceContextMenu}
+        />
+        {resourceEditorOpen ? (
+          <form className="dash-resource-editor" onSubmit={saveResourceLink}>
+            <label className="form-label" htmlFor="home-resource-url">总资料链接</label>
+            <input
+              id="home-resource-url"
+              className="form-input"
+              value={draftResourceUrl}
+              placeholder="https://"
+              autoFocus
+              onChange={(event) => setDraftResourceUrl(event.target.value)}
+              onKeyDown={(event) => {
+                if (event.key === 'Escape') setResourceEditorOpen(false)
+              }}
+            />
+            <div className="dash-resource-actions">
+              <button className="btn btn-xs btn-primary" type="submit">保存</button>
+              <button
+                className="btn btn-xs btn-secondary"
+                type="button"
+                onClick={() => {
+                  writeHomeResourceLink('')
+                  setDraftResourceUrl('')
+                  setResourceEditorOpen(false)
+                }}
+              >
+                清空
+              </button>
+              <button className="btn btn-xs btn-ghost" type="button" onClick={() => setResourceEditorOpen(false)}>取消</button>
+            </div>
+          </form>
+        ) : null}
       </div>
 
       <div className="dash-header-right">
