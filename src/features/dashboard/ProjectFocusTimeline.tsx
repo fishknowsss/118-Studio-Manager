@@ -3,8 +3,8 @@ import { Flag, PackageCheck, Search } from 'lucide-react'
 import type { DashboardProjectFocusTimelineModel } from '../../legacy/selectors'
 import { formatDate } from '../../legacy/utils'
 
-/** Lucide 语义图标：开工旗 / 审查放大镜 / 交付包裹（尺寸配合实体 badge，避免 filter halo） */
-const MARKER_SIZE = 16
+/** Lucide 语义图标：开工旗 / 审查放大镜 / 交付包裹 */
+const MARKER_SIZE = 20
 const MARKER_STROKE = 2.25
 
 /**

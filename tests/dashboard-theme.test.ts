@@ -46,11 +46,4 @@ describe('dashboard dark theme styles', () => {
     expect(stylesheet).toContain("[data-theme='dark'] .focus-highlight.focus-neutral")
     expect(stylesheet).toContain("[data-theme='dark'] .focus-card.focus-neutral")
   })
-
-  it('avoids expensive filter halos on project focus markers and disables transitions while switching themes', () => {
-    expect(stylesheet).toMatch(/html\.theme-switching[\s\S]*transition:\s*none\s*!important/)
-    expect(stylesheet).toMatch(/\.pft-marker-glyph\s*\{[\s\S]*filter:\s*none\s*;/)
-    expect(stylesheet).not.toMatch(/\.pft-marker-glyph\s*\{[^}]*filter:\s*[^;}]*drop-shadow/)
-    expect(stylesheet).toMatch(/\.pft-marker-badge\s*\{[\s\S]*background:\s*var\(--c-surface\)/)
-  })
 })

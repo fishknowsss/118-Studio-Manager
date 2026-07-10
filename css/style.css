@@ -81,16 +81,6 @@
   --shadow-lg: 0 8px 32px rgba(0,0,0,.5);
 }
 
-/* 主题切换瞬间关闭全局 transition/animation，避免首页大树“拖影式”变色卡顿 */
-html.theme-switching,
-html.theme-switching *,
-html.theme-switching *::before,
-html.theme-switching *::after {
-  transition: none !important;
-  animation-duration: 0s !important;
-  animation-delay: 0s !important;
-}
-
 /* ── 深色模式专项修复 ────────────────────────────────── */
 
 /* 交互 hover 深色适配
@@ -164,26 +154,25 @@ html.theme-switching *::after {
   border-left-color: rgba(148, 163, 184, 0.30);
 }
 [data-theme='dark'] .pft-row {
-  /* 避免多层 color-mix；用半透明固定底 + 边框色变量，主题切换更轻 */
-  background: rgba(30, 41, 59, 0.72);
-  border-color: rgba(148, 163, 184, 0.28);
+  background: color-mix(in srgb, var(--pft-accent) 6%, rgba(15, 23, 42, 0.36));
+  border-color: color-mix(in srgb, var(--pft-accent) 34%, rgba(148, 163, 184, 0.2));
   box-shadow: none;
 }
 [data-theme='dark'] .pft-row:hover,
 [data-theme='dark'] .pft-row:focus-visible {
-  border-color: rgba(148, 163, 184, 0.4);
-  background: rgba(37, 51, 73, 0.88);
+  border-color: color-mix(in srgb, var(--pft-accent) 52%, rgba(148, 163, 184, 0.26));
+  background: color-mix(in srgb, var(--pft-accent) 10%, rgba(15, 23, 42, 0.48));
 }
 [data-theme='dark'] .pft-track {
   background: rgba(15, 23, 42, 0.5);
   border-color: rgba(148, 163, 184, 0.2);
 }
 [data-theme='dark'] .pft-today-band {
-  background: rgba(65, 102, 245, 0.12);
+  background: color-mix(in srgb, var(--c-primary) 12%, transparent);
   box-shadow: none;
 }
 [data-theme='dark'] .pft-today-line {
-  background: rgba(65, 102, 245, 0.7);
+  background: color-mix(in srgb, var(--c-primary) 70%, transparent);
   box-shadow: none;
 }
 [data-theme='dark'] .pft-grid-line {
@@ -193,12 +182,16 @@ html.theme-switching *::after {
   background: rgba(148, 163, 184, 0.26);
 }
 [data-theme='dark'] .pft-bar {
-  background: rgba(15, 23, 42, 0.55);
-  border-color: rgba(148, 163, 184, 0.28);
+  background: color-mix(in srgb, var(--pft-accent) 24%, rgba(15, 23, 42, 0.72));
+  border-color: color-mix(in srgb, var(--pft-accent) 42%, transparent);
 }
-[data-theme='dark'] .pft-marker-badge {
-  background: #1e293b;
-  box-shadow: 0 0 0 1px rgba(15, 23, 42, 0.85);
+[data-theme='dark'] .pft-marker-glyph {
+  /* 深色：深底 halo，颜色仍跟紧急色 / 主色 */
+  filter:
+    drop-shadow(0 0 0.8px #0f172a)
+    drop-shadow(0 0 1.8px #0f172a)
+    drop-shadow(0 0 3px rgba(15, 23, 42, 0.85))
+    drop-shadow(0 1px 2px rgba(0, 0, 0, 0.45));
 }
 [data-theme='dark'] .pft-action {
   color: rgba(203, 213, 225, 0.9);
@@ -210,8 +203,8 @@ html.theme-switching *::after {
   border-bottom-color: rgba(148, 163, 184, 0.22);
 }
 [data-theme='dark'] .pft-axis-tick.is-today .pft-axis-tick-label {
-  background: rgba(15, 23, 42, 0.85);
-  border-color: rgba(65, 102, 245, 0.4);
+  background: color-mix(in srgb, var(--c-primary) 20%, rgba(15, 23, 42, 0.85));
+  border-color: color-mix(in srgb, var(--c-primary) 40%, transparent);
 }
 
 /* hover 时保留彩色侧光并叠加外阴影，避免 box-shadow 被覆盖导致侧光消失 */
@@ -1383,8 +1376,6 @@ html[data-easter-mode='konami'] .assignee-chip.selected:has(.assignee-chip-avata
   grid-template-rows: var(--pft-axis-h) minmax(0, 1fr);
   gap: 5px;
   overflow: hidden;
-  /* 主题切换时限制样式重算范围 */
-  contain: layout style;
 }
 
 /* Rows shell hosts the continuous today overlay (rows only — never through axis "今天") */
@@ -1552,26 +1543,20 @@ html[data-easter-mode='konami'] .assignee-chip.selected:has(.assignee-chip-avata
   /* Vertical padding only — horizontal pad on identity/aside keeps track aligned.
      No AI left accent rail — priority shows via bar / phase only. */
   padding: 6px 0;
-  border: 1px solid var(--c-border);
+  border: 1px solid color-mix(in srgb, var(--pft-accent) 22%, var(--c-border));
   border-radius: 10px;
-  background: var(--c-surface);
+  background: color-mix(in srgb, var(--pft-accent) 2.5%, var(--c-surface));
   box-shadow: none;
   cursor: pointer;
   text-align: left;
-  /* visible：标记可溢出 track；x 方向仍由子项 min-width 约束 */
+  /* visible：标记阴影可溢出 track；x 方向仍由子项 min-width 约束 */
   overflow: visible;
-  /* 仅 hover 过渡；主题切换靠 html.theme-switching 全局关闭 transition */
-  transition: none;
-}
-@media (hover: hover) and (pointer: fine) {
-  .pft-row {
-    transition: border-color .12s ease, background .12s ease, box-shadow .12s ease;
-  }
+  transition: border-color .15s ease, background .15s ease, box-shadow .15s ease;
 }
 .pft-row:hover,
 .pft-row:focus-visible {
-  background: var(--c-bg);
-  border-color: var(--c-primary);
+  background: color-mix(in srgb, var(--pft-accent) 5.5%, var(--c-surface));
+  border-color: color-mix(in srgb, var(--pft-accent) 36%, var(--c-border));
   box-shadow: 0 1px 4px rgba(15, 23, 42, .04);
 }
 .pft-row:focus-visible {
@@ -1615,9 +1600,8 @@ html[data-easter-mode='konami'] .assignee-chip.selected:has(.assignee-chip-avata
   min-height: 18px;
   padding: 0 7px;
   border-radius: 999px;
-  background: var(--c-bg);
+  background: color-mix(in srgb, var(--pft-accent) 14%, var(--c-bg));
   color: var(--pft-accent);
-  border: 1px solid color-mix(in srgb, var(--pft-accent) 28%, var(--c-border));
   font-size: 11px;
   font-weight: 800;
   line-height: 1;
@@ -1677,11 +1661,10 @@ html[data-easter-mode='konami'] .assignee-chip.selected:has(.assignee-chip-avata
   min-width: 0;
   height: 36px;
   border-radius: 8px;
-  background: var(--c-bg);
-  border: 1px solid var(--c-border);
-  /* 允许标记溢出；网格线与 bar 仍由自身尺寸约束 */
+  background: color-mix(in srgb, var(--c-bg) 90%, var(--c-surface));
+  border: 1px solid color-mix(in srgb, var(--c-border) 88%, transparent);
+  /* 允许标记阴影溢出；网格线与 bar 仍由自身尺寸约束 */
   overflow: visible;
-  contain: layout style;
 }
 .pft-grid-line {
   position: absolute;
@@ -1690,18 +1673,16 @@ html[data-easter-mode='konami'] .assignee-chip.selected:has(.assignee-chip-avata
   left: var(--pft-tick);
   width: 1px;
   transform: translateX(-50%);
-  background: var(--c-border);
-  opacity: 0.55;
+  background: color-mix(in srgb, var(--c-border) 45%, transparent);
   pointer-events: none;
   z-index: 1;
 }
 .pft-grid-line.is-major {
-  opacity: 0.9;
+  background: color-mix(in srgb, var(--c-border) 70%, transparent);
 }
 .pft-grid-line.is-today {
   width: 0;
   background: transparent;
-  opacity: 0;
 }
 .pft-bar {
   position: absolute;
@@ -1711,9 +1692,8 @@ html[data-easter-mode='konami'] .assignee-chip.selected:has(.assignee-chip-avata
   height: 12px;
   min-width: 24px;
   border-radius: 999px;
-  background: var(--c-surface);
-  border: 1px solid var(--pft-accent);
-  opacity: 0.92;
+  background: color-mix(in srgb, var(--pft-accent) 12%, var(--c-surface));
+  border: 1px solid color-mix(in srgb, var(--pft-accent) 36%, transparent);
   overflow: hidden;
   z-index: 3;
   transform: translateY(-50%);
@@ -1727,7 +1707,7 @@ html[data-easter-mode='konami'] .assignee-chip.selected:has(.assignee-chip-avata
   background: var(--pft-accent);
 }
 
-/* 开 / 审 / 交：实体底 badge 替代多层 drop-shadow filter（主题切换主卡点） */
+/* 开 / 审 / 交：Lucide 语义线型（Flag / Search / PackageCheck）；颜色跟 bar 紧急色 / 主色 + halo 保清晰 */
 .pft-marker {
   --pft-marker-tone: var(--pft-accent);
   position: absolute;
@@ -1737,28 +1717,26 @@ html[data-easter-mode='konami'] .assignee-chip.selected:has(.assignee-chip-avata
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 22px;
-  height: 22px;
+  width: 20px;
+  height: 20px;
   transform: translate(-50%, -50%);
   pointer-events: none;
 }
 .pft-marker-badge {
-  display: grid;
-  place-items: center;
-  width: 22px;
-  height: 22px;
-  border-radius: 999px;
-  background: var(--c-surface);
-  box-shadow: 0 0 0 1px var(--c-surface);
+  display: contents;
 }
 .pft-marker-glyph {
   display: block;
   flex: 0 0 auto;
-  width: 16px;
-  height: 16px;
+  width: 20px;
+  height: 20px;
   color: var(--pft-marker-tone);
-  /* 禁止 filter：SVG 多层 drop-shadow 在首页时间轴上主题切换极贵 */
-  filter: none;
+  /* 白色描边 halo：压在色条上仍清晰 */
+  filter:
+    drop-shadow(0 0 0.75px #ffffff)
+    drop-shadow(0 0 1.75px #ffffff)
+    drop-shadow(0 0 3px rgba(255, 255, 255, 0.95))
+    drop-shadow(0 1px 2px rgba(15, 23, 42, 0.22));
 }
 .pft-marker--start {
   --pft-marker-tone: var(--pft-accent);
@@ -9486,14 +9464,9 @@ select.form-input { cursor: pointer; }
   }
 
   .pft-marker,
-  .pft-marker-badge {
-    width: 22px;
-    height: 22px;
-  }
-
   .pft-marker-glyph {
-    width: 16px;
-    height: 16px;
+    width: 20px;
+    height: 20px;
   }
 
   .pft-progress span {
