@@ -26,8 +26,13 @@ export type LegacyProject = LegacyEntity & {
   name?: string
   status?: ProjectStatus
   priority?: ProjectPriority
+  startDate?: string | null
+  endDate?: string | null
+  reviewDate?: string | null
+  deliveryDate?: string | null
   ddl?: string | null
   description?: string
+  notes?: string
 }
 
 export type LegacyTask = LegacyEntity & {
@@ -223,7 +228,21 @@ export function buildPersonDeletionPatch(
 
 type ProjectRecord = LegacyProject & Record<string, unknown>
 
-const PROJECT_RECORD_KEYS = new Set(['createdAt', 'ddl', 'description', 'id', 'name', 'priority', 'status', 'updatedAt'])
+const PROJECT_RECORD_KEYS = new Set([
+  'createdAt',
+  'ddl',
+  'deliveryDate',
+  'description',
+  'endDate',
+  'id',
+  'name',
+  'notes',
+  'priority',
+  'reviewDate',
+  'startDate',
+  'status',
+  'updatedAt',
+])
 
 function projectNeedsNormalization(project: ProjectRecord) {
   return Object.keys(project).some((key) => !PROJECT_RECORD_KEYS.has(key))

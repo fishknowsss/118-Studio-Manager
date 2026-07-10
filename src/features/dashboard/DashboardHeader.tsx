@@ -111,6 +111,13 @@ export function DashboardHeader({
             className="dash-search-input"
             value={searchQuery}
             placeholder="搜索项目 / 任务 / 人员，回车快速跳转"
+            role="combobox"
+            aria-autocomplete="list"
+            aria-controls="dashboard-search-results"
+            aria-expanded={showDropdown}
+            aria-activedescendant={showDropdown && searchResults[activeIndex]
+              ? `dashboard-search-option-${activeIndex}`
+              : undefined}
             onChange={(event) => {
               onSearchQueryChange(event.target.value)
               setSearchOpen(true)
@@ -120,14 +127,22 @@ export function DashboardHeader({
             onKeyDown={handleSearchKeyDown}
           />
           {showDropdown ? (
-            <div className="dash-search-dropdown" role="listbox" aria-label="全局搜索结果">
+            <div
+              id="dashboard-search-results"
+              className="dash-search-dropdown"
+              role="listbox"
+              aria-label="全局搜索结果"
+            >
               {searchResults.length === 0 ? (
                 <div className="dash-search-empty">没有匹配结果</div>
               ) : (
                 searchResults.map((item, index) => (
                   <button
                     key={`${item.kind}-${item.id}`}
+                    id={`dashboard-search-option-${index}`}
                     type="button"
+                    role="option"
+                    aria-selected={index === activeIndex}
                     className={`dash-search-item ${index === activeIndex ? 'active' : ''}`}
                     onMouseDown={(event) => event.preventDefault()}
                     onClick={() => {

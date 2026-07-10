@@ -28,8 +28,13 @@ export type ProjectFormInput = {
   name: string | null
   status: ProjectStatus | null
   priority: ProjectPriority | null
+  startDate: string | null
+  endDate: string | null
+  reviewDate: string | null
+  deliveryDate: string | null
   ddl: string | null
   description: string | null
+  notes: string | null
 }
 
 export type TaskFormInput = {
@@ -56,6 +61,39 @@ export type PersonFormInput = {
   notes: string | null
 }
 
+function normalizeProjectSchedule(input: Pick<ProjectFormInput, 'ddl' | 'deliveryDate' | 'endDate' | 'reviewDate' | 'startDate'>) {
+  const reviewDate = input.reviewDate || null
+  let deliveryDate = input.deliveryDate || null
+  let endDate = input.endDate || null
+  const explicitLegacyDdl = input.ddl || null
+  const hasRealEndDateInput = Boolean(input.endDate)
+
+  if (!deliveryDate && !endDate && explicitLegacyDdl) {
+    deliveryDate = explicitLegacyDdl
+    endDate = explicitLegacyDdl
+  }
+
+  const hasLegacyDdlFallback = Boolean(!input.deliveryDate && !input.endDate && explicitLegacyDdl)
+
+  const scheduleDates = [
+    input.startDate || null,
+    reviewDate,
+    deliveryDate,
+    endDate,
+  ].filter((value): value is string => Boolean(value)).sort()
+
+  const startDate = scheduleDates[0] || null
+  const normalizedEndDate = scheduleDates.at(-1) || null
+
+  return {
+    startDate,
+    endDate: normalizedEndDate,
+    reviewDate,
+    deliveryDate,
+    ddl: deliveryDate || ((hasRealEndDateInput || hasLegacyDdlFallback) ? normalizedEndDate : null),
+  }
+}
+
 async function runWithUndo<T>(label: string, operation: () => Promise<T>) {
   const checkpointId = await pushUndoCheckpoint(label)
 
@@ -72,13 +110,16 @@ export function buildProjectRecord(
   form: ProjectFormInput,
   timestamp = now(),
 ): LegacyProject {
+  const schedule = normalizeProjectSchedule(form)
+
   return {
     id: project?.id || uid(),
     name: form.name?.trim() || '',
     status: form.status || 'active',
     priority: form.priority || 'medium',
-    ddl: form.ddl || null,
+    ...schedule,
     description: form.description || '',
+    notes: form.notes || '',
     createdAt: project?.createdAt || timestamp,
     updatedAt: timestamp,
   }
@@ -246,9 +287,45 @@ export async function updateProjectDeadline(projectId: string, ddl: string | nul
   if (!project) return null
 
   return await runWithUndo(`延期项目「${project.name || '未命名项目'}」`, async () => {
-    const updated = { ...project, ddl, updatedAt: now() }
+    const schedule = normalizeProjectSchedule({
+      startDate: project.startDate || null,
+      reviewDate: project.reviewDate || null,
+      deliveryDate: ddl,
+      endDate: project.endDate || null,
+      ddl,
+    })
+    const updated = { ...project, ...schedule, updatedAt: now() }
     await store.saveProject(updated)
     await store.addLog(`延期项目「${project.name}」`)
+    return updated
+  })
+}
+
+export async function updateProjectSchedule(
+  projectId: string,
+  patch: Pick<LegacyProject, 'deliveryDate' | 'endDate' | 'notes' | 'reviewDate' | 'startDate'>,
+) {
+  const project = store.getProject(projectId)
+  if (!project) return null
+
+  return await runWithUndo(`更新项目排期「${project.name || '未命名项目'}」`, async () => {
+    const schedule = normalizeProjectSchedule({
+      startDate: Object.prototype.hasOwnProperty.call(patch, 'startDate') ? patch.startDate || null : project.startDate || null,
+      endDate: Object.prototype.hasOwnProperty.call(patch, 'endDate') ? patch.endDate || null : project.endDate || null,
+      reviewDate: Object.prototype.hasOwnProperty.call(patch, 'reviewDate') ? patch.reviewDate || null : project.reviewDate || null,
+      deliveryDate: Object.prototype.hasOwnProperty.call(patch, 'deliveryDate')
+        ? patch.deliveryDate || null
+        : project.deliveryDate || null,
+      ddl: null,
+    })
+    const updated = {
+      ...project,
+      ...schedule,
+      notes: Object.prototype.hasOwnProperty.call(patch, 'notes') ? patch.notes || '' : (project.notes || ''),
+      updatedAt: now(),
+    }
+    await store.saveProject(updated)
+    await store.addLog(`更新项目排期「${project.name}」`)
     return updated
   })
 }

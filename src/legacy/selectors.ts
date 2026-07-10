@@ -2,6 +2,7 @@ import {
   coerceToLocalDateKey,
   daysUntil,
   ddlLabel,
+  formatDate,
   getCalendarDays,
   getPersonGenderLabel,
   now,
@@ -10,6 +11,7 @@ import {
   STATUS_LABELS,
   shiftLocalDateKey,
   urgencyClass,
+  weekdayLabel,
 } from './utils'
 import type { BackupPayload } from './utils'
 import type { LegacyLog, LegacyPerson, LegacyProject, LegacyTask } from './store'
@@ -71,6 +73,7 @@ type TimelineModel = {
   days: TimelineDay[]
   rows: TimelineRow[]
   startDate: string
+  todayOffsetDays: number | null
 }
 
 export type DashboardHeaderModel = {
@@ -112,6 +115,60 @@ export type DashboardFocusCard = {
   name: string
   openTaskCount: number
   urgencyKey: string
+}
+
+export type DashboardProjectFocusAxisTick = {
+  date: string
+  isMajor: boolean
+  isToday: boolean
+  label: string
+  percent: number
+  weekdayLabel: string
+}
+
+export type DashboardProjectFocusTimelineItem = {
+  actionKind: 'blocked' | 'checkpoint' | 'task' | 'unscheduled'
+  actionLabel: string
+  assigneeNames: string[]
+  assigneePreview: string
+  barStartPercent: number
+  barWidthPercent: number
+  blockedTaskCount: number
+  daysToDelivery: number | null
+  deliveryDate: string | null
+  deliveryLabel: string
+  deliveryPercent: number | null
+  doneTaskCount: number
+  durationDays: number
+  durationLabel: string
+  endDate: string
+  id: string
+  name: string
+  notePreview: string
+  openTaskCount: number
+  phaseLabel: string
+  progressPercent: number
+  progressText: string
+  reviewDate: string | null
+  reviewPercent: number | null
+  startDate: string
+  startPercent: number
+  statusKey: string
+  taskCount: number
+  urgencyKey: ProjectDeadlineToneKey
+}
+
+export type DashboardProjectFocusTimelineModel = {
+  axisEndDate: string
+  axisEndLabel: string
+  axisStartDate: string
+  axisStartLabel: string
+  axisTicks: DashboardProjectFocusAxisTick[]
+  hiddenCount: number
+  items: DashboardProjectFocusTimelineItem[]
+  rangeDays: number
+  rangeLabel: string
+  todayPercent: number | null
 }
 
 export type ProjectEventItem = {
@@ -269,6 +326,17 @@ function inclusiveDateDuration(startDate: string, endDate: string) {
   return Math.max(0, Math.round((end.getTime() - start.getTime()) / 86400000))
 }
 
+function datePercent(dateKey: string | null | undefined, startDate: string, endDate: string) {
+  if (!dateKey) return null
+  const start = parseLocalDateKey(startDate)
+  const end = parseLocalDateKey(endDate)
+  const target = parseLocalDateKey(dateKey)
+  if (!start || !end || !target) return null
+  const total = Math.max(1, Math.round((end.getTime() - start.getTime()) / 86400000))
+  const offset = Math.round((target.getTime() - start.getTime()) / 86400000)
+  return Math.max(0, Math.min(100, Math.round((offset / total) * 100)))
+}
+
 function taskTouchesDate(task: LegacyTask, dateKey: string) {
   if (task.status === 'done') return false
   if (task.scheduledDate === dateKey || task.endDate === dateKey) return true
@@ -303,10 +371,38 @@ function comparePlannerTasks(left: DatePlannerTaskModel, right: DatePlannerTaskM
 }
 
 function compareProjectDeadline(left: LegacyProject, right: LegacyProject) {
-  const leftDdl = left.ddl || '9999-12-31'
-  const rightDdl = right.ddl || '9999-12-31'
+  const leftDdl = left.deliveryDate || left.endDate || left.ddl || '9999-12-31'
+  const rightDdl = right.deliveryDate || right.endDate || right.ddl || '9999-12-31'
   if (leftDdl !== rightDdl) return leftDdl.localeCompare(rightDdl)
   return (left.name || '').localeCompare(right.name || '', 'zh-CN')
+}
+
+function getProjectDeadlineKey(project: LegacyProject) {
+  return project.deliveryDate || project.endDate || project.ddl || null
+}
+
+function getProjectFocusTaskDate(task: LegacyTask) {
+  return coerceToLocalDateKey(task.endDate)
+    || coerceToLocalDateKey(task.scheduledDate)
+    || coerceToLocalDateKey(task.startDate)
+    || null
+}
+
+function getProjectScheduleDateCandidates(project: LegacyProject) {
+  return [
+    coerceToLocalDateKey(project.startDate),
+    coerceToLocalDateKey(project.reviewDate),
+    coerceToLocalDateKey(project.deliveryDate),
+    coerceToLocalDateKey(project.endDate),
+    coerceToLocalDateKey(project.ddl),
+  ].filter((value): value is string => Boolean(value))
+}
+
+function compareProjectFocusTasks(left: LegacyTask, right: LegacyTask) {
+  const leftDate = getProjectFocusTaskDate(left) || '9999-12-31'
+  const rightDate = getProjectFocusTaskDate(right) || '9999-12-31'
+  if (leftDate !== rightDate) return leftDate.localeCompare(rightDate)
+  return (left.title || '').localeCompare(right.title || '', 'zh-CN')
 }
 
 function getFocusToneByIndex(index: number): ProjectDeadlineToneKey {
@@ -356,7 +452,7 @@ export function buildProjectDeadlineToneMap(
       toneMap[project.id] = 'urg-done'
       continue
     }
-    const days = daysFromReference(project.ddl || null, referenceDate)
+    const days = daysFromReference(getProjectDeadlineKey(project), referenceDate)
     if (days === null) noDeadline.push(project)
     else if (days < 0) overdue.push(project)
     else upcoming.push(project)
@@ -617,7 +713,7 @@ export function buildProjectEventSummaryMap(
   }
 
   for (const project of projects) {
-    const ddlKey = coerceToLocalDateKey(project.ddl)
+    const ddlKey = coerceToLocalDateKey(getProjectDeadlineKey(project))
     const toneKey = toneMap[project.id] || 'focus-neutral'
     if (ddlKey && project.name) {
       const day = ensureDay(ddlKey)
@@ -655,8 +751,9 @@ export function buildProjectTimelineModel(
   referenceDate = shiftLocalDateKey(new Date(), 0),
 ): TimelineModel {
   const toneMap = buildProjectDeadlineToneMap(projects, referenceDate)
+  const defaultProjectDate = shiftLocalDateKey(new Date(), 0)
   const projectStartKeys = projects
-    .map((project) => coerceToLocalDateKey(project.createdAt) || coerceToLocalDateKey(project.ddl))
+    .map((project) => getProjectStartDate(project, defaultProjectDate))
     .filter((value): value is string => Boolean(value))
     .sort()
 
@@ -681,9 +778,13 @@ export function buildProjectTimelineModel(
   })
 
   const startRef = parseLocalDateKey(startDate) || new Date()
+  const rangeEndDate = shiftLocalDateKey(startRef, Math.max(0, rangeDays - 1))
+  const todayOffsetDays = referenceDate >= startDate && referenceDate <= rangeEndDate
+    ? daysFromReference(referenceDate, startDate)
+    : null
   const rows = projects.map((project) => {
-    const projectStartDate = coerceToLocalDateKey(project.createdAt) || shiftLocalDateKey(new Date(), 0)
-    const projectEndDate = coerceToLocalDateKey(project.ddl) || shiftLocalDateKey(parseLocalDateKey(projectStartDate) || new Date(), 7)
+    const projectStartDate = getProjectStartDate(project, defaultProjectDate)
+    const projectEndDate = getProjectEndDate(project, projectStartDate)
     const startDateObject = parseLocalDateKey(projectStartDate) || startRef
     const endDateObject = parseLocalDateKey(projectEndDate) || startDateObject
     const offsetDays = Math.max(0, Math.round((startDateObject.getTime() - startRef.getTime()) / 86400000))
@@ -700,7 +801,7 @@ export function buildProjectTimelineModel(
     }
   })
 
-  return { days, rows, startDate }
+  return { days, rows, startDate, todayOffsetDays }
 }
 
 export function buildProjectCardModels(
@@ -723,7 +824,7 @@ export function buildProjectCardModels(
     const priorityKey = project.priority || 'medium'
 
     return {
-      ddlText: ddlLabel(project.ddl || null, statusKey),
+      ddlText: ddlLabel(getProjectDeadlineKey(project), statusKey),
       description: project.description || '',
       doneCount: projectTasks.filter((task) => task.status === 'done').length,
       id: project.id,
@@ -887,7 +988,7 @@ export function getDashboardFocusData(
   if (!project) return null
 
   const projectTasks = tasks.filter((task) => task.projectId === project.id)
-  const days = daysUntil(project.ddl)
+  const days = daysUntil(getProjectDeadlineKey(project))
 
   let brief = '该项目未设置 DDL，请尽快补齐时间点。'
   if (days !== null) {
@@ -908,7 +1009,7 @@ export function getDashboardFocusData(
     remainingCount: openTasks.length,
     todayCount: projectTasks.filter((task) => task.scheduledDate === todayStr && task.status !== 'done').length,
     topTasks: openTasks.slice(0, 8).map((task) => task.title || '未命名任务'),
-    uc: urgencyClass(project.ddl, project.status || 'active'),
+    uc: urgencyClass(getProjectDeadlineKey(project), project.status || 'active'),
   }
 }
 
@@ -927,14 +1028,280 @@ export function buildDashboardFocusCards(
     const statusKey = project.status || 'active'
     return {
       assigneeCount: new Set(openTasks.flatMap((task) => getTaskAssigneeIds(task))).size,
-      daysLeft: (statusKey === 'active' || statusKey === 'paused') ? (daysUntil(project.ddl || null) ?? null) : null,
-      ddlLabel: ddlLabel(project.ddl || null, statusKey),
+      daysLeft: (statusKey === 'active' || statusKey === 'paused') ? (daysUntil(getProjectDeadlineKey(project)) ?? null) : null,
+      ddlLabel: ddlLabel(getProjectDeadlineKey(project), statusKey),
       id: project.id,
       name: project.name || '未命名项目',
       openTaskCount: openTasks.length,
       urgencyKey: toneMap[project.id] || 'focus-neutral',
     } satisfies DashboardFocusCard
   })
+}
+
+function getProjectStartDate(project: LegacyProject, fallbackDate: string) {
+  const scheduleDates = getProjectScheduleDateCandidates(project).sort()
+  if (scheduleDates.length > 0) {
+    return scheduleDates[0] || fallbackDate
+  }
+
+  const createdAt = coerceToLocalDateKey(project.createdAt)
+  if (createdAt) return createdAt
+
+  return coerceToLocalDateKey(fallbackDate) || fallbackDate
+}
+
+function getProjectEndDate(project: LegacyProject, startDate: string) {
+  const scheduleDates = getProjectScheduleDateCandidates(project).sort()
+
+  if (scheduleDates.length > 0) {
+    return scheduleDates.at(-1) || startDate
+  }
+
+  return shiftLocalDateKey(parseLocalDateKey(startDate) || new Date(), 14)
+}
+
+function buildProjectFocusAction(
+  project: LegacyProject,
+  openTasks: LegacyTask[],
+  blockedTaskCount: number,
+  todayStr: string,
+) {
+  if (blockedTaskCount > 0) {
+    return {
+      actionKind: 'blocked' as const,
+      actionLabel: `${blockedTaskCount} 项受阻`,
+    }
+  }
+
+  const nextTask = [...openTasks].sort(compareProjectFocusTasks)[0]
+  if (nextTask) {
+    return {
+      actionKind: 'task' as const,
+      actionLabel: nextTask.title?.trim() || '未命名任务',
+    }
+  }
+
+  const reviewDate = coerceToLocalDateKey(project.reviewDate)
+  if (reviewDate && reviewDate >= todayStr) {
+    return {
+      actionKind: 'checkpoint' as const,
+      actionLabel: `审查 · ${formatDate(reviewDate)}`,
+    }
+  }
+
+  const deliveryDate = coerceToLocalDateKey(project.deliveryDate) || coerceToLocalDateKey(project.endDate) || coerceToLocalDateKey(project.ddl)
+  if (deliveryDate && deliveryDate >= todayStr) {
+    return {
+      actionKind: 'checkpoint' as const,
+      actionLabel: `交付 · ${formatDate(deliveryDate)}`,
+    }
+  }
+
+  return {
+    actionKind: 'unscheduled' as const,
+    actionLabel: '待补排期',
+  }
+}
+
+function getProjectPhaseLabel(project: LegacyProject, todayStr: string) {
+  const statusKey = project.status || 'active'
+  const reviewDate = coerceToLocalDateKey(project.reviewDate)
+  const deliveryDate = coerceToLocalDateKey(project.deliveryDate) || coerceToLocalDateKey(project.endDate) || coerceToLocalDateKey(project.ddl)
+
+  if (statusKey === 'completed') return '已完成'
+  if (statusKey === 'cancelled') return '已取消'
+  if (deliveryDate && deliveryDate < todayStr) return '逾期'
+  if (deliveryDate === todayStr) return '今日交付'
+  if (reviewDate && reviewDate >= todayStr) return '审查前'
+  if (deliveryDate && deliveryDate >= todayStr) return '交付前'
+  return statusKey === 'paused' ? '暂停' : '制作中'
+}
+
+function buildProjectFocusAxisTicks(
+  axisStartDate: string,
+  axisEndDate: string,
+  todayStr: string,
+): DashboardProjectFocusAxisTick[] {
+  const rangeDays = Math.max(1, inclusiveDateDuration(axisStartDate, axisEndDate))
+  // Aim for ~6–9 labeled marks so the top axis feels informative, not sparse.
+  let stepDays = 1
+  if (rangeDays > 10) stepDays = 2
+  if (rangeDays > 18) stepDays = 3
+  if (rangeDays > 28) stepDays = 5
+  if (rangeDays > 45) stepDays = 7
+  if (rangeDays > 70) stepDays = 14
+
+  const ticks: DashboardProjectFocusAxisTick[] = []
+  const start = parseLocalDateKey(axisStartDate)
+  if (!start) return ticks
+
+  for (let offset = 0; offset <= rangeDays; offset += stepDays) {
+    const date = shiftLocalDateKey(start, offset)
+    const percent = datePercent(date, axisStartDate, axisEndDate)
+    if (percent === null) continue
+    const isEdge = offset === 0 || offset + stepDays > rangeDays
+    const isToday = date === todayStr
+    ticks.push({
+      date,
+      isMajor: isEdge || offset % (stepDays * 2) === 0 || isToday,
+      isToday,
+      label: formatDate(date),
+      percent,
+      weekdayLabel: weekdayLabel(date),
+    })
+  }
+
+  // Always ensure end date is present.
+  if (!ticks.some((tick) => tick.date === axisEndDate)) {
+    const percent = datePercent(axisEndDate, axisStartDate, axisEndDate) ?? 100
+    ticks.push({
+      date: axisEndDate,
+      isMajor: true,
+      isToday: axisEndDate === todayStr,
+      label: formatDate(axisEndDate),
+      percent,
+      weekdayLabel: weekdayLabel(axisEndDate),
+    })
+  }
+
+  // Always ensure today is present when inside range.
+  if (todayStr >= axisStartDate && todayStr <= axisEndDate && !ticks.some((tick) => tick.date === todayStr)) {
+    const percent = datePercent(todayStr, axisStartDate, axisEndDate)
+    if (percent !== null) {
+      ticks.push({
+        date: todayStr,
+        isMajor: true,
+        isToday: true,
+        label: formatDate(todayStr),
+        percent,
+        weekdayLabel: weekdayLabel(todayStr),
+      })
+    }
+  }
+
+  return ticks
+    .sort((left, right) => left.percent - right.percent)
+    .filter((tick, index, list) => index === 0 || tick.date !== list[index - 1]?.date)
+}
+
+function formatProjectFocusDuration(days: number) {
+  const inclusive = Math.max(1, days + 1)
+  if (inclusive <= 1) return '1 天'
+  if (inclusive < 14) return `${inclusive} 天`
+  const weeks = Math.round(inclusive / 7)
+  if (inclusive < 40) return `${weeks} 周`
+  return `${Math.round(inclusive / 30)} 个月`
+}
+
+function formatProjectFocusDeliveryLabel(deliveryDate: string | null, todayStr: string) {
+  if (!deliveryDate) return '未设交付'
+  const days = daysFromReference(deliveryDate, todayStr)
+  if (days === null) return formatDate(deliveryDate)
+  if (days < 0) return `逾期 ${Math.abs(days)} 天`
+  if (days === 0) return '今日交付'
+  if (days === 1) return '明日交付'
+  if (days <= 7) return `${days} 天后`
+  return formatDate(deliveryDate)
+}
+
+export function buildDashboardProjectFocusTimeline(
+  projects: LegacyProject[],
+  tasks: LegacyTask[],
+  people: LegacyPerson[],
+  todayStr: string,
+  limit = 4,
+): DashboardProjectFocusTimelineModel {
+  const activeProjects = getActiveProjects(projects)
+  const visibleProjects = sortProjectsByDeadlineTone(activeProjects, todayStr).slice(0, limit)
+  const entityMaps = buildEntityMaps(projects, tasks, people)
+  const toneMap = buildProjectDeadlineToneMap(visibleProjects, todayStr)
+
+  const projectRanges = visibleProjects.map((project) => {
+    const startDate = getProjectStartDate(project, todayStr)
+    const endDate = getProjectEndDate(project, startDate)
+    return { endDate, project, startDate }
+  })
+
+  const rawStart = projectRanges.map((item) => item.startDate).sort()[0] || todayStr
+  const rawEnd = projectRanges.map((item) => item.endDate).sort().at(-1) || rawStart
+  // Pad the axis slightly so bars/milestones are not glued to the edges.
+  const axisStartDate = shiftLocalDateKey(parseLocalDateKey(rawStart) || new Date(), -1)
+  const axisEndDate = shiftLocalDateKey(parseLocalDateKey(rawEnd) || new Date(), 1)
+  const rangeDays = Math.max(1, inclusiveDateDuration(axisStartDate, axisEndDate))
+  const todayPercent = datePercent(todayStr, axisStartDate, axisEndDate)
+  const axisTicks = buildProjectFocusAxisTicks(axisStartDate, axisEndDate, todayStr)
+
+  const items = projectRanges.map(({ endDate, project, startDate }) => {
+    const projectTasks = entityMaps.tasksByProjectId[project.id] || []
+    const openTasks = projectTasks.filter((task) => task.status !== 'done')
+    const doneTaskCount = projectTasks.filter((task) => task.status === 'done').length
+    const blockedTaskCount = projectTasks.filter((task) => task.status === 'blocked').length
+    const assigneeNames = Array.from(new Set(
+      openTasks.flatMap((task) => getTaskAssigneeIds(task))
+        .map((personId) => entityMaps.peopleById[personId]?.name || '')
+        .filter(Boolean),
+    ))
+    const taskCount = projectTasks.length
+    const reviewDate = coerceToLocalDateKey(project.reviewDate)
+    const deliveryDate = coerceToLocalDateKey(project.deliveryDate) || coerceToLocalDateKey(project.endDate) || coerceToLocalDateKey(project.ddl)
+    const note = (project.notes || project.description || '').trim()
+    const progressPercent = taskCount > 0 ? Math.round((doneTaskCount / taskCount) * 100) : 0
+    const startPercent = datePercent(startDate, axisStartDate, axisEndDate) ?? 0
+    const endPercent = datePercent(endDate, axisStartDate, axisEndDate) ?? startPercent
+    const barWidthPercent = Math.max(5, endPercent - startPercent)
+    const durationDays = inclusiveDateDuration(startDate, endDate)
+    const { actionKind, actionLabel } = buildProjectFocusAction(project, openTasks, blockedTaskCount, todayStr)
+    const assigneePreview = assigneeNames.length === 0
+      ? '未分配'
+      : assigneeNames.length <= 2
+        ? assigneeNames.join('、')
+        : `${assigneeNames.slice(0, 2).join('、')}+${assigneeNames.length - 2}`
+
+    return {
+      actionKind,
+      actionLabel,
+      assigneeNames,
+      assigneePreview,
+      barStartPercent: startPercent,
+      barWidthPercent,
+      blockedTaskCount,
+      daysToDelivery: deliveryDate ? daysFromReference(deliveryDate, todayStr) : null,
+      deliveryDate,
+      deliveryLabel: formatProjectFocusDeliveryLabel(deliveryDate, todayStr),
+      deliveryPercent: datePercent(deliveryDate, axisStartDate, axisEndDate),
+      doneTaskCount,
+      durationDays,
+      durationLabel: formatProjectFocusDuration(durationDays),
+      endDate,
+      id: project.id,
+      name: project.name || '未命名项目',
+      notePreview: note.length > 18 ? `${note.slice(0, 18)}…` : note,
+      openTaskCount: openTasks.length,
+      phaseLabel: getProjectPhaseLabel(project, todayStr),
+      progressPercent,
+      progressText: taskCount > 0 ? `${doneTaskCount}/${taskCount}` : '0/0',
+      reviewDate,
+      reviewPercent: datePercent(reviewDate, axisStartDate, axisEndDate),
+      startDate,
+      startPercent,
+      statusKey: project.status || 'active',
+      taskCount,
+      urgencyKey: toneMap[project.id] || 'focus-neutral',
+    } satisfies DashboardProjectFocusTimelineItem
+  })
+
+  return {
+    axisEndDate,
+    axisEndLabel: formatDate(axisEndDate),
+    axisStartDate,
+    axisStartLabel: formatDate(axisStartDate),
+    axisTicks,
+    hiddenCount: Math.max(0, activeProjects.length - visibleProjects.length),
+    items,
+    rangeDays,
+    rangeLabel: `${formatDate(axisStartDate)} – ${formatDate(axisEndDate)} · ${rangeDays + 1} 天`,
+    todayPercent,
+  }
 }
 
 export function buildQuickJumpSearchItems(

@@ -1,8 +1,6 @@
 import { useEffect, useMemo, useState, useSyncExternalStore, type DragEvent } from 'react'
 import { DashboardHeader } from '../features/dashboard/DashboardHeader'
 import { DashboardMiniCalendar } from '../features/dashboard/DashboardMiniCalendar'
-import { FocusPrimaryCard } from '../features/dashboard/FocusPrimaryCard'
-import { FocusSecondaryCards } from '../features/dashboard/FocusSecondaryCards'
 import { LeaveDialog } from '../features/dashboard/LeaveDialog'
 import { PeopleAssignmentPanel } from '../features/dashboard/PeopleAssignmentPanel'
 import {
@@ -14,6 +12,7 @@ import {
 } from '../features/dashboard/personPanelState'
 import { PersonDetailPanel } from '../features/dashboard/PersonDetailPanel'
 import { ProjectDetailPanel } from '../features/dashboard/ProjectDetailPanel'
+import { ProjectFocusTimeline } from '../features/dashboard/ProjectFocusTimeline'
 import { TaskPoolPanel } from '../features/dashboard/TaskPoolPanel'
 import { ExpandPanel } from '../components/ui/ExpandPanel'
 import { useToast } from '../components/feedback/ToastProvider'
@@ -23,16 +22,14 @@ import { assignTaskToPerson, updateTaskQuickField } from '../legacy/actions'
 import {
   buildTaskDatePatch,
   buildDashboardHeaderModel,
-  buildDashboardFocusCards,
+  buildDashboardProjectFocusTimeline,
   buildDashboardMiniCalendarModel,
   buildQuickJumpSearchItems,
   buildPersonCardModels,
   buildEntityMaps,
   buildProjectEventSummaryMap,
   getActivePeople,
-  getDashboardFocusData,
   getTaskPool,
-  getTopProjects,
 } from '../legacy/selectors'
 import { type LegacyProject, type LegacyTask, getTaskAssigneeIds } from '../legacy/store'
 import { useLegacyStoreSnapshot } from '../legacy/useLegacyStore'
@@ -88,8 +85,10 @@ export function Dashboard() {
   const todayStr = useMemo(() => formatLocalDateKey(dateObj), [dateObj])
 
   const entityMaps = useMemo(() => buildEntityMaps(projects, tasks, people), [people, projects, tasks])
-  const topProjects = useMemo(() => getTopProjects(projects, 8, todayStr), [projects, todayStr])
-  const focusCards = useMemo(() => buildDashboardFocusCards(projects, tasks, todayStr), [projects, tasks, todayStr])
+  const projectFocusTimeline = useMemo(
+    () => buildDashboardProjectFocusTimeline(projects, tasks, people, todayStr),
+    [people, projects, tasks, todayStr],
+  )
   const taskPool = useMemo(() => getTaskPool(tasks), [tasks])
   const activePeople = useMemo(() => getActivePeople(people), [people])
   const leaveDates = useMemo(
@@ -116,9 +115,6 @@ export function Dashboard() {
     [calDate, eventMap, todayStr, leaveDates, tasks],
   )
 
-  const focusProj = topProjects[0] as LegacyProject | undefined
-  const focusData = useMemo(() => getDashboardFocusData(focusProj, tasks, todayStr), [focusProj, tasks, todayStr])
-  const primaryFocusTone = focusCards[0]?.urgencyKey || 'focus-neutral'
   const searchResults = useMemo(
     () => buildQuickJumpSearchItems(projects, tasks, people, searchQuery),
     [people, projects, searchQuery, tasks],
@@ -266,6 +262,15 @@ export function Dashboard() {
     setSearchQuery('')
   }
 
+  const openProjectsFromElement = (element: HTMLElement) => {
+    const rect = element.getBoundingClientRect()
+    setExpandedPanel({
+      type: 'projects',
+      ox: rect.left + rect.width / 2,
+      oy: rect.top + rect.height / 2,
+    })
+  }
+
   const closePanel = () => setExpandedPanel(null)
 
   return (
@@ -279,31 +284,19 @@ export function Dashboard() {
       />
 
       <div className="today-focus">
-        <div
+        <button
+          type="button"
           className="focus-section-header"
-          onClick={(e) => { const r = e.currentTarget.getBoundingClientRect(); setExpandedPanel({ type: 'projects', ox: r.left + r.width / 2, oy: r.top + r.height / 2 }) }}
+          onClick={(event) => openProjectsFromElement(event.currentTarget)}
         >
           <span className="focus-label">项目焦点</span>
           <span className="panel-action">展开全部</span>
-        </div>
-        <div className={`focus-cards${focusCards.length > 5 ? ' focus-cards--wide' : ''}`}>
-          {!focusProj ? (
-            <div className="focus-empty">暂无活跃项目 — 新建一个开始吧</div>
-          ) : (
-            <>
-              <FocusPrimaryCard
-                focusData={focusData}
-                project={focusProj}
-                toneKey={primaryFocusTone}
-                onExpandProject={(ox, oy) => setExpandedPanel({ type: 'project', projectId: focusProj.id, ox, oy })}
-              />
-              <FocusSecondaryCards
-                cards={focusCards.slice(1, 7)}
-                onExpandProject={(id, ox, oy) => setExpandedPanel({ type: 'project', projectId: id, ox, oy })}
-                showSingleProjectEmpty={topProjects.length === 1}
-              />
-            </>
-          )}
+        </button>
+        <div className="focus-cards">
+          <ProjectFocusTimeline
+            model={projectFocusTimeline}
+            onExpandProject={(id, ox, oy) => setExpandedPanel({ type: 'project', projectId: id, ox, oy })}
+          />
         </div>
       </div>
 
@@ -361,7 +354,11 @@ export function Dashboard() {
           {expandedPanel.type === 'tasks' && <Tasks />}
           {expandedPanel.type === 'people' && <People />}
           {expandedPanel.type === 'calendar' && <Calendar />}
-          {expandedPanel.type === 'projects' && <Projects />}
+          {expandedPanel.type === 'projects' && (
+            <Projects
+              onOpenProject={(projectId, ox, oy) => setExpandedPanel({ type: 'project', projectId, ox, oy })}
+            />
+          )}
           {expandedPanel.type === 'project' && (
             <ProjectDetailPanel projectId={expandedPanel.projectId} />
           )}

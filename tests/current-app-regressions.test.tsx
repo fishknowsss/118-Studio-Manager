@@ -12,6 +12,8 @@ import { buildTaskExportRows } from '../src/legacy/selectors'
 import { downloadFile, formatLocalDateKey, normalizeImportedBackup, toCSV } from '../src/legacy/utils'
 import { getAssignableTasks } from '../src/features/planner/plannerUtils'
 import { ContextMenu } from '../src/components/ui/ContextMenu'
+import * as projectActions from '../src/legacy/actions'
+import { ProjectDialog } from '../src/features/projects/ProjectDialog'
 import { TaskDialog } from '../src/features/tasks/TaskDialog'
 
 describe('current app regressions', () => {
@@ -218,6 +220,61 @@ describe('current app regressions', () => {
     vi.useRealTimers()
   })
 
+  it('moves focus into an expanded panel, cycles Tab, and restores its trigger', () => {
+    vi.useFakeTimers()
+    const trigger = document.createElement('button')
+    trigger.textContent = '打开项目'
+    document.body.appendChild(trigger)
+    trigger.focus()
+    const onClose = vi.fn()
+    const container = document.createElement('div')
+    document.body.appendChild(container)
+    const root = createRoot(container)
+
+    act(() => {
+      root.render(
+        <ExpandPanel title="项目详情" originX={20} originY={20} onClose={onClose}>
+          <button type="button">第一个动作</button>
+          <button type="button">最后一个动作</button>
+        </ExpandPanel>,
+      )
+    })
+
+    const closeButton = container.querySelector('.modal-close') as HTMLButtonElement | null
+    const actionButtons = Array.from(container.querySelectorAll('.expand-panel-body button')) as HTMLButtonElement[]
+    expect(closeButton).not.toBeNull()
+    expect(document.activeElement).toBe(closeButton)
+
+    act(() => {
+      document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Tab', bubbles: true }))
+    })
+    // From close button, native tab order continues; trap only wraps at ends.
+    // Force focus to last action then wrap with Tab.
+    act(() => {
+      actionButtons[1]?.focus()
+      document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Tab', bubbles: true }))
+    })
+    expect(document.activeElement).toBe(closeButton)
+
+    act(() => {
+      closeButton?.click()
+      vi.advanceTimersByTime(260)
+    })
+    expect(onClose).toHaveBeenCalledTimes(1)
+
+    act(() => {
+      vi.runAllTimers()
+    })
+    expect(document.activeElement).toBe(trigger)
+
+    act(() => {
+      root.unmount()
+    })
+    container.remove()
+    trigger.remove()
+    vi.useRealTimers()
+  })
+
   it('keeps task dialog focused on deadline metadata and prevents modal footer clipping in short viewports', () => {
     const taskDialogSource = readFileSync(join(process.cwd(), 'src/features/tasks/TaskDialog.tsx'), 'utf8')
     const projectDialogSource = readFileSync(join(process.cwd(), 'src/features/projects/ProjectDialog.tsx'), 'utf8')
@@ -328,6 +385,121 @@ describe('current app regressions', () => {
       root.unmount()
     })
     container.remove()
+  })
+
+  it('initializes the project dialog delivery picker from a legacy ddl without rendering a separate ddl picker', () => {
+    const project = {
+      id: 'project-legacy-ddl',
+      name: '旧项目',
+      status: 'active' as const,
+      priority: 'medium' as const,
+      ddl: '2026-04-30',
+    }
+    const container = document.createElement('div')
+    document.body.appendChild(container)
+    const root = createRoot(container)
+
+    act(() => {
+      root.render(
+        <ToastProvider>
+          <ProjectDialog
+            project={project}
+            onClose={() => {}}
+          />
+        </ToastProvider>,
+      )
+    })
+
+    const deliveryTrigger = document.body.querySelector('#project-delivery') as HTMLButtonElement | null
+
+    expect(deliveryTrigger).not.toBeNull()
+    expect(deliveryTrigger?.textContent).toContain('2026-04-30')
+    expect(document.body.querySelectorAll('.date-picker-trigger')).toHaveLength(4)
+    expect(document.body.querySelector('#project-ddl')).toBeNull()
+
+    act(() => {
+      root.unmount()
+    })
+    container.remove()
+  })
+
+  it('clearing project delivery from the dialog submits both deliveryDate and ddl as null', async () => {
+    const saveProjectSpy = vi.spyOn(projectActions, 'saveProjectFromForm').mockResolvedValue({
+      id: 'project-1',
+      name: '项目 A',
+      status: 'active',
+      priority: 'medium',
+      startDate: '2026-05-01',
+      reviewDate: '2026-05-10',
+      deliveryDate: null,
+      endDate: null,
+      ddl: null,
+      description: '',
+      notes: '',
+    })
+    const project = {
+      id: 'project-1',
+      name: '项目 A',
+      status: 'active' as const,
+      priority: 'medium' as const,
+      startDate: '2026-05-01',
+      reviewDate: '2026-05-10',
+      deliveryDate: '2026-05-15',
+      ddl: '2026-05-15',
+      description: '',
+      notes: '',
+    }
+    const container = document.createElement('div')
+    document.body.appendChild(container)
+    const root = createRoot(container)
+
+    act(() => {
+      root.render(
+        <ToastProvider>
+          <ProjectDialog
+            project={project}
+            onClose={() => {}}
+          />
+        </ToastProvider>,
+      )
+    })
+
+    const deliveryTrigger = document.body.querySelector('#project-delivery') as HTMLButtonElement | null
+    expect(deliveryTrigger?.textContent).toContain('2026-05-15')
+
+    act(() => {
+      deliveryTrigger?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+    })
+
+    const clearButton = Array.from(document.body.querySelectorAll('.date-picker-action'))
+      .find((button) => button.textContent?.includes('清除')) as HTMLButtonElement | undefined
+    expect(clearButton).toBeDefined()
+
+    act(() => {
+      clearButton?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+    })
+
+    expect(deliveryTrigger?.textContent).toContain('选择日期')
+
+    const saveButton = Array.from(document.body.querySelectorAll('button'))
+      .find((button) => button.textContent?.includes('保存')) as HTMLButtonElement | undefined
+    expect(saveButton).toBeDefined()
+
+    await act(async () => {
+      saveButton?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+      await Promise.resolve()
+    })
+
+    expect(saveProjectSpy.mock.calls.at(-1)?.[1]).toMatchObject({
+      deliveryDate: null,
+      ddl: null,
+    })
+
+    act(() => {
+      root.unmount()
+    })
+    container.remove()
+    saveProjectSpy.mockRestore()
   })
 
   it('renders the date picker as a centered viewport layer without changing modal flow', () => {
@@ -792,6 +964,7 @@ describe('current app regressions', () => {
       'src/legacy/actions.ts',
       'src/features/dashboard/TaskPoolPanel.tsx',
       'src/features/dashboard/PeopleAssignmentPanel.tsx',
+      'src/features/dashboard/ProjectFocusTimeline.tsx',
       'src/features/dashboard/FocusPrimaryCard.tsx',
       'src/features/dashboard/FocusSecondaryCards.tsx',
       'src/features/dashboard/DashboardHeader.tsx',
@@ -887,23 +1060,76 @@ describe('current app regressions', () => {
     expect(source).not.toMatch(/pagePeopleKey/)
   })
 
-  it('keeps dashboard secondary focus cards driven by a selector instead of inline task math', () => {
+  it('keeps dashboard project focus timeline driven by a selector instead of inline task math', () => {
     const dashboardSource = readFileSync(join(process.cwd(), 'src/views/Dashboard.tsx'), 'utf8')
 
-    expect(dashboardSource).toMatch(/buildDashboardFocusCards/)
+    expect(dashboardSource).toMatch(/buildDashboardProjectFocusTimeline/)
     expect(dashboardSource).not.toMatch(/const projectTasks =/)
   })
 
   it('keeps dashboard focus area split into dedicated components', () => {
     const dashboardSource = readFileSync(join(process.cwd(), 'src/views/Dashboard.tsx'), 'utf8')
 
-    expect(dashboardSource).toMatch(/FocusPrimaryCard/)
-    expect(dashboardSource).toMatch(/FocusSecondaryCards/)
+    expect(dashboardSource).toMatch(/ProjectFocusTimeline/)
     expect(dashboardSource).toMatch(/DashboardHeader/)
     expect(dashboardSource).toMatch(/DashboardMiniCalendar/)
     expect(dashboardSource).not.toMatch(/focus-highlight-head/)
     expect(dashboardSource).not.toMatch(/dash-date-block/)
     expect(dashboardSource).not.toMatch(/mini-cal-header/)
+  })
+
+  it('keeps project detail panel as an editable production schedule workspace', () => {
+    const panelSource = readFileSync(join(process.cwd(), 'src/features/dashboard/ProjectDetailPanel.tsx'), 'utf8')
+    const summaryIndex = panelSource.indexOf('pdp-action-summary')
+    const scheduleIndex = panelSource.indexOf('pdp-schedule-panel')
+    const risksIndex = panelSource.indexOf('className="pdp-blocker-list"')
+    const tasksIndex = panelSource.indexOf('className="pdp-section"')
+
+    expect(panelSource).toMatch(/updateProjectSchedule/)
+    expect(panelSource).toMatch(/pdp-schedule-panel/)
+    expect(panelSource).toMatch(/pdp-production-panel/)
+    expect(panelSource).toMatch(/remainingHours/)
+    expect(panelSource).toMatch(/nextCheckpoint/)
+    expect(panelSource).toMatch(/pdp-blocker-list/)
+    expect(panelSource).toMatch(/initialProjectId=\{projectId\}/)
+    expect(panelSource).toMatch(/setEditingTask\(null\)/)
+    expect(panelSource).toMatch(/ProjectDialog/)
+    expect(panelSource).toMatch(/setEditingProject/)
+    // Schedule field order: 开工 → 审查 → 交付
+    const startField = panelSource.indexOf('htmlFor="pdp-start"')
+    const reviewField = panelSource.indexOf('htmlFor="pdp-review"')
+    const deliveryField = panelSource.indexOf('htmlFor="pdp-delivery"')
+    expect(startField).toBeGreaterThan(-1)
+    expect(startField).toBeLessThan(reviewField)
+    expect(reviewField).toBeLessThan(deliveryField)
+    expect(panelSource).toMatch(/htmlFor="pdp-start">开工</)
+    expect(summaryIndex).toBeGreaterThan(-1)
+    expect(summaryIndex).toBeLessThan(scheduleIndex)
+    expect(scheduleIndex).toBeLessThan(risksIndex)
+    expect(risksIndex).toBeLessThan(tasksIndex)
+  })
+
+  it('unifies project workspace entry points across dashboard and projects views', () => {
+    const dashboardSource = readFileSync(join(process.cwd(), 'src/views/Dashboard.tsx'), 'utf8')
+    const projectsSource = readFileSync(join(process.cwd(), 'src/views/Projects.tsx'), 'utf8')
+    const cardSource = readFileSync(join(process.cwd(), 'src/features/projects/ProjectCard.tsx'), 'utf8')
+    const timelineSource = readFileSync(join(process.cwd(), 'src/features/projects/ProjectTimeline.tsx'), 'utf8')
+    const headerSource = readFileSync(join(process.cwd(), 'src/features/dashboard/DashboardHeader.tsx'), 'utf8')
+    const focusStyleSource = readFileSync(join(process.cwd(), 'css/style.css'), 'utf8')
+
+    expect(dashboardSource).toMatch(/<button[\s\S]*className="focus-section-header"/)
+    expect(dashboardSource).toMatch(/onOpenProject=/)
+    expect(projectsSource).toMatch(/onOpenProject/)
+    expect(projectsSource).toMatch(/ProjectDetailPanel/)
+    expect(projectsSource).toMatch(/projectSearch/)
+    expect(cardSource).toMatch(/aria-label=\{`查看项目/)
+    expect(cardSource).not.toMatch(/className=\{`project-card[^`]*`\} onClick=\{onEdit\}/)
+    expect(timelineSource).toMatch(/<button[\s\S]*timeline-row/)
+    expect(headerSource).toMatch(/role="combobox"/)
+    expect(headerSource).toMatch(/aria-expanded=\{showDropdown\}/)
+    expect(headerSource).toMatch(/aria-activedescendant=/)
+    expect(focusStyleSource).toMatch(/\.pft-row:focus-visible/)
+    expect(focusStyleSource).toMatch(/\.focus-section-header:focus-visible/)
   })
 
   it('treats synced support records as first-class backup data across bootstrap and settings summary reads', () => {

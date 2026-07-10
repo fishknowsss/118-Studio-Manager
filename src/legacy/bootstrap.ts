@@ -9,7 +9,7 @@ import {
   type ShortDramaAssignment,
   type ShortDramaGroup,
 } from './store'
-import { shiftLocalDateKey } from './utils'
+import { shiftLocalDateKey, type BackupPayload } from './utils'
 import { restoreCloudSnapshotOnBoot } from '../features/sync/bootstrapSync'
 import { isCloudSyncConfigured } from '../features/sync/syncApi'
 import { initializeSyncableViewState } from '../features/persistence/syncableViewState'
@@ -17,6 +17,20 @@ import { hasBackupContent } from '../features/sync/syncShared'
 import { db } from './db'
 
 let hasBooted = false
+const DEMO_DATA_VERSION = 'studio-production-v2'
+const DEMO_DATA_SETTING_KEY = 'demo:dataVersion'
+
+function isLegacyDemoSnapshot(backup: BackupPayload) {
+  const projectNames = new Set(backup.projects.map((project) => String(project.name || '')))
+  const hasCurrentVersion = backup.settings.some((setting) => (
+    setting.key === DEMO_DATA_SETTING_KEY && setting.value === DEMO_DATA_VERSION
+  ))
+
+  return !hasCurrentVersion
+    && projectNames.has('品牌宣传片 · 第三季')
+    && projectNames.has('线下活动视觉设计')
+    && projectNames.has('社交媒体内容 · 4月')
+}
 
 async function seedDemoData() {
   const uid = () => crypto.randomUUID()
@@ -34,46 +48,96 @@ async function seedDemoData() {
   const jay: LegacyPerson = { id: uid(), name: '马承宇', className: '数媒 2203', studentNo: '22011810', email: 'machy@example.com', gender: 'male', status: 'active', skills: ['前端', '交互原型', '数据整理'], notes: '负责展示页和交互 demo', createdAt: timestamp(), updatedAt: timestamp() }
 
   const projA: LegacyProject = {
-    id: uid(), name: '品牌宣传片 · 第三季', status: 'active', priority: 'urgent',
-    ddl: shiftLocalDateKey(new Date(), 1), description: '客户品牌年度宣传片，3分钟正片+15s短版，需要4K交付。',
-    createdAt: timestamp(), updatedAt: timestamp(),
+    id: uid(),
+    name: '短剧《微光便利店》01-12 集后期统筹',
+    status: 'active',
+    priority: 'urgent',
+    startDate: shiftLocalDateKey(new Date(), -8),
+    reviewDate: shiftLocalDateKey(new Date(), 0),
+    deliveryDate: shiftLocalDateKey(new Date(), 2),
+    endDate: shiftLocalDateKey(new Date(), 3),
+    ddl: shiftLocalDateKey(new Date(), 2),
+    description: '竖屏短剧 01-12 集后期统筹，含粗剪、字幕花字、调色、混音和平台送审包。',
+    notes: '交付 9:16 1080x1920，平台审片版、无水印母版、封面图各一套；审查前先锁 01-06 集节奏。',
+    createdAt: timestamp(),
+    updatedAt: timestamp(),
   }
   const projB: LegacyProject = {
-    id: uid(), name: '线下活动视觉设计', status: 'active', priority: 'high',
-    ddl: shiftLocalDateKey(new Date(), 5), description: '5月线下沙龙活动——VI设计、海报、物料、现场大屏素材。',
-    createdAt: timestamp(), updatedAt: timestamp(),
+    id: uid(),
+    name: '城市文旅品牌片 60s 主片与 15s 短版',
+    status: 'active',
+    priority: 'high',
+    startDate: shiftLocalDateKey(new Date(), -4),
+    reviewDate: shiftLocalDateKey(new Date(), 4),
+    deliveryDate: shiftLocalDateKey(new Date(), 9),
+    endDate: shiftLocalDateKey(new Date(), 10),
+    ddl: shiftLocalDateKey(new Date(), 9),
+    description: '城市文旅客户品牌片，输出 60 秒主片、15 秒横竖屏短版和封面静帧。',
+    notes: '客户要求保留城市夜景、手作市集和青年游客三类镜头；音乐版权和航拍授权需在审查前确认。',
+    createdAt: timestamp(),
+    updatedAt: timestamp(),
   }
   const projC: LegacyProject = {
-    id: uid(), name: '社交媒体内容 · 4月', status: 'active', priority: 'medium',
-    ddl: shiftLocalDateKey(new Date(), 18), description: '小红书 + 微博 + 视频号月度内容矩阵，共20条。',
-    createdAt: timestamp(), updatedAt: timestamp(),
+    id: uid(),
+    name: '毕业展互动装置记录片与现场快剪',
+    status: 'active',
+    priority: 'high',
+    startDate: shiftLocalDateKey(new Date(), -2),
+    reviewDate: shiftLocalDateKey(new Date(), 6),
+    deliveryDate: shiftLocalDateKey(new Date(), 12),
+    endDate: shiftLocalDateKey(new Date(), 13),
+    ddl: shiftLocalDateKey(new Date(), 12),
+    description: '记录毕业展互动装置的布展、开幕和观众体验，现场先出 90 秒快剪。',
+    notes: '重点保留装置屏幕内容、观众互动和作品铭牌；拍摄授权名单由制片统一确认。',
+    createdAt: timestamp(),
+    updatedAt: timestamp(),
   }
   const projD: LegacyProject = {
-    id: uid(), name: '校园开放日短片', status: 'active', priority: 'high',
-    ddl: shiftLocalDateKey(new Date(), 8), description: '招生开放日现场拍摄与 90 秒混剪，需要当天出预览版。',
-    createdAt: timestamp(), updatedAt: timestamp(),
+    id: uid(),
+    name: '品牌账号七月内容矩阵 12 条短视频',
+    status: 'active',
+    priority: 'medium',
+    startDate: shiftLocalDateKey(new Date(), 1),
+    reviewDate: shiftLocalDateKey(new Date(), 8),
+    deliveryDate: shiftLocalDateKey(new Date(), 15),
+    endDate: shiftLocalDateKey(new Date(), 16),
+    ddl: shiftLocalDateKey(new Date(), 15),
+    description: '品牌账号七月短视频矩阵，覆盖产品教程、幕后花絮、口播和活动预告。',
+    notes: '每条需同步封面、标题、字幕和发布平台备注；先完成 4 条样片给运营确认。',
+    createdAt: timestamp(),
+    updatedAt: timestamp(),
   }
   const projE: LegacyProject = {
-    id: uid(), name: '产品发布会物料包', status: 'paused', priority: 'medium',
-    ddl: shiftLocalDateKey(new Date(), 12), description: '发布会主视觉、KV 延展、邀请函和直播间贴片。',
-    createdAt: timestamp(), updatedAt: timestamp(),
+    id: uid(),
+    name: '三维片头资产库与包装模板',
+    status: 'active',
+    priority: 'medium',
+    startDate: shiftLocalDateKey(new Date(), 3),
+    reviewDate: shiftLocalDateKey(new Date(), 13),
+    deliveryDate: shiftLocalDateKey(new Date(), 21),
+    endDate: shiftLocalDateKey(new Date(), 23),
+    ddl: shiftLocalDateKey(new Date(), 21),
+    description: '沉淀节目片头、转场、字幕条和角标模板，服务后续短剧与栏目包装。',
+    notes: '交付 AE 模板、C4D 源文件、渲染预设和命名规范；先做 3 套风格样机。',
+    createdAt: timestamp(),
+    updatedAt: timestamp(),
   }
 
   const tasks: LegacyTask[] = [
-    { id: uid(), projectId: projA.id, title: '音效混音终版', status: 'in-progress', priority: 'urgent', assigneeIds: [alice.id, bob.id], scheduledDate: shiftLocalDateKey(new Date(), 0), startDate: shiftLocalDateKey(new Date(), -1), endDate: shiftLocalDateKey(new Date(), 0), estimatedHours: 4, description: '', createdAt: timestamp(), updatedAt: timestamp() },
-    { id: uid(), projectId: projA.id, title: '客户修改版渲染输出', status: 'todo', priority: 'urgent', assigneeIds: [alice.id], scheduledDate: shiftLocalDateKey(new Date(), 1), startDate: shiftLocalDateKey(new Date(), 1), endDate: shiftLocalDateKey(new Date(), 1), estimatedHours: 2, description: '', createdAt: timestamp(), updatedAt: timestamp() },
-    { id: uid(), projectId: projA.id, title: '片头动画调整', status: 'done', priority: 'high', assigneeIds: [bob.id], scheduledDate: shiftLocalDateKey(new Date(), -2), startDate: shiftLocalDateKey(new Date(), -3), endDate: shiftLocalDateKey(new Date(), -2), estimatedHours: 6, description: '', createdAt: timestamp(), updatedAt: timestamp() },
-    { id: uid(), projectId: projB.id, title: 'VI色彩方案提案', status: 'in-progress', priority: 'high', assigneeIds: [carol.id], scheduledDate: shiftLocalDateKey(new Date(), 0), startDate: shiftLocalDateKey(new Date(), 0), endDate: shiftLocalDateKey(new Date(), 1), estimatedHours: 8, description: '', createdAt: timestamp(), updatedAt: timestamp() },
-    { id: uid(), projectId: projB.id, title: '活动海报 A3 版设计', status: 'todo', priority: 'high', assigneeIds: [carol.id], scheduledDate: null, startDate: shiftLocalDateKey(new Date(), 2), endDate: shiftLocalDateKey(new Date(), 3), estimatedHours: 6, description: '', createdAt: timestamp(), updatedAt: timestamp() },
-    { id: uid(), projectId: projB.id, title: '现场大屏动画', status: 'todo', priority: 'medium', assigneeIds: [bob.id], scheduledDate: null, startDate: shiftLocalDateKey(new Date(), 3), endDate: shiftLocalDateKey(new Date(), 4), estimatedHours: 10, description: '', createdAt: timestamp(), updatedAt: timestamp() },
-    { id: uid(), projectId: projC.id, title: '4月选题列表', status: 'todo', priority: 'medium', assigneeIds: [], scheduledDate: null, startDate: shiftLocalDateKey(new Date(), 1), endDate: shiftLocalDateKey(new Date(), 2), estimatedHours: 2, description: '', createdAt: timestamp(), updatedAt: timestamp() },
-    { id: uid(), projectId: projC.id, title: '拍摄脚本撰写', status: 'todo', priority: 'low', assigneeIds: [], scheduledDate: null, startDate: shiftLocalDateKey(new Date(), 3), endDate: shiftLocalDateKey(new Date(), 5), estimatedHours: 4, description: '', createdAt: timestamp(), updatedAt: timestamp() },
-    { id: uid(), projectId: projD.id, title: '开放日采访提纲', status: 'in-progress', priority: 'high', assigneeIds: [emma.id, grace.id], scheduledDate: shiftLocalDateKey(new Date(), 0), startDate: shiftLocalDateKey(new Date(), 0), endDate: shiftLocalDateKey(new Date(), 2), estimatedHours: 5, description: '', createdAt: timestamp(), updatedAt: timestamp() },
-    { id: uid(), projectId: projD.id, title: '机位和收音清单', status: 'todo', priority: 'high', assigneeIds: [david.id, he.id], scheduledDate: shiftLocalDateKey(new Date(), 1), startDate: shiftLocalDateKey(new Date(), 1), endDate: shiftLocalDateKey(new Date(), 1), estimatedHours: 3, description: '', createdAt: timestamp(), updatedAt: timestamp() },
-    { id: uid(), projectId: projD.id, title: '现场快剪模板', status: 'in-progress', priority: 'medium', assigneeIds: [alice.id, jay.id], scheduledDate: shiftLocalDateKey(new Date(), 2), startDate: shiftLocalDateKey(new Date(), 1), endDate: shiftLocalDateKey(new Date(), 3), estimatedHours: 6, description: '', createdAt: timestamp(), updatedAt: timestamp() },
-    { id: uid(), projectId: projE.id, title: '发布会 KV 延展', status: 'blocked', priority: 'medium', assigneeIds: [carol.id, iris.id], scheduledDate: null, startDate: shiftLocalDateKey(new Date(), 4), endDate: shiftLocalDateKey(new Date(), 7), estimatedHours: 9, description: '等待客户确认主视觉方向。', createdAt: timestamp(), updatedAt: timestamp() },
-    { id: uid(), projectId: projE.id, title: '直播间贴片动效', status: 'todo', priority: 'medium', assigneeIds: [bob.id, frank.id], scheduledDate: null, startDate: shiftLocalDateKey(new Date(), 6), endDate: shiftLocalDateKey(new Date(), 9), estimatedHours: 12, description: '', createdAt: timestamp(), updatedAt: timestamp() },
-    { id: uid(), projectId: projB.id, title: '现场物料打样检查', status: 'todo', priority: 'urgent', assigneeIds: [grace.id], scheduledDate: shiftLocalDateKey(new Date(), 0), startDate: shiftLocalDateKey(new Date(), 0), endDate: shiftLocalDateKey(new Date(), 0), estimatedHours: 2, description: '', createdAt: timestamp(), updatedAt: timestamp() },
+    { id: uid(), projectId: projA.id, title: '01-06 集粗剪锁节奏', status: 'done', priority: 'urgent', assigneeIds: [alice.id, he.id], scheduledDate: shiftLocalDateKey(new Date(), -2), startDate: shiftLocalDateKey(new Date(), -6), endDate: shiftLocalDateKey(new Date(), -2), estimatedHours: 18, description: '完成前 6 集结构和节奏锁定。', createdAt: timestamp(), updatedAt: timestamp() },
+    { id: uid(), projectId: projA.id, title: '07-12 集字幕花字校对', status: 'in-progress', priority: 'urgent', assigneeIds: [bob.id, iris.id], scheduledDate: shiftLocalDateKey(new Date(), 0), startDate: shiftLocalDateKey(new Date(), -1), endDate: shiftLocalDateKey(new Date(), 1), estimatedHours: 10, description: '统一角色名、平台敏感词和花字动效。', createdAt: timestamp(), updatedAt: timestamp() },
+    { id: uid(), projectId: projA.id, title: '平台送审包导出', status: 'blocked', priority: 'urgent', assigneeIds: [grace.id], scheduledDate: shiftLocalDateKey(new Date(), 1), startDate: shiftLocalDateKey(new Date(), 1), endDate: shiftLocalDateKey(new Date(), 2), estimatedHours: 5, description: '等待客户补齐片尾免责声明和版权授权编号。', createdAt: timestamp(), updatedAt: timestamp() },
+    { id: uid(), projectId: projB.id, title: '主片精剪与旁白节奏', status: 'in-progress', priority: 'high', assigneeIds: [alice.id, emma.id], scheduledDate: shiftLocalDateKey(new Date(), 1), startDate: shiftLocalDateKey(new Date(), -2), endDate: shiftLocalDateKey(new Date(), 3), estimatedHours: 14, description: '按 60 秒主片结构压缩城市段落。', createdAt: timestamp(), updatedAt: timestamp() },
+    { id: uid(), projectId: projB.id, title: '音乐版权确认', status: 'blocked', priority: 'high', assigneeIds: [grace.id], scheduledDate: shiftLocalDateKey(new Date(), 2), startDate: shiftLocalDateKey(new Date(), 1), endDate: shiftLocalDateKey(new Date(), 4), estimatedHours: 3, description: '版权方尚未回复可商用范围，影响审片版本输出。', createdAt: timestamp(), updatedAt: timestamp() },
+    { id: uid(), projectId: projB.id, title: '15 秒竖版短版适配', status: 'todo', priority: 'high', assigneeIds: [jay.id, bob.id], scheduledDate: null, startDate: shiftLocalDateKey(new Date(), 4), endDate: shiftLocalDateKey(new Date(), 7), estimatedHours: 8, description: '从主片拆出竖屏短版并补字幕安全区。', createdAt: timestamp(), updatedAt: timestamp() },
+    { id: uid(), projectId: projC.id, title: '现场机位与收音清单', status: 'done', priority: 'high', assigneeIds: [david.id, he.id], scheduledDate: shiftLocalDateKey(new Date(), -1), startDate: shiftLocalDateKey(new Date(), -2), endDate: shiftLocalDateKey(new Date(), -1), estimatedHours: 4, description: '确认布展、开幕和观众体验三组机位。', createdAt: timestamp(), updatedAt: timestamp() },
+    { id: uid(), projectId: projC.id, title: '90 秒快剪模板', status: 'in-progress', priority: 'high', assigneeIds: [alice.id, jay.id], scheduledDate: shiftLocalDateKey(new Date(), 2), startDate: shiftLocalDateKey(new Date(), 0), endDate: shiftLocalDateKey(new Date(), 4), estimatedHours: 9, description: '预设片头、作品信息条和快速调色节点。', createdAt: timestamp(), updatedAt: timestamp() },
+    { id: uid(), projectId: projC.id, title: '作品授权名单核对', status: 'todo', priority: 'high', assigneeIds: [grace.id, emma.id], scheduledDate: null, startDate: shiftLocalDateKey(new Date(), 3), endDate: shiftLocalDateKey(new Date(), 5), estimatedHours: 4, description: '未授权作品不进入正片特写镜头。', createdAt: timestamp(), updatedAt: timestamp() },
+    { id: uid(), projectId: projD.id, title: '前 4 条脚本和分镜锁定', status: 'todo', priority: 'medium', assigneeIds: [emma.id, carol.id], scheduledDate: null, startDate: shiftLocalDateKey(new Date(), 1), endDate: shiftLocalDateKey(new Date(), 4), estimatedHours: 7, description: '先锁产品教程和幕后花絮两类模板。', createdAt: timestamp(), updatedAt: timestamp() },
+    { id: uid(), projectId: projD.id, title: '批量封面版式', status: 'todo', priority: 'medium', assigneeIds: [carol.id, iris.id], scheduledDate: null, startDate: shiftLocalDateKey(new Date(), 4), endDate: shiftLocalDateKey(new Date(), 7), estimatedHours: 6, description: '统一封面标题层级和品牌角标。', createdAt: timestamp(), updatedAt: timestamp() },
+    { id: uid(), projectId: projD.id, title: '发布平台备注整理', status: 'todo', priority: 'low', assigneeIds: [grace.id], scheduledDate: null, startDate: shiftLocalDateKey(new Date(), 8), endDate: shiftLocalDateKey(new Date(), 11), estimatedHours: 3, description: '整理视频号、小红书、抖音不同发布字段。', createdAt: timestamp(), updatedAt: timestamp() },
+    { id: uid(), projectId: projE.id, title: '三维片头风格样机', status: 'todo', priority: 'medium', assigneeIds: [frank.id, bob.id], scheduledDate: null, startDate: shiftLocalDateKey(new Date(), 4), endDate: shiftLocalDateKey(new Date(), 10), estimatedHours: 16, description: '先出 3 套片头和转场样机给内部评审。', createdAt: timestamp(), updatedAt: timestamp() },
+    { id: uid(), projectId: projE.id, title: '字幕条和角标模板规范', status: 'todo', priority: 'medium', assigneeIds: [jay.id, iris.id], scheduledDate: null, startDate: shiftLocalDateKey(new Date(), 11), endDate: shiftLocalDateKey(new Date(), 17), estimatedHours: 10, description: '命名、字体、版本号和导出预设统一归档。', createdAt: timestamp(), updatedAt: timestamp() },
   ]
 
   const people = [alice, bob, carol, david, emma, frank, grace, he, iris, jay]
@@ -124,9 +188,11 @@ async function seedDemoData() {
   ]
 
   const briefs = [
-    { id: uid(), projectId: projA.id, projectName: projA.name || '', clientName: '青石影业', requirements: '正片 3 分钟内，15 秒短版同步输出。重点突出新品质感和团队协作镜头。', styleNotes: '偏冷静、高级、少口号；可参考黑银色系科技片。', prohibitions: '不要夸张转场，不使用免费素材站水印镜头。', referenceUrls: [{ label: '参考片 A', url: 'https://example.com/reference-a' }], createdAt: timestamp(), updatedAt: timestamp() },
-    { id: uid(), projectId: projB.id, projectName: projB.name || '', clientName: '城市设计周', requirements: '活动主视觉、A3 海报、导视贴纸和现场大屏循环动画。', styleNotes: '明亮、年轻、有城市街区感；字体要足够醒目。', prohibitions: '避免土黄色和过度复古纹理。', referenceUrls: [{ label: '品牌手册', url: 'https://example.com/brand-guide' }], createdAt: timestamp(), updatedAt: timestamp() },
-    { id: uid(), projectId: projD.id, projectName: projD.name || '', clientName: '招生办公室', requirements: '开放日当天快速出 90 秒预览，次日交完整 3 分钟版。', styleNotes: '真实、明亮、节奏轻快，多保留学生互动。', prohibitions: '不要使用过暗滤镜，不拍摄未授权学生正脸特写。', referenceUrls: [], createdAt: timestamp(), updatedAt: timestamp() },
+    { id: uid(), projectId: projA.id, projectName: projA.name || '', clientName: '青石影业', requirements: '01-12 集竖屏短剧送审包，含平台审片版、无水印母版和封面图。', styleNotes: '节奏紧凑，字幕清楚，花字不要抢对白。', prohibitions: '不要使用未授权音乐，不保留临时水印。', referenceUrls: [{ label: '平台规范', url: 'https://example.com/short-drama-spec' }], createdAt: timestamp(), updatedAt: timestamp() },
+    { id: uid(), projectId: projB.id, projectName: projB.name || '', clientName: '澄江文旅', requirements: '60 秒主片、15 秒横版和 15 秒竖版短版，均需带字幕版和无字幕版。', styleNotes: '真实、明亮，镜头节奏要保留城市烟火气。', prohibitions: '避免过度滤镜，不使用未经授权航拍镜头。', referenceUrls: [{ label: '审片链接', url: 'https://example.com/review-city-film' }], createdAt: timestamp(), updatedAt: timestamp() },
+    { id: uid(), projectId: projC.id, projectName: projC.name || '', clientName: '艺术设计学院', requirements: '现场 90 秒快剪和 4 分钟记录片，需覆盖布展、开幕和观众互动。', styleNotes: '画面干净，作品信息清晰，节奏不做夸张转场。', prohibitions: '未授权作品不做特写，不拍摄未授权学生正脸。', referenceUrls: [], createdAt: timestamp(), updatedAt: timestamp() },
+    { id: uid(), projectId: projD.id, projectName: projD.name || '', clientName: '映禾品牌运营', requirements: '12 条短视频，统一封面、字幕、标题和平台发布备注。', styleNotes: '轻快、直接，口播内容要有明确开头和结尾。', prohibitions: '不要堆过多贴纸，不使用夸张促销口吻。', referenceUrls: [{ label: '选题表', url: 'https://example.com/content-calendar' }], createdAt: timestamp(), updatedAt: timestamp() },
+    { id: uid(), projectId: projE.id, projectName: projE.name || '', clientName: '118 Studio 内部', requirements: 'AE 模板、C4D 源文件、渲染预设和命名规范，供后续短剧和栏目包装复用。', styleNotes: '机械感、干净、易改字，颜色可按项目替换。', prohibitions: '不要依赖本机字体，不提交未整理贴图路径。', referenceUrls: [], createdAt: timestamp(), updatedAt: timestamp() },
   ]
   const accounts = [
     { id: uid(), platform: 'Figma 团队空间', url: 'https://figma.com', account: 'studio-design@example.com', password: 'demo-only', note: '设计文件与客户预览链接', category: 'design', createdAt: timestamp(), updatedAt: timestamp() },
@@ -154,6 +220,7 @@ async function seedDemoData() {
   await db.put('settings', { key: 'materials:briefs', value: briefs, updatedAt: timestamp() })
   await db.put('settings', { key: 'materials:accounts', value: accounts, updatedAt: timestamp() })
   await db.put('settings', { key: 'materials:folders', value: folders, updatedAt: timestamp() })
+  await db.put('settings', { key: DEMO_DATA_SETTING_KEY, value: DEMO_DATA_VERSION, updatedAt: timestamp() })
   await store.addLog('加载了演示数据')
 }
 
@@ -176,7 +243,12 @@ export async function initializeAppData() {
     } else {
       await seedDemoData()
     }
+  } else if (!cloudSyncConfigured && isLegacyDemoSnapshot(localBackup)) {
+    await db.clearAll()
+    await seedDemoData()
   }
+
+  await store.loadAll()
 
   if (!window.location.hash) {
     window.location.hash = '#dashboard'

@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import {
   buildBackupSummary,
   buildDashboardHeaderModel,
@@ -7,6 +7,7 @@ import {
   buildTaskDatePatch,
   buildCalendarEventMap,
   buildDashboardFocusCards,
+  buildDashboardProjectFocusTimeline,
   buildEntityMaps,
   buildPersonCardModels,
   buildProjectCardModels,
@@ -20,8 +21,10 @@ import {
   getProjectEventsForDate,
   getTaskPool,
 } from '../src/legacy/selectors'
-import { buildTaskRecord } from '../src/legacy/actions'
-import { buildPersonDeletionPatch, syncTaskStatusWithAssignees } from '../src/legacy/store'
+import { db } from '../src/legacy/db'
+import { buildProjectRecord, buildTaskRecord, updateProjectDeadline, updateProjectSchedule } from '../src/legacy/actions'
+import { buildPersonDeletionPatch, store, syncTaskStatusWithAssignees } from '../src/legacy/store'
+import { buildBackupPayload } from '../src/legacy/utils'
 
 describe('store selectors', () => {
   it('builds fast lookup maps and open task counts', () => {
@@ -140,6 +143,446 @@ describe('store selectors', () => {
     expect(cards[3].urgencyKey).toBe('focus-medium')
     expect(cards[4].urgencyKey).toBe('focus-calm')
     expect(cards[5].urgencyKey).toBe('focus-neutral')
+  })
+
+  it('builds dashboard project focus as a four-row production timeline', () => {
+    const timeline = buildDashboardProjectFocusTimeline(
+      [
+        {
+          id: 'project-overdue',
+          name: '竖屏短剧 A',
+          status: 'active',
+          priority: 'urgent',
+          startDate: '2026-04-06',
+          reviewDate: '2026-04-09',
+          deliveryDate: '2026-04-10',
+          endDate: '2026-04-10',
+          ddl: '2026-04-10',
+          notes: '客户等样片',
+        },
+        {
+          id: 'project-near',
+          name: '品牌片剪辑',
+          status: 'active',
+          priority: 'high',
+          startDate: '2026-04-12',
+          reviewDate: '2026-04-15',
+          deliveryDate: '2026-04-18',
+          endDate: '2026-04-18',
+        },
+        {
+          id: 'project-mid',
+          name: '校园纪录片',
+          status: 'active',
+          priority: 'medium',
+          startDate: '2026-04-14',
+          deliveryDate: '2026-04-24',
+          ddl: '2026-04-24',
+        },
+        {
+          id: 'project-calm',
+          name: '分镜筹备',
+          status: 'paused',
+          priority: 'low',
+          startDate: '2026-04-20',
+          deliveryDate: '2026-05-08',
+          ddl: '2026-05-08',
+        },
+        {
+          id: 'project-hidden',
+          name: '远期项目',
+          status: 'active',
+          ddl: '2026-05-20',
+        },
+      ],
+      [
+        { id: 'task-1', title: '粗剪', projectId: 'project-overdue', status: 'done', assigneeIds: ['person-1'] },
+        { id: 'task-2', title: '调色', projectId: 'project-overdue', status: 'in-progress', assigneeIds: ['person-2'], endDate: '2026-04-10' },
+        { id: 'task-3', title: '花字包装', projectId: 'project-near', status: 'blocked', assigneeIds: ['person-2'] },
+        { id: 'task-4', title: '声音修整', projectId: 'project-near', status: 'todo', assigneeIds: ['person-3'] },
+      ],
+      [
+        { id: 'person-1', name: '剪辑甲', status: 'active' },
+        { id: 'person-2', name: '后期乙', status: 'active' },
+        { id: 'person-3', name: '导演丙', status: 'active' },
+      ],
+      '2026-04-12',
+    )
+
+    expect(timeline.items).toHaveLength(4)
+    expect(timeline.items.map((item) => item.id)).toEqual([
+      'project-overdue',
+      'project-near',
+      'project-mid',
+      'project-calm',
+    ])
+    // Axis is padded by 1 day on each side so bars/milestones are not edge-glued.
+    expect(timeline.axisStartDate).toBe('2026-04-05')
+    expect(timeline.axisEndDate).toBe('2026-05-09')
+    expect(timeline.axisStartLabel).toBe('4/5')
+    expect(timeline.axisEndLabel).toBe('5/9')
+    expect(timeline.axisTicks.length).toBeGreaterThanOrEqual(6)
+    expect(timeline.rangeDays).toBeGreaterThanOrEqual(30)
+    expect(timeline.todayPercent).toBeGreaterThanOrEqual(0)
+    expect(timeline.todayPercent).toBeLessThanOrEqual(100)
+    expect(timeline.items[0]).toMatchObject({
+      assigneeNames: ['后期乙'],
+      blockedTaskCount: 0,
+      doneTaskCount: 1,
+      openTaskCount: 1,
+      progressPercent: 50,
+      progressText: '1/2',
+      reviewDate: '2026-04-09',
+      deliveryDate: '2026-04-10',
+      phaseLabel: '逾期',
+      notePreview: '客户等样片',
+      urgencyKey: 'focus-overdue',
+    })
+    expect(timeline.items[1]).toMatchObject({
+      actionKind: 'blocked',
+      actionLabel: '1 项受阻',
+      assigneeNames: ['后期乙', '导演丙'],
+      blockedTaskCount: 1,
+      phaseLabel: '审查前',
+      progressText: '0/2',
+    })
+    expect(timeline.items[0].barStartPercent).toBeGreaterThanOrEqual(0)
+    expect(timeline.items[0].barStartPercent).toBeLessThan(10)
+    expect(timeline.items[0].barWidthPercent).toBeGreaterThanOrEqual(5)
+    expect(timeline.items[1].reviewPercent).toBeGreaterThan(timeline.items[1].barStartPercent)
+    expect(timeline.items[1].deliveryPercent).toBeGreaterThan(timeline.items[1].reviewPercent || 0)
+    expect(timeline.items[0].assigneePreview).toBe('后期乙')
+    expect(timeline.items[0].durationLabel).toBeTruthy()
+    expect(timeline.items[0].deliveryLabel).toBeTruthy()
+  })
+
+  it('keeps blocked focus actions visible even on very short timeline bars', () => {
+    const timeline = buildDashboardProjectFocusTimeline(
+      [
+        {
+          id: 'project-blocked-short',
+          name: '一分钟短片',
+          status: 'active',
+          startDate: '2026-04-12',
+          endDate: '2026-04-12',
+          deliveryDate: '2026-04-12',
+        },
+      ],
+      [
+        { id: 'task-1', title: '客户卡点确认', projectId: 'project-blocked-short', status: 'blocked' },
+      ],
+      [],
+      '2026-04-12',
+    )
+
+    expect(timeline.items[0].actionKind).toBe('blocked')
+    expect(timeline.items[0].actionLabel).toBe('1 项受阻')
+    expect(timeline.items[0].barWidthPercent).toBeGreaterThanOrEqual(4)
+  })
+
+  it('migrates explicit legacy ddl into delivery date when delivery and end are empty', () => {
+    const saved = buildProjectRecord({
+      id: 'project-legacy',
+      name: '旧项目',
+      status: 'active',
+      priority: 'medium',
+      ddl: '2026-04-12',
+      createdAt: '2026-04-01T10:00:00.000Z',
+      updatedAt: '2026-04-01T10:00:00.000Z',
+    }, {
+      name: '旧项目',
+      status: 'active',
+      priority: 'medium',
+      startDate: null,
+      reviewDate: null,
+      deliveryDate: null,
+      endDate: null,
+      ddl: '2026-04-30',
+      description: '',
+      notes: '',
+    }, '2026-04-12T10:00:00.000Z')
+
+    expect(saved).toMatchObject({
+      deliveryDate: '2026-04-30',
+      endDate: '2026-04-30',
+      ddl: '2026-04-30',
+    })
+  })
+
+  it('does not synthesize ddl from only start and review checkpoints', () => {
+    const saved = buildProjectRecord(null, {
+      name: '仅审查排期',
+      status: 'active',
+      priority: 'medium',
+      startDate: '2026-04-12',
+      reviewDate: '2026-04-18',
+      deliveryDate: null,
+      endDate: null,
+      ddl: null,
+      description: '',
+      notes: '',
+    }, '2026-04-12T10:00:00.000Z')
+
+    expect(saved).toMatchObject({
+      startDate: '2026-04-12',
+      reviewDate: '2026-04-18',
+      deliveryDate: null,
+      endDate: '2026-04-18',
+      ddl: null,
+    })
+  })
+
+  it('normalizes project schedule bounds across all filled checkpoints while mirroring ddl from delivery date', () => {
+    const saved = buildProjectRecord(null, {
+      name: '影像交付',
+      status: 'active',
+      priority: 'high',
+      startDate: '2026-04-22',
+      reviewDate: '2026-04-18',
+      deliveryDate: '2026-04-12',
+      endDate: '2026-04-20',
+      ddl: null,
+      description: '客户主片',
+      notes: '先出 30 秒样片',
+    }, '2026-04-12T10:00:00.000Z')
+
+    expect(saved).toMatchObject({
+      startDate: '2026-04-12',
+      reviewDate: '2026-04-18',
+      deliveryDate: '2026-04-12',
+      endDate: '2026-04-22',
+      ddl: '2026-04-12',
+      notes: '先出 30 秒样片',
+    })
+
+    const backup = buildBackupPayload({
+      projects: [{
+        ...saved,
+        shouldDrop: true,
+      }],
+    })
+
+    expect(backup.projects[0]).toMatchObject({
+      startDate: '2026-04-12',
+      reviewDate: '2026-04-18',
+      deliveryDate: '2026-04-12',
+      endDate: '2026-04-22',
+      ddl: '2026-04-12',
+      notes: '先出 30 秒样片',
+    })
+    expect(backup.projects[0]).not.toHaveProperty('shouldDrop')
+  })
+
+  it('clearing schedule delivery does not backfill a legacy ddl in saved project data', async () => {
+    vi.spyOn(db, 'exportAll').mockResolvedValue(buildBackupPayload({}))
+    vi.spyOn(store, 'getProject').mockReturnValue({
+      id: 'project-legacy-ddl',
+      name: '旧排期项目',
+      status: 'active',
+      priority: 'medium',
+      startDate: '2026-04-12',
+      reviewDate: null,
+      deliveryDate: null,
+      endDate: null,
+      ddl: '2026-04-30',
+      notes: '保留备注',
+      createdAt: '2026-04-01T10:00:00.000Z',
+      updatedAt: '2026-04-01T10:00:00.000Z',
+    })
+    const captured: { saved: unknown } = { saved: null }
+    vi.spyOn(store, 'saveProject').mockImplementation(async (project) => {
+      captured.saved = project
+    })
+    vi.spyOn(store, 'addLog').mockResolvedValue({
+      id: 'log-1',
+      text: '更新项目排期',
+      ts: '2026-04-12T10:00:00.000Z',
+    })
+
+    await updateProjectSchedule('project-legacy-ddl', {
+      startDate: '2026-04-12',
+      reviewDate: '2026-04-18',
+      deliveryDate: null,
+      endDate: null,
+      notes: '保留备注',
+    })
+
+    expect(captured.saved).toMatchObject({
+      startDate: '2026-04-12',
+      reviewDate: '2026-04-18',
+      deliveryDate: null,
+      endDate: '2026-04-18',
+      ddl: null,
+      notes: '保留备注',
+    })
+  })
+
+  it('normalizes deadline updates against existing checkpoints when saving project data', async () => {
+    vi.spyOn(db, 'exportAll').mockResolvedValue(buildBackupPayload({}))
+    vi.spyOn(store, 'getProject').mockReturnValue({
+      id: 'p-delay',
+      name: '延后项目',
+      status: 'active',
+      priority: 'medium',
+      startDate: '2026-05-01',
+      reviewDate: '2026-05-20',
+      deliveryDate: null,
+      endDate: null,
+      ddl: null,
+      notes: '',
+      createdAt: '2026-05-01T00:00:00.000Z',
+      updatedAt: '2026-05-01T00:00:00.000Z',
+    })
+    const captured: { saved: unknown } = { saved: null }
+    vi.spyOn(store, 'saveProject').mockImplementation(async (project) => {
+      captured.saved = project
+    })
+    vi.spyOn(store, 'addLog').mockResolvedValue({
+      id: 'log-1',
+      text: '延期项目',
+      ts: '2026-05-15T10:00:00.000Z',
+    })
+
+    await updateProjectDeadline('p-delay', '2026-05-15')
+
+    expect(captured.saved).toMatchObject({
+      id: 'p-delay',
+      startDate: '2026-05-01',
+      reviewDate: '2026-05-20',
+      deliveryDate: '2026-05-15',
+      endDate: '2026-05-20',
+      ddl: '2026-05-15',
+    })
+  })
+
+  it('keeps review-driven project end dates when clearing a deadline', async () => {
+    vi.spyOn(db, 'exportAll').mockResolvedValue(buildBackupPayload({}))
+    vi.spyOn(store, 'getProject').mockReturnValue({
+      id: 'p-clear',
+      name: '清空交付项目',
+      status: 'active',
+      priority: 'medium',
+      startDate: '2026-05-01',
+      reviewDate: '2026-05-20',
+      deliveryDate: '2026-05-15',
+      endDate: null,
+      ddl: '2026-05-15',
+      notes: '',
+      createdAt: '2026-05-01T00:00:00.000Z',
+      updatedAt: '2026-05-15T10:00:00.000Z',
+    })
+    const captured: { saved: unknown } = { saved: null }
+    vi.spyOn(store, 'saveProject').mockImplementation(async (project) => {
+      captured.saved = project
+    })
+    vi.spyOn(store, 'addLog').mockResolvedValue({
+      id: 'log-1',
+      text: '延期项目',
+      ts: '2026-05-15T10:00:00.000Z',
+    })
+
+    await updateProjectDeadline('p-clear', null)
+
+    expect(captured.saved).toMatchObject({
+      id: 'p-clear',
+      startDate: '2026-05-01',
+      reviewDate: '2026-05-20',
+      deliveryDate: null,
+      endDate: '2026-05-20',
+      ddl: null,
+    })
+  })
+
+  it('keeps project focus timeline axis aligned with schedule dates and ignores createdAt when schedule exists', () => {
+    const timeline = buildDashboardProjectFocusTimeline(
+      [
+        {
+          id: 'project-dirty-range',
+          name: '错序排期项目',
+          status: 'active',
+          priority: 'high',
+          createdAt: '2026-04-01T00:30:00+08:00',
+          reviewDate: '2026-04-18',
+          deliveryDate: '2026-04-12',
+          endDate: '2026-04-20',
+        },
+      ],
+      [],
+      [],
+      '2026-04-12',
+    )
+
+    expect(timeline.axisStartDate).toBe('2026-04-11')
+    expect(timeline.axisEndDate).toBe('2026-04-21')
+    expect(timeline.items[0]?.startDate).toBe('2026-04-12')
+    expect(timeline.items[0]?.endDate).toBe('2026-04-20')
+    expect(timeline.items[0]?.deliveryPercent).not.toBeNull()
+    expect(timeline.items[0]?.reviewPercent).not.toBeNull()
+    expect(timeline.items[0]?.deliveryPercent).toBeGreaterThanOrEqual(0)
+    expect(timeline.items[0]?.deliveryPercent).toBeLessThanOrEqual(100)
+    expect(timeline.items[0]?.reviewPercent).toBeGreaterThanOrEqual(0)
+    expect(timeline.items[0]?.reviewPercent).toBeLessThanOrEqual(100)
+    expect(timeline.items[0]?.barWidthPercent).toBeGreaterThanOrEqual(4)
+  })
+
+  it('uses local createdAt as the start date when no schedule fields exist', () => {
+    const timeline = buildDashboardProjectFocusTimeline(
+      [
+        {
+          id: 'p-created',
+          name: '旧项目',
+          createdAt: '2026-04-20T00:30:00+08:00',
+        },
+      ],
+      [],
+      [],
+      '2026-04-12',
+    )
+
+    expect(timeline.axisStartDate).toBe('2026-04-19')
+    expect(timeline.items[0]?.startDate).toBe('2026-04-20')
+    expect(timeline.items[0]?.endDate).toBe('2026-05-04')
+    expect(timeline.axisEndDate).toBe('2026-05-05')
+  })
+
+  it('falls back to today when no createdAt exists', () => {
+    const timeline = buildDashboardProjectFocusTimeline(
+      [
+        {
+          id: 'p-today',
+          name: '今天项目',
+        },
+      ],
+      [],
+      [],
+      '2026-04-12',
+    )
+
+    expect(timeline.axisStartDate).toBe('2026-04-11')
+  })
+
+  it('falls back to local createdAt plus 14 days only when no schedule fields exist', () => {
+    const timeline = buildDashboardProjectFocusTimeline(
+      [
+        {
+          id: 'project-created-at-fallback',
+          name: '仅创建时间项目',
+          status: 'active',
+          priority: 'medium',
+          createdAt: '2026-04-01T00:30:00+08:00',
+        },
+      ],
+      [],
+      [],
+      '2026-04-12',
+    )
+
+    expect(timeline.axisStartDate).toBe('2026-03-31')
+    expect(timeline.axisEndDate).toBe('2026-04-16')
+    expect(timeline.items[0]).toMatchObject({
+      startDate: '2026-04-01',
+      endDate: '2026-04-15',
+    })
   })
 
   it('builds dashboard header copy from one model selector', () => {
@@ -414,13 +857,29 @@ describe('store selectors', () => {
     expect(timeline.startDate).toBe('2026-04-01')
     expect(timeline.rows[0]).toMatchObject({
       id: 'project-1',
-      offsetDays: 11,
-      durationDays: 3,
-      startDate: '2026-04-12',
+      offsetDays: 14,
+      durationDays: 1,
+      startDate: '2026-04-15',
       endDate: '2026-04-15',
       urgencyKey: 'focus-critical',
     })
+    expect(timeline.rows[1]).toMatchObject({
+      startDate: '2026-04-18',
+      endDate: '2026-04-18',
+    })
     expect(timeline.rows[1].urgencyKey).toBe('focus-strong')
+    expect(timeline.todayOffsetDays).toBe(11)
+
+    const outsideRange = buildProjectTimelineModel([
+      {
+        id: 'project-1',
+        name: '答辩周',
+        createdAt: '2026-04-12T00:30:00+08:00',
+        ddl: '2026-04-15',
+      },
+    ], 14, undefined, '2026-05-12')
+
+    expect(outsideRange.todayOffsetDays).toBeNull()
   })
 
   it('builds project card models with progress summary', () => {
@@ -608,6 +1067,42 @@ describe('store selectors', () => {
       date: '4/12',
       time: '08:05',
     })
+  })
+
+  it('derives project delivery dates from the edited form schedule only', () => {
+    const legacyProject = { id: 'legacy', name: '旧项目', ddl: '2026-04-30' }
+
+    const savedWithEndDate = buildProjectRecord(legacyProject, {
+      name: '旧项目',
+      status: null,
+      priority: null,
+      startDate: null,
+      endDate: '2026-04-20',
+      reviewDate: null,
+      deliveryDate: null,
+      ddl: '2026-04-30',
+      description: '',
+      notes: '',
+    }, '2026-04-12T10:00:00+08:00')
+
+    expect(savedWithEndDate.deliveryDate).toBeNull()
+    expect(savedWithEndDate.ddl).toBe('2026-04-20')
+
+    const savedWithoutEndDate = buildProjectRecord(legacyProject, {
+      name: '旧项目',
+      status: null,
+      priority: null,
+      startDate: null,
+      endDate: null,
+      reviewDate: null,
+      deliveryDate: null,
+      ddl: '2026-04-30',
+      description: '',
+      notes: '',
+    }, '2026-04-12T10:00:00+08:00')
+
+    expect(savedWithoutEndDate.deliveryDate).toBe('2026-04-30')
+    expect(savedWithoutEndDate.ddl).toBe('2026-04-30')
   })
 
   it('builds task records with strict defaults from form input', () => {

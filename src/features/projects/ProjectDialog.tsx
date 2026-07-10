@@ -19,8 +19,13 @@ export function ProjectDialog({
     name: project?.name || '',
     status: project?.status || 'active',
     priority: project?.priority || 'medium',
-    ddl: project?.ddl || null,
+    startDate: project?.startDate || null,
+    reviewDate: project?.reviewDate || null,
+    deliveryDate: project?.deliveryDate || project?.ddl || null,
+    endDate: project?.endDate || null,
+    ddl: project?.deliveryDate || project?.ddl || null,
     description: project?.description || '',
+    notes: project?.notes || '',
   }))
 
   const save = async () => {
@@ -70,17 +75,48 @@ export function ProjectDialog({
           </select>
         </div>
         <div className="form-field">
-          <label className="form-label" htmlFor="project-ddl">截止日期</label>
+          <label className="form-label" htmlFor="project-start">开始日期</label>
           <DatePicker
-            id="project-ddl"
-            label="截止日期"
-            value={form.ddl || null}
-            onChange={(value) => setForm((current) => ({ ...current, ddl: value }))}
+            id="project-start"
+            label="开始日期"
+            value={form.startDate || null}
+            onChange={(value) => setForm((current) => ({ ...current, startDate: value }))}
+          />
+        </div>
+        <div className="form-field">
+          <label className="form-label" htmlFor="project-review">审查日期</label>
+          <DatePicker
+            id="project-review"
+            label="审查日期"
+            value={form.reviewDate || null}
+            onChange={(value) => setForm((current) => ({ ...current, reviewDate: value }))}
+          />
+        </div>
+        <div className="form-field">
+          <label className="form-label" htmlFor="project-delivery">交付日期</label>
+          <DatePicker
+            id="project-delivery"
+            label="交付日期"
+            value={form.deliveryDate || null}
+            onChange={(value) => setForm((current) => ({ ...current, deliveryDate: value, ddl: value }))}
+          />
+        </div>
+        <div className="form-field">
+          <label className="form-label" htmlFor="project-end">结束日期</label>
+          <DatePicker
+            id="project-end"
+            label="结束日期"
+            value={form.endDate || null}
+            onChange={(value) => setForm((current) => ({ ...current, endDate: value }))}
           />
         </div>
         <div className="form-field span2">
           <label className="form-label" htmlFor="project-desc">描述</label>
           <textarea id="project-desc" className="form-input" rows={4} value={form.description || ''} onChange={(event) => setForm((current) => ({ ...current, description: event.target.value }))} />
+        </div>
+        <div className="form-field span2">
+          <label className="form-label" htmlFor="project-notes">备注</label>
+          <textarea id="project-notes" className="form-input" rows={3} value={form.notes || ''} onChange={(event) => setForm((current) => ({ ...current, notes: event.target.value }))} />
         </div>
       </div>
     </Dialog>

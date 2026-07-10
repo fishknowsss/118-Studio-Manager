@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react'
+import { useCallback, useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react'
 import { useBackdropDismiss } from './useBackdropDismiss'
 
 const CLOSE_FALLBACK_MS = 260
@@ -24,6 +24,12 @@ function calcOrigin(ox: number, oy: number, variant: Variant): string {
   return `${x}% ${y}%`
 }
 
+function getFocusableElements(container: HTMLElement) {
+  return Array.from(container.querySelectorAll<HTMLElement>(
+    'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])',
+  )).filter((element) => !element.hidden && element.getAttribute('aria-hidden') !== 'true')
+}
+
 export function ExpandPanel({
   boxClassName,
   children,
@@ -45,6 +51,9 @@ export function ExpandPanel({
 }) {
   const [closing, setClosing] = useState(false)
   const overlayRef = useRef<HTMLDivElement>(null)
+  const dialogRef = useRef<HTMLDivElement>(null)
+  const closeButtonRef = useRef<HTMLButtonElement>(null)
+  const previousFocusRef = useRef<HTMLElement | null>(null)
   const closeTimerRef = useRef<number | null>(null)
   const closedRef = useRef(false)
   const transformOrigin = calcOrigin(originX, originY, variant)
@@ -57,6 +66,13 @@ export function ExpandPanel({
       closeTimerRef.current = null
     }
     onClose()
+    const previous = previousFocusRef.current
+    previousFocusRef.current = null
+    if (previous && typeof previous.focus === 'function') {
+      window.requestAnimationFrame(() => {
+        previous.focus()
+      })
+    }
   }, [onClose])
 
   const triggerClose = useCallback(() => {
@@ -72,10 +88,48 @@ export function ExpandPanel({
     }
   }
 
+  useLayoutEffect(() => {
+    previousFocusRef.current = document.activeElement instanceof HTMLElement
+      ? document.activeElement
+      : null
+    closeButtonRef.current?.focus()
+  }, [])
+
   useEffect(() => {
     const handler = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') triggerClose()
+      if (event.key === 'Escape') {
+        triggerClose()
+        return
+      }
+
+      if (event.key !== 'Tab') return
+      const dialog = dialogRef.current
+      if (!dialog) return
+
+      const focusable = getFocusableElements(dialog)
+      if (focusable.length === 0) {
+        event.preventDefault()
+        return
+      }
+
+      const first = focusable[0]
+      const last = focusable[focusable.length - 1]
+      const active = document.activeElement instanceof HTMLElement ? document.activeElement : null
+
+      if (event.shiftKey) {
+        if (!active || active === first || !dialog.contains(active)) {
+          event.preventDefault()
+          last.focus()
+        }
+        return
+      }
+
+      if (!active || active === last || !dialog.contains(active)) {
+        event.preventDefault()
+        first.focus()
+      }
     }
+
     document.addEventListener('keydown', handler, true)
     return () => document.removeEventListener('keydown', handler, true)
   }, [triggerClose])
@@ -98,6 +152,7 @@ export function ExpandPanel({
       {...backdropDismiss}
     >
       <div
+        ref={dialogRef}
         className={`expand-panel-box${variant === 'slim' ? ' slim' : variant === 'wide' ? ' wide' : ''}${boxClassName ? ` ${boxClassName}` : ''}`}
         style={{ transformOrigin }}
         role="dialog"
@@ -106,7 +161,13 @@ export function ExpandPanel({
       >
         <div className="expand-panel-header">
           <span className="expand-panel-title">{title}</span>
-          <button className="modal-close" type="button" onClick={triggerClose} aria-label="关闭">
+          <button
+            ref={closeButtonRef}
+            className="modal-close"
+            type="button"
+            onClick={triggerClose}
+            aria-label="关闭"
+          >
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
               <line x1="18" y1="6" x2="6" y2="18" />
               <line x1="6" y1="6" x2="18" y2="18" />

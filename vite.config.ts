@@ -94,6 +94,17 @@ export default defineConfig(({ command }) => ({
     alias: {
       '@': '/src',
     },
+    // 避免预构建/依赖切换时出现多份 React 导致整站白屏
+    dedupe: ['react', 'react-dom'],
+  },
+  optimizeDeps: {
+    include: [
+      'react',
+      'react-dom',
+      'react/jsx-runtime',
+      'react/jsx-dev-runtime',
+      'lucide-react',
+    ],
   },
   build: {
     rollupOptions: {

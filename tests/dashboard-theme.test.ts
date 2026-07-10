@@ -34,10 +34,12 @@ describe('dashboard dark theme styles', () => {
     expect(darkThemeRootBlock?.[0]).not.toMatch(/font-size\s*:/)
   })
 
-  it('defines dark theme overrides for focus summary chips', () => {
+  it('defines dark theme overrides for focus summary chips and timeline rows', () => {
     expect(stylesheet).toContain("[data-theme='dark'] .focus-highlight-tier")
     expect(stylesheet).toContain("[data-theme='dark'] .focus-highlight-summary")
     expect(stylesheet).toContain("[data-theme='dark'] .focus-highlight-task-item")
+    expect(stylesheet).toContain("[data-theme='dark'] .pft-row")
+    expect(stylesheet).toContain("[data-theme='dark'] .pft-track")
   })
 
   it('keeps default focus gray cards explicitly gray in dark theme', () => {

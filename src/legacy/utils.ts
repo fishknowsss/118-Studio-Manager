@@ -40,7 +40,21 @@ export type BackupCollectionName = (typeof BACKUP_COLLECTION_NAMES)[number]
 
 export const BACKUP_SCHEMA_VERSION = 5
 
-const PROJECT_BACKUP_KEYS = new Set(['createdAt', 'ddl', 'description', 'id', 'name', 'priority', 'status', 'updatedAt'])
+const PROJECT_BACKUP_KEYS = new Set([
+  'createdAt',
+  'ddl',
+  'deliveryDate',
+  'description',
+  'endDate',
+  'id',
+  'name',
+  'notes',
+  'priority',
+  'reviewDate',
+  'startDate',
+  'status',
+  'updatedAt',
+])
 
 function sanitizeProjectBackupRecord(record: BackupRecord): BackupRecord {
   return Object.fromEntries(

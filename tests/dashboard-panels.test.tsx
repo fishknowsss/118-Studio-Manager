@@ -10,6 +10,7 @@ import { ConfirmProvider } from '../src/components/feedback/ConfirmProvider'
 import { ToastProvider } from '../src/components/feedback/ToastProvider'
 import { PeopleAssignmentPanel } from '../src/features/dashboard/PeopleAssignmentPanel'
 import { PersonDetailPanel } from '../src/features/dashboard/PersonDetailPanel'
+import { ProjectFocusTimeline } from '../src/features/dashboard/ProjectFocusTimeline'
 import { TaskPoolPanel } from '../src/features/dashboard/TaskPoolPanel'
 import { buildPersonCardModels } from '../src/legacy/selectors'
 import { store, type LegacyLog, type LegacyPerson, type LegacyProject, type LegacyTask, type LeaveRecord } from '../src/legacy/store'
@@ -56,8 +57,8 @@ describe('dashboard panels', () => {
     expect(styleSource).toMatch(/\.dash-date-big\s*\{[\s\S]*white-space:\s*nowrap;/)
     expect(styleSource).toMatch(/@media \(min-width:\s*721px\) and \(max-width:\s*1180px\)/)
     expect(styleSource).toMatch(/--dash-header-fit-h:\s*clamp\(52px,\s*8dvh,\s*76px\);/)
-    expect(styleSource).toMatch(/--dash-focus-fit-h:\s*230px;/)
-    expect(styleSource).toMatch(/\.focus-cards,[\s\S]*\.focus-cards--wide\s*\{[\s\S]*height:\s*170px;/)
+    expect(styleSource).toMatch(/--dash-focus-fit-h:\s*262px;/)
+    expect(styleSource).toMatch(/\.today-focus\s*\{[\s\S]*grid-template-rows:\s*auto minmax\(0,\s*1fr\);/)
     expect(styleSource).toMatch(/\.dashboard\s*\{[\s\S]*grid-template-rows:\s*var\(--dash-header-fit-h\) var\(--dash-focus-fit-h\) minmax\(0,\s*1fr\);/)
     expect(styleSource).toMatch(/\.dash-bottom\s*\{[\s\S]*grid-template-columns:\s*minmax\(0,\s*1fr\)\s+minmax\(0,\s*1fr\)\s+minmax\(280px,\s*0\.88fr\)/)
     expect(styleSource).toMatch(/@media \(min-width:\s*721px\) and \(max-width:\s*980px\)/)
@@ -67,6 +68,202 @@ describe('dashboard panels', () => {
     expect(styleSource).toMatch(/\.mini-cal-grid\s*\{[\s\S]*grid-template-rows:\s*auto repeat\(6,\s*minmax\(0,\s*1fr\)\);/)
     expect(styleSource).toMatch(/@media \(min-width:\s*721px\) and \(max-height:\s*820px\)/)
     expect(styleSource).toMatch(/\.mini-cal-day\s*\{[\s\S]*aspect-ratio:\s*auto;/)
+  })
+
+  it('keeps the project focus timeline filling four rows without edge clipping', () => {
+    const styleSource = readFileSync(join(process.cwd(), 'css/style.css'), 'utf8')
+
+    expect(styleSource).toMatch(/--pft-axis-h:\s*28px;/)
+    expect(styleSource).toMatch(/\.project-focus-timeline\s*\{[\s\S]*min-height:\s*0;/)
+    expect(styleSource).toMatch(/\.pft-rows\s*\{[\s\S]*grid-template-rows:\s*repeat\(4,\s*minmax\(0,\s*1fr\)\);/)
+    expect(styleSource).toMatch(/\.pft-row\s*\{[\s\S]*height:\s*100%;/)
+    expect(styleSource).toMatch(/--pft-cols:\s*var\(--pft-identity-w\)\s+minmax\(0,\s*1\.9fr\)\s+var\(--pft-aside-w\);/)
+    expect(styleSource).toMatch(/\.pft-identity\s*\{/)
+    expect(styleSource).toMatch(/\.pft-name\s*\{[\s\S]*font-size:\s*14px;/)
+    expect(styleSource).toMatch(/\.pft-action\s*\{[\s\S]*font-size:\s*11\.5px;/)
+    expect(styleSource).toMatch(/\.pft-bar-fill\s*\{/)
+    expect(styleSource).toMatch(/\.pft-axis-tick\s*\{/)
+    expect(styleSource).toMatch(/\.pft-today-band\s*\{/)
+    expect(styleSource).toMatch(/\.pft-rows-shell\s*\{/)
+    expect(styleSource).toMatch(/\.pft-today-layer\s*\{[\s\S]*z-index:\s*20;/)
+    expect(styleSource).toMatch(/\.pft-bar\s*\{[\s\S]*height:\s*12px;/)
+    // No AI left accent rail
+    expect(styleSource).not.toMatch(/\.pft-row\s*\{[\s\S]*border-left:\s*3px solid var\(--pft-accent\);/)
+    expect(styleSource).toMatch(/\.pft-row\.focus-overdue\s*\{\s*--pft-accent:/)
+    expect(styleSource).toMatch(/\.pft-row\.focus-critical\s*\{\s*--pft-accent:/)
+    // Distinct start/review/delivery markers
+    expect(styleSource).toMatch(/\.pft-marker--start/)
+    expect(styleSource).toMatch(/\.pft-marker--review/)
+    expect(styleSource).toMatch(/\.pft-marker--delivery/)
+    expect(styleSource).not.toMatch(/\.pft-note\s*\{/)
+    expect(styleSource).not.toMatch(/\.pft-row:hover[\s\S]{0,80}translateY\(/)
+    expect(styleSource).toMatch(/\.focus-cards\s*\{[\s\S]*overflow:\s*hidden;/)
+  })
+
+  it('keeps the project focus timeline constrained on mobile widths', () => {
+    const styleSource = readFileSync(join(process.cwd(), 'css/style.css'), 'utf8')
+
+    expect(styleSource).toMatch(/@media \(max-width:\s*720px\)[\s\S]*\.project-focus-timeline\s*\{[\s\S]*width:\s*100%;[\s\S]*max-width:\s*100%;[\s\S]*min-width:\s*0;/)
+    expect(styleSource).toMatch(/@media \(max-width:\s*720px\)[\s\S]*\.pft-rows\s*\{[\s\S]*width:\s*100%;[\s\S]*max-width:\s*100%;[\s\S]*min-width:\s*0;/)
+    expect(styleSource).toMatch(/@media \(max-width:\s*720px\)[\s\S]*\.pft-row\s*\{[\s\S]*width:\s*100%;[\s\S]*max-width:\s*100%;[\s\S]*min-width:\s*0;[\s\S]*height:\s*auto;/)
+    expect(styleSource).toMatch(/@media \(max-width:\s*720px\)[\s\S]*\.pft-track\s*\{[\s\S]*width:\s*100%;[\s\S]*max-width:\s*100%;[\s\S]*min-width:\s*0;/)
+  })
+
+  it('renders the dashboard project focus as a compact four-row timeline', () => {
+    const onExpandProject = vi.fn()
+    const view = renderNode(
+      <ProjectFocusTimeline
+        model={{
+          axisEndDate: '2026-04-24',
+          axisEndLabel: '4/24',
+          axisStartDate: '2026-04-12',
+          axisStartLabel: '4/12',
+          axisTicks: [
+            { date: '2026-04-12', isMajor: true, isToday: true, label: '4/12', percent: 0, weekdayLabel: '日' },
+            { date: '2026-04-15', isMajor: false, isToday: false, label: '4/15', percent: 25, weekdayLabel: '三' },
+            { date: '2026-04-18', isMajor: true, isToday: false, label: '4/18', percent: 50, weekdayLabel: '六' },
+            { date: '2026-04-21', isMajor: false, isToday: false, label: '4/21', percent: 75, weekdayLabel: '二' },
+            { date: '2026-04-24', isMajor: true, isToday: false, label: '4/24', percent: 100, weekdayLabel: '五' },
+          ],
+          hiddenCount: 1,
+          rangeDays: 12,
+          rangeLabel: '4/12 – 4/24 · 13 天',
+          todayPercent: 0,
+          items: [
+            {
+              actionKind: 'blocked',
+              actionLabel: '1 项受阻',
+              assigneeNames: ['剪辑甲', '后期乙'],
+              assigneePreview: '剪辑甲、后期乙',
+              barStartPercent: 0,
+              barWidthPercent: 50,
+              blockedTaskCount: 1,
+              daysToDelivery: 6,
+              deliveryDate: '2026-04-18',
+              deliveryLabel: '6 天后',
+              deliveryPercent: 50,
+              doneTaskCount: 2,
+              durationDays: 6,
+              durationLabel: '7 天',
+              endDate: '2026-04-18',
+              id: 'project-1',
+              name: '短剧样片',
+              notePreview: '先出 30 秒样片',
+              openTaskCount: 3,
+              phaseLabel: '审查前',
+              progressPercent: 40,
+              progressText: '2/5',
+              reviewDate: '2026-04-15',
+              reviewPercent: 25,
+              startDate: '2026-04-12',
+              startPercent: 0,
+              statusKey: 'active',
+              taskCount: 5,
+              urgencyKey: 'focus-critical',
+            },
+            {
+              actionKind: 'task',
+              actionLabel: '字幕校对',
+              assigneeNames: [],
+              assigneePreview: '未分配',
+              barStartPercent: 12,
+              barWidthPercent: 38,
+              blockedTaskCount: 0,
+              daysToDelivery: 8,
+              deliveryDate: '2026-04-20',
+              deliveryLabel: '8 天后',
+              deliveryPercent: 66,
+              doneTaskCount: 0,
+              durationDays: 6,
+              durationLabel: '7 天',
+              endDate: '2026-04-20',
+              id: 'project-2',
+              name: '包装字幕',
+              notePreview: '',
+              openTaskCount: 1,
+              phaseLabel: '制作中',
+              progressPercent: 0,
+              progressText: '0/1',
+              reviewDate: null,
+              reviewPercent: null,
+              startDate: '2026-04-14',
+              startPercent: 12,
+              statusKey: 'active',
+              taskCount: 1,
+              urgencyKey: 'focus-strong',
+            },
+          ],
+        }}
+        onExpandProject={onExpandProject}
+      />,
+    )
+
+    const rows = view.container.querySelectorAll('.pft-row')
+    expect(rows).toHaveLength(2)
+    expect(view.container.querySelector('.pft-hidden-count')?.textContent).toBe('另 1 项')
+    expect(view.container.querySelectorAll('.pft-axis-tick').length).toBeGreaterThanOrEqual(4)
+    expect(view.container.querySelector('.pft-axis-range')?.textContent).toContain('4/12')
+    // Today overlay is under rows-shell only (never through axis "今天")
+    expect(view.container.querySelector('.pft-rows-shell .pft-today-layer')).not.toBeNull()
+    expect(view.container.querySelector('.pft-axis .pft-today-line')).toBeNull()
+    expect(view.container.querySelector('.pft-today-band')).not.toBeNull()
+    expect(view.container.querySelectorAll('.pft-track .pft-today-band').length).toBe(0)
+    expect(rows[0]?.className).toContain('focus-critical')
+    expect(rows[0]?.querySelector('.pft-name')?.textContent).toBe('短剧样片')
+    expect(rows[0]?.querySelector('.pft-phase')?.textContent).toBe('审查前')
+    expect(rows[0]?.textContent).toContain('40%')
+    expect(rows[0]?.textContent).toContain('2/5')
+    expect(rows[0]?.textContent).toContain('1 项受阻')
+    expect(rows[0]?.querySelector('.pft-action')?.getAttribute('data-kind')).toBe('blocked')
+    expect(rows[0]?.querySelector('.pft-identity')).not.toBeNull()
+    expect(rows[0]?.querySelector('.pft-aside')).not.toBeNull()
+    expect(rows[0]?.querySelector('.pft-bar-fill')).not.toBeNull()
+    expect(rows[0]?.tagName).toBe('BUTTON')
+    expect(rows[0]?.textContent).not.toContain('先出 30 秒样片')
+    // 开始 / 审查 / 交付 markers
+    expect(rows[0]?.querySelector('.pft-marker--start')).not.toBeNull()
+    expect(rows[0]?.querySelector('.pft-marker--review')).not.toBeNull()
+    expect(rows[0]?.querySelector('.pft-marker--delivery')).not.toBeNull()
+    expect(rows[0]?.querySelector('[data-pft-marker-icon="start"]')).not.toBeNull()
+    expect(rows[0]?.querySelector('[data-pft-marker-icon="review"]')).not.toBeNull()
+    expect(rows[0]?.querySelector('[data-pft-marker-icon="delivery"]')).not.toBeNull()
+    expect(rows[0]?.querySelectorAll('.pft-marker-badge')).toHaveLength(3)
+    expect(rows[0]?.querySelector('.pft-marker-label')).toBeNull()
+    expect(rows[0]?.querySelector('.pft-marker--start')?.textContent).toBe('')
+    expect(rows[0]?.querySelector('.pft-marker--review')?.textContent).toBe('')
+    expect(rows[0]?.querySelector('.pft-marker--delivery')?.textContent).toBe('')
+    expect(rows[1]?.querySelector('.pft-action')?.getAttribute('data-kind')).toBe('task')
+    expect(rows[1]?.querySelector('.pft-bar')?.getAttribute('style')).toContain('--pft-progress-min: 0px')
+
+    act(() => {
+      ;(rows[0] as HTMLButtonElement).click()
+    })
+    expect(onExpandProject).toHaveBeenCalledWith('project-1', expect.any(Number), expect.any(Number))
+
+    view.cleanup()
+  })
+
+  it('keeps empty project focus readable', () => {
+    const view = renderNode(
+      <ProjectFocusTimeline
+        model={{
+          axisEndDate: '2026-04-24',
+          axisEndLabel: '4/24',
+          axisStartDate: '2026-04-12',
+          axisStartLabel: '4/12',
+          axisTicks: [],
+          hiddenCount: 0,
+          rangeDays: 0,
+          rangeLabel: '',
+          todayPercent: null,
+          items: [],
+        }}
+        onExpandProject={() => {}}
+      />,
+    )
+
+    expect(view.container.textContent).toContain('新建项目后，这里会显示排期')
+    view.cleanup()
   })
 
   it('renders people assignment as a 4x4 card grid with reserved slots', () => {
@@ -114,7 +311,8 @@ describe('dashboard panels', () => {
     expect(firstCardTaskLabel?.textContent).toBe('渲染输出终版确认结果+1')
     expect(firstCardTaskLabel?.querySelector('.person-assignment-task-extra')?.textContent).toBe('+1')
     expect(firstCardSkills?.[0]?.textContent).toBe('Cinema 4D')
-    expect(firstCard?.querySelector('.person-assignment-skills')?.classList.contains('has-skill-overflow')).toBe(false)
+    expect(firstCardSkills?.length).toBeGreaterThanOrEqual(1)
+    expect(firstCardSkills?.length).toBeLessThanOrEqual(2)
     expect(secondCard?.textContent).toContain('佳宁')
     expect(secondCard?.textContent).toContain('After Effects')
     expect(maleMark?.textContent).toBe('♂')
@@ -394,6 +592,8 @@ describe('dashboard panels', () => {
     const skillOverflowRule = styleSource.match(/\.person-assignment-skills-overflow\s*\{[^}]*\}/)?.[0] ?? ''
 
     expect(taskCountRule).not.toMatch(/max-width:\s*calc\(100%\s*-\s*24px\)/)
+    // Restored original skills: slice(0,2) + has-skill-overflow + centered bottom +N
+    expect(cardSource).toMatch(/model\.skills\.slice\(0,\s*2\)/)
     expect(cardSource).toMatch(/has-skill-overflow/)
     expect(skillOverflowRule).toMatch(/position:\s*absolute/)
     expect(skillOverflowRule).toMatch(/left:\s*50%/)
