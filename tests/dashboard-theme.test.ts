@@ -47,13 +47,13 @@ describe('dashboard dark theme styles', () => {
     expect(stylesheet).toContain("[data-theme='dark'] .focus-card.focus-neutral")
   })
 
-  it('isolates project focus rendering without changing its visual declarations', () => {
+  it('promotes project focus filters without changing layout or visual declarations', () => {
     const timelineRule = stylesheet.match(/\n\.project-focus-timeline\s*\{[\s\S]*?\n\}/)?.[0] ?? ''
     const trackRule = stylesheet.match(/\n\.pft-track\s*\{[\s\S]*?\n\}/)?.[0] ?? ''
     const markerRule = stylesheet.match(/\n\.pft-marker-glyph\s*\{[\s\S]*?\n\}/)?.[0] ?? ''
 
-    expect(timelineRule).toMatch(/contain:\s*layout style;/)
-    expect(trackRule).toMatch(/contain:\s*layout style;/)
+    expect(timelineRule).not.toMatch(/contain:/)
+    expect(trackRule).not.toMatch(/contain:/)
     expect(markerRule).toMatch(/will-change:\s*filter;/)
     expect(markerRule).toMatch(/width:\s*20px;/)
     expect(markerRule).toMatch(/height:\s*20px;/)

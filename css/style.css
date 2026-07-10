@@ -1376,7 +1376,6 @@ html[data-easter-mode='konami'] .assignee-chip.selected:has(.assignee-chip-avata
   grid-template-rows: var(--pft-axis-h) minmax(0, 1fr);
   gap: 5px;
   overflow: hidden;
-  contain: layout style;
 }
 
 /* Rows shell hosts the continuous today overlay (rows only — never through axis "今天") */
@@ -1666,7 +1665,6 @@ html[data-easter-mode='konami'] .assignee-chip.selected:has(.assignee-chip-avata
   border: 1px solid color-mix(in srgb, var(--c-border) 88%, transparent);
   /* 允许标记阴影溢出；网格线与 bar 仍由自身尺寸约束 */
   overflow: visible;
-  contain: layout style;
 }
 .pft-grid-line {
   position: absolute;

@@ -38,10 +38,10 @@
 - 使用 `memo` 固定 `ProjectFocusTimeline`，仅在时间轴模型或打开项目回调实际变化时重新渲染。
 - 保持现有 selector、数据流和 DOM 结构不变，不引入新的业务状态或抽象。
 
-### 3. 项目焦点渲染隔离
+### 3. 项目焦点滤镜合成优化
 
-- 在不裁剪溢出内容的前提下，为时间轴和轨道增加安全的 layout/style containment。
 - 对已有 SVG 滤镜使用 `will-change: filter` 合成提示，使 12 个小型滤镜元素更容易保留独立缓存层。
+- 不使用任何 containment；真实浏览器像素对照证明 layout/style containment 会改变约 1,849 个像素，不符合严格视觉基准。
 - 不使用 `contain: paint`，避免裁剪当前阴影光晕。
 - 不使用 `translateZ(0)`，避免文字或 SVG 的抗锯齿观感变化。
 - 不修改任何现有颜色、滤镜、阴影、尺寸或 transition 声明。

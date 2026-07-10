@@ -4,7 +4,7 @@
 
 **Goal:** 在不改变当前视觉、DOM 可访问语义和动画参数的前提下，隔离主题更新并降低首页项目焦点的重复渲染与滤镜重绘成本。
 
-**Architecture:** 使用独立 external store 管理主题偏好和根节点 `data-theme`，仅让侧栏主题按钮订阅变化；Dashboard 与项目焦点时间轴建立 React memo 边界。CSS 只增加不裁剪内容的 layout/style containment 和滤镜合成提示，现有视觉声明原样保留。
+**Architecture:** 使用独立 external store 管理主题偏好和根节点 `data-theme`，仅让侧栏主题按钮订阅变化；Dashboard 与项目焦点时间轴建立 React memo 边界。CSS 只增加 SVG 滤镜合成提示，现有布局和视觉声明原样保留。
 
 **Tech Stack:** React 19、TypeScript 6、CSS、Vitest、jsdom、Vite、内置浏览器
 
@@ -19,7 +19,7 @@
 - Modify: `src/views/Dashboard.tsx` — 建立首页 memo 边界和稳定的项目展开回调
 - Modify: `src/features/dashboard/ProjectFocusTimeline.tsx` — 建立时间轴 memo 边界
 - Modify: `tests/current-app-regressions.test.tsx` — 固定首页与时间轴渲染边界契约
-- Modify: `css/style.css` — 增加安全 containment 和 SVG filter 合成提示
+- Modify: `css/style.css` — 增加 SVG filter 合成提示
 - Modify: `tests/dashboard-theme.test.ts` — 固定渲染提示并防止视觉声明被替换
 
 ### Task 1: 主题 external store
@@ -305,8 +305,8 @@ it('isolates project focus rendering without changing its visual declarations', 
   const trackRule = stylesheet.match(/\.pft-track\s*\{[\s\S]*?\n\}/)?.[0] ?? ''
   const markerRule = stylesheet.match(/\.pft-marker-glyph\s*\{[\s\S]*?\n\}/)?.[0] ?? ''
 
-  expect(timelineRule).toMatch(/contain:\s*layout style;/)
-  expect(trackRule).toMatch(/contain:\s*layout style;/)
+  expect(timelineRule).not.toMatch(/contain:/)
+  expect(trackRule).not.toMatch(/contain:/)
   expect(markerRule).toMatch(/will-change:\s*filter;/)
   expect(markerRule).toMatch(/width:\s*20px;/)
   expect(markerRule).toMatch(/height:\s*20px;/)
@@ -319,19 +319,17 @@ it('isolates project focus rendering without changing its visual declarations', 
 
 Run: `npm run test -- tests/dashboard-theme.test.ts -t "isolates project focus"`
 
-Expected: FAIL，缺少 containment 和 `will-change`。
+Expected: FAIL，缺少 `will-change`。
 
 - [ ] **Step 3: 添加不改变视觉值的渲染提示**
 
-只增加以下三条声明：
+只增加以下声明：
 
 ```css
-.project-focus-timeline { contain: layout style; }
-.pft-track { contain: layout style; }
 .pft-marker-glyph { will-change: filter; }
 ```
 
-不得修改相邻的 background、border、box-shadow、filter、transition、尺寸或 overflow。
+不得增加 containment，也不得修改相邻的 background、border、box-shadow、filter、transition、尺寸或 overflow。
 
 - [ ] **Step 4: 运行 CSS 与 Dashboard 测试**
 
@@ -373,7 +371,7 @@ Expected: 全部 Vitest 测试通过。
 
 - 布局矩形完全一致
 - background、border、shadow、filter、尺寸、transform、transition 完全一致
-- 仅允许 `contain` 和 `will-change` 两类预期计算样式差异
+- 仅允许 `will-change` 这一项预期计算样式差异
 
 - [ ] **Step 4: 比较性能基线**
 
@@ -387,4 +385,3 @@ Expected: 全部 Vitest 测试通过。
 - 没有改变颜色、阴影、尺寸、Hover 或 transition
 - 没有 `theme-switching`、关闭动画或 SVG 视觉替换
 - 没有修改业务、IndexedDB、同步或其他页面功能
-
