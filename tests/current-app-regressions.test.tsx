@@ -879,6 +879,16 @@ describe('current app regressions', () => {
     expect(appSource).not.toMatch(/if \(!easterMode\) \{\s*setEntryFlashVisible\(false\)\s*return\s*\}/)
   })
 
+  it('keeps dashboard and project focus behind stable render boundaries', () => {
+    const dashboardSource = readFileSync(join(process.cwd(), 'src/views/Dashboard.tsx'), 'utf8')
+    const timelineSource = readFileSync(join(process.cwd(), 'src/features/dashboard/ProjectFocusTimeline.tsx'), 'utf8')
+
+    expect(dashboardSource).toMatch(/export const Dashboard = memo\(function Dashboard\(\)/)
+    expect(dashboardSource).toMatch(/const openProjectPanel = useCallback/)
+    expect(dashboardSource).toMatch(/onExpandProject=\{openProjectPanel\}/)
+    expect(timelineSource).toMatch(/export const ProjectFocusTimeline = memo\(function ProjectFocusTimeline/)
+  })
+
   it('keeps materials folder ordering and color metadata syncable with long-press drag UI', () => {
     const materialsSource = readFileSync(join(process.cwd(), 'src/views/Materials.tsx'), 'utf8')
     const materialsStateSource = readFileSync(join(process.cwd(), 'src/features/materials/materialsState.ts'), 'utf8')

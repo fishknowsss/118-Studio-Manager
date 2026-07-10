@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, useSyncExternalStore, type DragEvent } from 'react'
+import { memo, useCallback, useEffect, useMemo, useState, useSyncExternalStore, type DragEvent } from 'react'
 import { DashboardHeader } from '../features/dashboard/DashboardHeader'
 import { DashboardMiniCalendar } from '../features/dashboard/DashboardMiniCalendar'
 import { LeaveDialog } from '../features/dashboard/LeaveDialog'
@@ -62,7 +62,7 @@ function getPanelTitle(panel: NonNullable<ExpandedPanel>, projects: LegacyProjec
   return proj?.name || '项目详情'
 }
 
-export function Dashboard() {
+export const Dashboard = memo(function Dashboard() {
   const store = useLegacyStoreSnapshot()
   const { projects, tasks, people } = store
   const { openPlanner } = usePlanner()
@@ -120,6 +120,9 @@ export function Dashboard() {
     [people, projects, searchQuery, tasks],
   )
   const expandedPanelType = expandedPanel?.type
+  const openProjectPanel = useCallback((id: string, ox: number, oy: number) => {
+    setExpandedPanel({ type: 'project', projectId: id, ox, oy })
+  }, [])
 
   useEffect(() => {
     if (expandedPanelType) {
@@ -295,7 +298,7 @@ export function Dashboard() {
         <div className="focus-cards">
           <ProjectFocusTimeline
             model={projectFocusTimeline}
-            onExpandProject={(id, ox, oy) => setExpandedPanel({ type: 'project', projectId: id, ox, oy })}
+            onExpandProject={openProjectPanel}
           />
         </div>
       </div>
@@ -414,4 +417,4 @@ export function Dashboard() {
       })() : null}
     </div>
   )
-}
+})

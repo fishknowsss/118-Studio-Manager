@@ -1,4 +1,5 @@
 import type React from 'react'
+import { memo } from 'react'
 import { Flag, PackageCheck, Search } from 'lucide-react'
 import type { DashboardProjectFocusTimelineModel } from '../../legacy/selectors'
 import { formatDate } from '../../legacy/utils'
@@ -11,7 +12,7 @@ const MARKER_STROKE = 2.25
  * Project focus Gantt strip.
  * Markers: Lucide Flag · Search · PackageCheck（保留白色 halo，颜色跟 bar 紧急色 / 主色）
  */
-export function ProjectFocusTimeline({
+export const ProjectFocusTimeline = memo(function ProjectFocusTimeline({
   model,
   onExpandProject,
 }: {
@@ -180,4 +181,4 @@ export function ProjectFocusTimeline({
       </div>
     </div>
   )
-}
+})
