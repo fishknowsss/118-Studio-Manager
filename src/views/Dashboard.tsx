@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, useSyncExternalStore, type DragEvent } from 'react'
+import { memo, useEffect, useMemo, useState, useSyncExternalStore, type DragEvent } from 'react'
 import { DashboardHeader } from '../features/dashboard/DashboardHeader'
 import { DashboardMiniCalendar } from '../features/dashboard/DashboardMiniCalendar'
 import { LeaveDialog } from '../features/dashboard/LeaveDialog'
@@ -62,7 +62,7 @@ function getPanelTitle(panel: NonNullable<ExpandedPanel>, projects: LegacyProjec
   return proj?.name || '项目详情'
 }
 
-export function Dashboard() {
+export const Dashboard = memo(function Dashboard() {
   const store = useLegacyStoreSnapshot()
   const { projects, tasks, people } = store
   const { openPlanner } = usePlanner()
@@ -414,4 +414,4 @@ export function Dashboard() {
       })() : null}
     </div>
   )
-}
+})
