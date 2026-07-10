@@ -1,8 +1,16 @@
-import React, { useEffect, useRef, useState } from 'react'
+import React, { useEffect, useRef, useState, useSyncExternalStore } from 'react'
 import { ConfirmProvider } from './components/feedback/ConfirmProvider'
 import { ToastProvider } from './components/feedback/ToastProvider'
 import { PlannerProvider } from './features/planner/PlannerProvider'
 import { CloudSyncProvider } from './features/sync/SyncProvider'
+import {
+  getServerThemeSnapshot,
+  getTheme,
+  hydrateThemeFromStorage,
+  setEasterThemeOverride,
+  subscribeTheme,
+  toggleTheme,
+} from './features/theme/themeStore'
 import { initializeAppData } from './legacy/bootstrap'
 import { Dashboard } from './views/Dashboard'
 import { Materials } from './views/Materials'
@@ -51,7 +59,6 @@ function getHashView() {
 
 export default function App() {
   const [view, setView] = useState(getHashView)
-  const [theme, setTheme] = useState(() => localStorage.getItem('theme') || 'light')
   const [easterMode, setEasterMode] = useState(false)
   const [entryFlashVisible, setEntryFlashVisible] = useState(false)
   const [ready, setReady] = useState(false)
@@ -73,12 +80,8 @@ export default function App() {
   }, [])
 
   useEffect(() => {
-    localStorage.setItem('theme', theme)
-  }, [theme])
-
-  useEffect(() => {
-    document.documentElement.setAttribute('data-theme', easterMode ? 'light' : theme)
-  }, [easterMode, theme])
+    hydrateThemeFromStorage()
+  }, [])
 
   useEffect(() => {
     const onHash = () => setView(getHashView())
@@ -87,6 +90,7 @@ export default function App() {
   }, [])
 
   useEffect(() => {
+    setEasterThemeOverride(easterMode)
     const nextValue = easterMode ? 'konami' : null
     const targets = [document.documentElement, document.body]
 
@@ -102,6 +106,7 @@ export default function App() {
       for (const target of targets) {
         target.removeAttribute('data-easter-mode')
       }
+      setEasterThemeOverride(false)
     }
   }, [easterMode])
 
@@ -231,7 +236,6 @@ export default function App() {
                 <div className="sidebar-footer">
                   <FooterModeButton
                     easterMode={easterMode}
-                    theme={theme}
                     onExitEasterMode={() => {
                       if (entryFlashTimerRef.current) {
                         window.clearTimeout(entryFlashTimerRef.current)
@@ -240,7 +244,6 @@ export default function App() {
                       setEntryFlashVisible(false)
                       setEasterMode(false)
                     }}
-                    onToggleTheme={() => setTheme((current) => current === 'dark' ? 'light' : 'dark')}
                   />
                   <NavItem label="设置" active={view === 'settings'} onClick={() => window.location.hash = '#settings'}>
                     <circle cx="12" cy="12" r="3" />
@@ -281,17 +284,15 @@ function SidebarBrand({ easterMode }: { easterMode: boolean }) {
 
 function FooterModeButton({
   easterMode,
-  theme,
   onExitEasterMode,
-  onToggleTheme,
 }: {
   easterMode: boolean
-  theme: string
   onExitEasterMode: () => void
-  onToggleTheme: () => void
 }) {
+  const theme = useSyncExternalStore(subscribeTheme, getTheme, getServerThemeSnapshot)
+
   return (
-    <button className={`nav-item nav-button${easterMode ? ' is-easter-toggle' : ''}`} type="button" onClick={easterMode ? onExitEasterMode : onToggleTheme}>
+    <button className={`nav-item nav-button${easterMode ? ' is-easter-toggle' : ''}`} type="button" onClick={easterMode ? onExitEasterMode : toggleTheme}>
       <svg className="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
         {easterMode ? (
           <>

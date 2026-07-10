@@ -5,6 +5,10 @@ import { act } from 'react'
 import { createRoot } from 'react-dom/client'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+const { dashboardRenderSpy } = vi.hoisted(() => ({
+  dashboardRenderSpy: vi.fn(),
+}))
+
 vi.mock('../src/legacy/bootstrap', () => ({
   initializeAppData: vi.fn().mockResolvedValue(undefined),
 }))
@@ -35,6 +39,7 @@ vi.mock('../src/features/sync/SyncProvider', () => ({
 
 vi.mock('../src/views/Dashboard', () => ({
   Dashboard() {
+    dashboardRenderSpy()
     return (
       <div>
         <input aria-label="首页搜索" />
@@ -111,6 +116,26 @@ describe('konami anomaly mode', () => {
     window.location.hash = '#dashboard'
     localStorage.clear()
     document.body.innerHTML = ''
+    dashboardRenderSpy.mockClear()
+  })
+
+  it('switches the normal theme without rerendering the dashboard', async () => {
+    const view = await renderApp()
+    const rendersBefore = dashboardRenderSpy.mock.calls.length
+    const button = Array.from(view.container.querySelectorAll('button')).find((item) =>
+      item.textContent?.includes('深色模式'),
+    )
+
+    await act(async () => {
+      button?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+    })
+
+    expect(document.documentElement.dataset.theme).toBe('dark')
+    expect(localStorage.getItem('theme')).toBe('dark')
+    expect(view.container.textContent).toContain('浅色模式')
+    expect(dashboardRenderSpy).toHaveBeenCalledTimes(rendersBefore)
+
+    view.cleanup()
   })
 
   it('enters anomaly mode after the konami sequence on the dashboard shell', async () => {
