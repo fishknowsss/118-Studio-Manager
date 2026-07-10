@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useMemo, useState } from 'react'
 import { useConfirm } from '../../components/feedback/ConfirmProvider'
 import { useToast } from '../../components/feedback/ToastProvider'
 import { DatePicker } from '../../components/ui/DatePicker'
@@ -19,6 +19,46 @@ type TaskMenuState =
   | { taskId: string; type: 'priority'; x: number; y: number }
   | { taskId: string; type: 'status'; x: number; y: number }
 
+type ScheduleFormState = {
+  deliveryDate: string | null
+  endDate: string | null
+  notes: string
+  reviewDate: string | null
+  startDate: string | null
+}
+
+const EMPTY_SCHEDULE_FORM: ScheduleFormState = {
+  deliveryDate: null,
+  endDate: null,
+  notes: '',
+  reviewDate: null,
+  startDate: null,
+}
+
+/** Keep user-facing schedule fields as stored semantics; never invent endDate from delivery. */
+function buildScheduleFormFromProject(project: LegacyProject): ScheduleFormState {
+  return {
+    deliveryDate: project.deliveryDate || project.ddl || null,
+    endDate: project.endDate || null,
+    notes: project.notes || '',
+    reviewDate: project.reviewDate || null,
+    startDate: project.startDate || null,
+  }
+}
+
+function scheduleFormSyncKey(project: LegacyProject | undefined): string {
+  if (!project) return ''
+  const form = buildScheduleFormFromProject(project)
+  return [
+    project.id,
+    form.startDate ?? '',
+    form.reviewDate ?? '',
+    form.deliveryDate ?? '',
+    form.endDate ?? '',
+    form.notes,
+  ].join('\u0001')
+}
+
 export function ProjectDetailPanel({ projectId }: { projectId: string }) {
   const snap = useLegacyStoreSnapshot()
   const { confirm } = useConfirm()
@@ -28,16 +68,21 @@ export function ProjectDetailPanel({ projectId }: { projectId: string }) {
   const [contextMenu, setContextMenu] = useState<TaskMenuState | null>(null)
   const [completeDialogOpen, setCompleteDialogOpen] = useState(false)
   const [delayDialogOpen, setDelayDialogOpen] = useState(false)
-  const [scheduleForm, setScheduleForm] = useState({
-    deliveryDate: null as string | null,
-    endDate: null as string | null,
-    notes: '',
-    reviewDate: null as string | null,
-    startDate: null as string | null,
-  })
 
   const project = snap.projects.find((p) => p.id === projectId)
   const todayStr = today()
+  const nextScheduleSyncKey = scheduleFormSyncKey(project)
+
+  const [scheduleForm, setScheduleForm] = useState<ScheduleFormState>(() =>
+    project ? buildScheduleFormFromProject(project) : EMPTY_SCHEDULE_FORM,
+  )
+  const [scheduleSyncKey, setScheduleSyncKey] = useState(nextScheduleSyncKey)
+
+  // Reset editable schedule when the stored project schedule changes (project switch or external save).
+  if (nextScheduleSyncKey !== scheduleSyncKey) {
+    setScheduleSyncKey(nextScheduleSyncKey)
+    setScheduleForm(project ? buildScheduleFormFromProject(project) : EMPTY_SCHEDULE_FORM)
+  }
 
   const projectTasks = useMemo(
     () => snap.tasks.filter((t) => t.projectId === projectId),
@@ -53,18 +98,6 @@ export function ProjectDetailPanel({ projectId }: { projectId: string }) {
     () => snap.people.filter((p) => p.status === 'active'),
     [snap.people],
   )
-
-  useEffect(() => {
-    if (!project) return
-    // Keep user-facing schedule fields as stored semantics; never invent endDate from delivery.
-    setScheduleForm({
-      deliveryDate: project.deliveryDate || project.ddl || null,
-      endDate: project.endDate || null,
-      notes: project.notes || '',
-      reviewDate: project.reviewDate || null,
-      startDate: project.startDate || null,
-    })
-  }, [project])
 
   const contextItems = useMemo<ContextMenuItem[]>(() => {
     if (!contextMenu) return []
