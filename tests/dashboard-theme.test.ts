@@ -64,4 +64,14 @@ describe('dashboard dark theme styles', () => {
     expect(stylesheet).toMatch(/html\.theme-switching,[\s\S]*html\.theme-switching \*::after[\s\S]*transition:\s*none !important;/)
     expect(stylesheet).not.toMatch(/theme-switching[\s\S]{0,300}animation-duration:/)
   })
+
+  it('keeps project focus hover visual values with a 90ms response', () => {
+    const rowRule = stylesheet.match(/\n\.pft-row\s*\{[\s\S]*?\n\}/)?.[0] ?? ''
+    const hoverRule = stylesheet.match(/\n\.pft-row:hover,[\s\S]*?\n\}/)?.[0] ?? ''
+
+    expect(rowRule).toMatch(/transition:\s*border-color \.09s ease, background \.09s ease, box-shadow \.09s ease;/)
+    expect(hoverRule).toMatch(/background:\s*color-mix\(in srgb, var\(--pft-accent\) 5\.5%, var\(--c-surface\)\);/)
+    expect(hoverRule).toMatch(/border-color:\s*color-mix\(in srgb, var\(--pft-accent\) 36%, var\(--c-border\)\);/)
+    expect(hoverRule).toMatch(/box-shadow:\s*0 1px 4px rgba\(15, 23, 42, \.04\);/)
+  })
 })

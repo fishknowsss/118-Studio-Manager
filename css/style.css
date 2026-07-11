@@ -1558,7 +1558,7 @@ html[data-easter-mode='konami'] .assignee-chip.selected:has(.assignee-chip-avata
   text-align: left;
   /* visible：标记阴影可溢出 track；x 方向仍由子项 min-width 约束 */
   overflow: visible;
-  transition: border-color .15s ease, background .15s ease, box-shadow .15s ease;
+  transition: border-color .09s ease, background .09s ease, box-shadow .09s ease;
 }
 .pft-row:hover,
 .pft-row:focus-visible {
