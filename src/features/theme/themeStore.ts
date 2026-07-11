@@ -1,10 +1,13 @@
 export type AppTheme = 'light' | 'dark'
 
 const THEME_STORAGE_KEY = 'theme'
+const THEME_SWITCHING_CLASS = 'theme-switching'
 const listeners = new Set<() => void>()
 
 let theme: AppTheme = readStoredTheme()
 let easterForcesLight = false
+let switchingFrameOne: number | null = null
+let switchingFrameTwo: number | null = null
 
 function readStoredTheme(): AppTheme {
   try {
@@ -17,6 +20,37 @@ function readStoredTheme(): AppTheme {
 function applyDocumentTheme() {
   if (typeof document === 'undefined') return
   document.documentElement.dataset.theme = easterForcesLight ? 'light' : theme
+}
+
+function effectiveDocumentTheme(): AppTheme {
+  return easterForcesLight ? 'light' : theme
+}
+
+function cancelSwitchingFrames() {
+  if (typeof cancelAnimationFrame === 'function') {
+    if (switchingFrameOne !== null) cancelAnimationFrame(switchingFrameOne)
+    if (switchingFrameTwo !== null) cancelAnimationFrame(switchingFrameTwo)
+  }
+  switchingFrameOne = null
+  switchingFrameTwo = null
+}
+
+function beginThemeSwitching() {
+  if (typeof document === 'undefined') return
+  const root = document.documentElement
+  root.classList.add(THEME_SWITCHING_CLASS)
+  cancelSwitchingFrames()
+  if (typeof requestAnimationFrame !== 'function') {
+    root.classList.remove(THEME_SWITCHING_CLASS)
+    return
+  }
+  switchingFrameOne = requestAnimationFrame(() => {
+    switchingFrameOne = null
+    switchingFrameTwo = requestAnimationFrame(() => {
+      switchingFrameTwo = null
+      root.classList.remove(THEME_SWITCHING_CLASS)
+    })
+  })
 }
 
 function notifyThemeListeners() {
@@ -50,6 +84,7 @@ export function setTheme(next: AppTheme | ((current: AppTheme) => AppTheme)) {
   const resolved = typeof next === 'function' ? next(theme) : next
   if (resolved === theme) return
 
+  beginThemeSwitching()
   theme = resolved
   try {
     localStorage.setItem(THEME_STORAGE_KEY, theme)
@@ -65,6 +100,8 @@ export function toggleTheme() {
 }
 
 export function setEasterThemeOverride(active: boolean) {
+  const previousTheme = effectiveDocumentTheme()
   easterForcesLight = active
+  if (previousTheme !== effectiveDocumentTheme()) beginThemeSwitching()
   applyDocumentTheme()
 }

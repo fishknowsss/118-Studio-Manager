@@ -58,6 +58,10 @@ describe('dashboard dark theme styles', () => {
     expect(markerRule).toMatch(/width:\s*20px;/)
     expect(markerRule).toMatch(/height:\s*20px;/)
     expect(markerRule).toMatch(/drop-shadow\(0 0 0\.75px #ffffff\)/)
-    expect(stylesheet).not.toMatch(/theme-switching/)
+  })
+
+  it('disables only transitions during an active theme switch', () => {
+    expect(stylesheet).toMatch(/html\.theme-switching,[\s\S]*html\.theme-switching \*::after[\s\S]*transition:\s*none !important;/)
+    expect(stylesheet).not.toMatch(/theme-switching[\s\S]{0,300}animation-duration:/)
   })
 })
