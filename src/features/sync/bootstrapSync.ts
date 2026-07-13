@@ -22,6 +22,7 @@ export async function restoreCloudSnapshotOnBoot() {
   writePersistedCloudSyncState({
     lastCompletedSyncAt: new Date().toISOString(),
     lastAppliedVersion: current.meta.version,
+    pendingLocalChanges: false,
   })
   return true
 }

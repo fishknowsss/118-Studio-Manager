@@ -57,9 +57,22 @@ export function ClientBriefDialog({ brief, projectOptions, onSave, onClose }: Pr
       ? (projectOptions.find((p) => p.id === projectId)?.name ?? projectName)
       : projectName
 
-    const validRefs = refs
-      .map((r) => ({ label: r.label.trim(), url: normalizeMaterialUrl(r.url) }))
-      .filter((r) => r.label && r.url)
+    const validRefs: RefEntry[] = []
+    for (const reference of refs) {
+      const label = reference.label.trim()
+      const rawUrl = reference.url.trim()
+      if (!label && !rawUrl) continue
+      if (!label) {
+        toast('请填写参考链接名称', 'error')
+        return
+      }
+      const url = normalizeMaterialUrl(rawUrl)
+      if (!url) {
+        toast('请输入有效的参考链接', 'error')
+        return
+      }
+      validRefs.push({ label, url })
+    }
 
     const now = new Date().toISOString()
     onSave({

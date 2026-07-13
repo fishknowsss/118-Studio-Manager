@@ -3,6 +3,7 @@ import type { DragEvent, MouseEvent } from 'react'
 import type { LegacyPerson, LegacyProject, LegacyTask } from '../../legacy/store'
 import { TASK_STATUSES } from '../../legacy/store'
 import { SquidMark } from '../../components/easter/SquidMark'
+import { useConfirm } from '../../components/feedback/ConfirmProvider'
 import { getSquidVariant, hasSquidAssignee } from '../../components/easter/squidMarkUtils'
 import { ContextMenu, type ContextMenuItem } from '../../components/ui/ContextMenu'
 import { TaskDialog } from '../tasks/TaskDialog'
@@ -68,6 +69,7 @@ export function TaskPoolPanel({
   tasks: TaskRow[]
 }) {
   const snap = useLegacyStoreSnapshot()
+  const { confirm } = useConfirm()
   const panelRef = useRef<HTMLDivElement | null>(null)
   const isTaskDraggingRef = useRef(false)
   const [ctxMenu, setCtxMenu] = useState<CtxState | null>(null)
@@ -140,9 +142,15 @@ export function TaskPoolPanel({
     setEditingTask(task)
   }
 
+  const requestDeleteTask = async (task: TaskRow) => {
+    const confirmed = await confirm('删除任务', `确认删除「${task.title || '未命名任务'}」？`)
+    if (!confirmed) return
+    await deleteTaskWithLog(task)
+  }
+
   const deleteDetailTask = (task: TaskRow) => {
     setDetailState(null)
-    void deleteTaskWithLog(task)
+    void requestDeleteTask(task)
   }
 
   const ctxItems: ContextMenuItem[] = ctxMenu
@@ -164,7 +172,7 @@ export function TaskPoolPanel({
           key: 'delete',
           label: '删除任务',
           tone: 'danger' as const,
-          onSelect: () => { void deleteTaskWithLog(ctxMenu.task) },
+          onSelect: () => { void requestDeleteTask(ctxMenu.task) },
         },
       ]
     : []
@@ -195,7 +203,9 @@ export function TaskPoolPanel({
         <span className="panel-title">任务池</span>
         <button
           className={`pool-hide-done-btn ${hideDone ? 'is-active' : ''}`}
+          type="button"
           title={hideDone ? '显示已完成' : '隐藏已完成'}
+          aria-label={hideDone ? '显示已完成' : '隐藏已完成'}
           onClick={(e) => { e.stopPropagation(); setHideDone((v) => !v) }}
         >
           {hideDone ? (
@@ -211,11 +221,19 @@ export function TaskPoolPanel({
             </svg>
           )}
         </button>
-        <span className="panel-action">展开全部</span>
+        <button
+          className="panel-action"
+          type="button"
+          onClick={(event) => {
+            event.stopPropagation()
+            const r = event.currentTarget.getBoundingClientRect()
+            onExpand(r.left + r.width / 2, r.top + r.height / 2)
+          }}
+        >展开全部</button>
       </div>
       <div className="panel-body task-pool-body">
         {tasks.length === 0 ? (
-          <div className="empty-state"><div className="empty-text">暂无待处理任务</div></div>
+          <div className="empty-state"><div className="empty-text">新建或拖入任务</div></div>
         ) : (
           tasks.filter((t) => !hideDone || t.status !== 'done').map((task) => {
             const isOverdue = task.endDate && task.endDate < today() && task.status !== 'done'

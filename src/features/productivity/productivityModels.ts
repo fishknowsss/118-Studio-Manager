@@ -28,6 +28,22 @@ export type ScheduleOwnerSummary = {
   updatedAt: string
 }
 
+export function findImportedSchedulePerson(
+  people: Pick<LegacyPerson, 'id' | 'name' | 'studentNo'>[],
+  imported: { personName: string; studentNo: string },
+) {
+  const studentNo = imported.studentNo.trim()
+  if (studentNo) {
+    return people.find((person) => person.studentNo?.trim() === studentNo)
+  }
+
+  const personName = imported.personName.trim()
+  const nameMatches = people.filter((person) => (
+    !person.studentNo?.trim() && person.name?.trim() === personName
+  ))
+  return nameMatches.length === 1 ? nameMatches[0] : undefined
+}
+
 function daysFromReference(dateStr: string | null | undefined, referenceDate: string) {
   if (!dateStr) return null
   const target = parseLocalDateKey(dateStr)

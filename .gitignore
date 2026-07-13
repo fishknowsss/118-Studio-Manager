@@ -3,15 +3,16 @@ node_modules/
 
 # Build output
 dist/
+output/
 
 # OS
 .DS_Store
 **/.DS_Store
 
-# Environment variables (keep .env.example)
-.env
-.env.local
-.env.*.local
+# Environment variables (keep examples)
+.env*
+!.env.example
+!**/.env.example
 
 # Editor
 .vscode/
@@ -22,6 +23,7 @@ dist/
 
 # Playwright MCP runtime (debug logs & snapshots)
 .playwright-mcp/
+.playwright-cli/
 
 # Logs
 *.log
@@ -42,6 +44,9 @@ playwright/.cache/
 
 # Wrangler (Cloudflare Worker dev artifacts)
 cloudflare/sync-worker/.wrangler/
+cloudflare/sync-worker/wrangler.local.toml
+cloudflare/sync-worker/.dev.vars*
+!cloudflare/sync-worker/.dev.vars.example
 wrangler.lock
 
 # macOS quarantine / system logs

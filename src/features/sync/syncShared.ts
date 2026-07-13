@@ -1,4 +1,4 @@
-import type { BackupPayload } from '../../legacy/utils'
+import { BACKUP_COLLECTION_NAMES, type BackupPayload } from '../../legacy/utils'
 
 export type SyncSource = 'auto' | 'manual'
 
@@ -19,18 +19,7 @@ export type SyncMetaResponse = {
 }
 
 export function hasBackupContent(payload: BackupPayload) {
-  return (
-    payload.projects.length > 0 ||
-    payload.tasks.length > 0 ||
-    payload.people.length > 0 ||
-    payload.logs.length > 0 ||
-    payload.settings.length > 0 ||
-    payload.leaveRecords.length > 0 ||
-    (payload.classSchedules?.length ?? 0) > 0 ||
-    (payload.shortDramas?.length ?? 0) > 0 ||
-    (payload.shortDramaGroups?.length ?? 0) > 0 ||
-    (payload.shortDramaAssignments?.length ?? 0) > 0
-  )
+  return BACKUP_COLLECTION_NAMES.some((name) => payload[name].length > 0)
 }
 
 export function applyRemoteWrite({

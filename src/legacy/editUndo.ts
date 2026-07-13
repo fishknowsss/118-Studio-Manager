@@ -1,5 +1,5 @@
 import { db } from './db'
-import { store } from './store'
+import { runTrackedStoreWrite, store } from './store'
 import type { BackupPayload } from './utils'
 import { flushSyncableViewStatePersistence, reloadSyncableViewStateFromDB } from '../features/persistence/syncableViewState'
 
@@ -74,19 +74,21 @@ export async function undoLastEdit() {
   const entry = undoStack[0]
   if (!entry) return null
 
-  await flushSyncableViewStatePersistence()
-  await db.importAll(entry.snapshot)
-  await reloadSyncableViewStateFromDB()
-  await store.loadAll()
-  undoStack.shift()
-  emitUndoChanged()
+  return await runTrackedStoreWrite(async () => {
+    await flushSyncableViewStatePersistence()
+    await db.importAll(entry.snapshot)
+    await reloadSyncableViewStateFromDB()
+    await store.loadAll()
+    undoStack.shift()
+    emitUndoChanged()
 
-  return {
-    id: entry.id,
-    label: entry.label,
-    createdAt: entry.createdAt,
-    revertedCount: 1,
-  }
+    return {
+      id: entry.id,
+      label: entry.label,
+      createdAt: entry.createdAt,
+      revertedCount: 1,
+    }
+  })
 }
 
 export async function undoEditById(id: string) {
@@ -96,18 +98,20 @@ export async function undoEditById(id: string) {
   const target = undoStack[index]
   if (!target) return null
 
-  await flushSyncableViewStatePersistence()
-  await db.importAll(target.snapshot)
-  await reloadSyncableViewStateFromDB()
-  await store.loadAll()
-  const revertedCount = index + 1
-  undoStack.splice(0, revertedCount)
-  emitUndoChanged()
+  return await runTrackedStoreWrite(async () => {
+    await flushSyncableViewStatePersistence()
+    await db.importAll(target.snapshot)
+    await reloadSyncableViewStateFromDB()
+    await store.loadAll()
+    const revertedCount = index + 1
+    undoStack.splice(0, revertedCount)
+    emitUndoChanged()
 
-  return {
-    id: target.id,
-    label: target.label,
-    createdAt: target.createdAt,
-    revertedCount,
-  }
+    return {
+      id: target.id,
+      label: target.label,
+      createdAt: target.createdAt,
+      revertedCount,
+    }
+  })
 }

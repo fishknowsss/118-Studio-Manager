@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState, useSyncExternalStore } from 'react'
+import React, { lazy, Suspense, useEffect, useRef, useState, useSyncExternalStore } from 'react'
 import { ConfirmProvider } from './components/feedback/ConfirmProvider'
 import { ToastProvider } from './components/feedback/ToastProvider'
 import { PlannerProvider } from './features/planner/PlannerProvider'
@@ -13,12 +13,13 @@ import {
 } from './features/theme/themeStore'
 import { initializeAppData } from './legacy/bootstrap'
 import { Dashboard } from './views/Dashboard'
-import { Materials } from './views/Materials'
-import { Productivity } from './views/Productivity'
-import { Graph } from './views/Graph'
-import { ShortDrama } from './views/ShortDrama'
-import { Tools } from './views/Tools'
-import { Settings } from './views/Settings'
+
+const Materials = lazy(() => import('./views/Materials').then((module) => ({ default: module.Materials })))
+const Productivity = lazy(() => import('./views/Productivity').then((module) => ({ default: module.Productivity })))
+const Graph = lazy(() => import('./views/Graph').then((module) => ({ default: module.Graph })))
+const ShortDrama = lazy(() => import('./views/ShortDrama').then((module) => ({ default: module.ShortDrama })))
+const Tools = lazy(() => import('./views/Tools').then((module) => ({ default: module.Tools })))
+const Settings = lazy(() => import('./views/Settings').then((module) => ({ default: module.Settings })))
 
 const VIEWS: Record<string, React.ComponentType> = {
   dashboard: Dashboard,
@@ -49,6 +50,30 @@ function isEditableTarget(target: EventTarget | null) {
   if (target.isContentEditable) return true
   if (target.closest('[contenteditable="true"]')) return true
   return ['INPUT', 'TEXTAREA', 'SELECT'].includes(target.tagName)
+}
+
+class ViewErrorBoundary extends React.Component<React.PropsWithChildren, { failed: boolean }> {
+  state = { failed: false }
+
+  static getDerivedStateFromError() {
+    return { failed: true }
+  }
+
+  componentDidCatch(error: Error) {
+    console.error('[118SM] 页面加载失败:', error)
+  }
+
+  render() {
+    if (this.state.failed) {
+      return (
+        <div className="view-load-error" role="alert">
+          <strong>页面加载失败</strong>
+          <button className="btn btn-primary" type="button" onClick={() => window.location.reload()}>重新加载</button>
+        </div>
+      )
+    }
+    return this.props.children
+  }
 }
 
 function getHashView() {
@@ -254,7 +279,11 @@ export default function App() {
 
               <main className="main-content">
                 <div id="view-container">
-                  <CurrentView />
+                  <ViewErrorBoundary key={view}>
+                    <Suspense fallback={<div className="view-loading" role="status">正在打开</div>}>
+                      <CurrentView />
+                    </Suspense>
+                  </ViewErrorBoundary>
                 </div>
               </main>
             </div>

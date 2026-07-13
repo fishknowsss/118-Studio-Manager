@@ -7,7 +7,7 @@ import { PersonStatusMark } from './PersonStatusMark'
 
 function getSkillTagClassName(skill: string) {
   const charCount = Array.from(skill.trim()).length
-  return charCount >= 7 ? 'skill-tag skill-tag-compact' : 'skill-tag'
+  return charCount >= 6 ? 'skill-tag skill-tag-compact' : 'skill-tag'
 }
 
 export function PersonAssignmentCard({
@@ -52,6 +52,9 @@ export function PersonAssignmentCard({
       ref={cardRef}
       className={`person-assignment-card ${isDropTarget ? 'drop-target' : ''} ${isReorderTarget ? 'reorder-target' : ''} ${isPresent ? 'is-present' : ''} ${model.isOnLeaveToday ? 'on-leave' : ''}`}
       draggable
+      role="button"
+      tabIndex={0}
+      aria-label={`打开${model.name}的详情`}
       data-person-id={model.id}
       onDragEnd={onDragEnd}
       onDragLeave={onDragLeave}
@@ -74,6 +77,12 @@ export function PersonAssignmentCard({
           return
         }
 
+        const r = event.currentTarget.getBoundingClientRect()
+        onPersonClick(model.id, r.left + r.width / 2, r.top + r.height / 2)
+      }}
+      onKeyDown={(event) => {
+        if (event.key !== 'Enter' && event.key !== ' ') return
+        event.preventDefault()
         const r = event.currentTarget.getBoundingClientRect()
         onPersonClick(model.id, r.left + r.width / 2, r.top + r.height / 2)
       }}
@@ -100,7 +109,7 @@ export function PersonAssignmentCard({
               {hiddenSkillCount > 0 ? <span className="person-assignment-skills-overflow">+{hiddenSkillCount}</span> : null}
             </>
           )
-          : <span className="person-assignment-empty-skill">待补技能</span>}
+          : <span className="person-assignment-empty-skill">补充技能</span>}
       </div>
       {genderTone !== 'neutral' ? <span className={`person-assignment-gender-mark ${genderTone}`}>{genderSymbol}</span> : null}
     </div>

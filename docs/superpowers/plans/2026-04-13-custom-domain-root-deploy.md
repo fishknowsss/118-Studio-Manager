@@ -2,7 +2,7 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Make `https://118.fishknowsss.com/` the canonical production entry instead of the old `/118-Studio-Manager/vc/` path.
+**Goal:** Make `https://studio.example.com/` the canonical production entry instead of the old `/118-Studio-Manager/vc/` path.
 
 **Architecture:** Keep the app UI unchanged and only adjust build/deploy path handling. Update the regression tests first so the deployment contract reflects the custom-domain root path, then change Vite and the GitHub Pages workflow to publish the VC build at `/`.
 
@@ -27,7 +27,7 @@
 
 - [ ] Change the Vite production fallback base from `/118-Studio-Manager/vc/` to `/`.
 - [ ] Update the GitHub Pages workflow so the `vc` branch publishes the built app at the site root and the generated root `index.html` no longer redirects to the old repo subpath.
-- [ ] Refresh README deployment notes so they describe `118.fishknowsss.com` as the canonical VC entry.
+- [ ] Refresh README deployment notes so they describe `studio.example.com` as the canonical VC entry.
 
 ### Task 3: Verify the new deployment contract
 

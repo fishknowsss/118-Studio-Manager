@@ -254,12 +254,59 @@ function sanitizeProjectRecord(project: ProjectRecord): LegacyProject {
   ) as LegacyProject
 }
 
-const listeners: Set<() => void> = new Set()
+const listeners: Set<(detail?: Record<string, unknown>) => void> = new Set()
+const storeWriteStartedListeners = new Set<() => void>()
+const activeStoreWrites = new Set<Promise<unknown>>()
+
+export function runTrackedStoreWrite<T>(write: () => Promise<T>): Promise<T> {
+  let resolveWrite!: (value: T | PromiseLike<T>) => void
+  let rejectWrite!: (reason?: unknown) => void
+  const trackedWrite = new Promise<T>((resolve, reject) => {
+    resolveWrite = resolve
+    rejectWrite = reject
+  })
+
+  activeStoreWrites.add(trackedWrite)
+  storeWriteStartedListeners.forEach((listener) => {
+    try {
+      listener()
+    } catch (error) {
+      console.error('Store write-start listener failed', error)
+    }
+  })
+
+  try {
+    void write().then(resolveWrite, rejectWrite)
+  } catch (error) {
+    rejectWrite(error)
+  }
+
+  void trackedWrite.then(
+    () => activeStoreWrites.delete(trackedWrite),
+    () => activeStoreWrites.delete(trackedWrite),
+  )
+  return trackedWrite
+}
+
+const trackStoreWrite = runTrackedStoreWrite
+
+export function subscribeStoreWriteStarted(listener: () => void) {
+  storeWriteStartedListeners.add(listener)
+  return () => {
+    storeWriteStartedListeners.delete(listener)
+  }
+}
+
+export async function waitForStoreWrites() {
+  while (activeStoreWrites.size > 0) {
+    await Promise.allSettled([...activeStoreWrites])
+  }
+}
 
 function emitStoreUpdated(detail: Record<string, unknown> = {}) {
   store.version++
   document.dispatchEvent(new CustomEvent('storeUpdated', { detail }))
-  listeners.forEach(l => l())
+  listeners.forEach((listener) => listener(detail))
 }
 
 export const store = {
@@ -274,7 +321,7 @@ export const store = {
   shortDramaAssignments: [] as ShortDramaAssignment[],
   version: 0,
 
-  subscribe(listener: () => void) {
+  subscribe(listener: (detail?: Record<string, unknown>) => void) {
     listeners.add(listener)
     return () => listeners.delete(listener)
   },
@@ -319,55 +366,63 @@ export const store = {
       allocations: assignment.allocations || [],
       producerIds: assignment.producerIds || [],
     }))
-    emitStoreUpdated()
+    emitStoreUpdated({ source: 'reload' })
   },
 
-  async saveProject(project: LegacyProject) {
-    const sanitizedProject = sanitizeProjectRecord(project as ProjectRecord)
-    await db.put('projects', sanitizedProject)
-    const index = this.projects.findIndex(item => item.id === sanitizedProject.id)
-    if (index >= 0) {
-      const next = [...this.projects]
-      next[index] = sanitizedProject
-      this.projects = next
-    } else {
-      this.projects = [...this.projects, sanitizedProject]
-    }
-    emitStoreUpdated({ type: 'project', action: 'save', id: sanitizedProject.id })
-  },
-
-  async deleteProject(id: string) {
-    const relatedIds = this.tasks.filter(task => task.projectId === id).map(task => task.id)
-    await db.runTransaction(['projects', 'tasks'], 'readwrite', (stores) => {
-      stores.projects.delete(id)
-      for (const taskId of relatedIds) stores.tasks.delete(taskId)
+  saveProject(project: LegacyProject) {
+    return trackStoreWrite(async () => {
+      const sanitizedProject = sanitizeProjectRecord(project as ProjectRecord)
+      await db.put('projects', sanitizedProject)
+      const index = this.projects.findIndex(item => item.id === sanitizedProject.id)
+      if (index >= 0) {
+        const next = [...this.projects]
+        next[index] = sanitizedProject
+        this.projects = next
+      } else {
+        this.projects = [...this.projects, sanitizedProject]
+      }
+      emitStoreUpdated({ type: 'project', action: 'save', id: sanitizedProject.id })
     })
-    this.tasks = this.tasks.filter(task => task.projectId !== id)
-    this.projects = this.projects.filter(project => project.id !== id)
-    emitStoreUpdated({ type: 'project', action: 'delete', id })
+  },
+
+  deleteProject(id: string) {
+    return trackStoreWrite(async () => {
+      const relatedIds = this.tasks.filter(task => task.projectId === id).map(task => task.id)
+      await db.runTransaction(['projects', 'tasks'], 'readwrite', (stores) => {
+        stores.projects.delete(id)
+        for (const taskId of relatedIds) stores.tasks.delete(taskId)
+      })
+      this.tasks = this.tasks.filter(task => task.projectId !== id)
+      this.projects = this.projects.filter(project => project.id !== id)
+      emitStoreUpdated({ type: 'project', action: 'delete', id })
+    })
   },
 
   getProject(id: string) {
     return this.projects.find(project => project.id === id)
   },
 
-  async saveTask(task: LegacyTask) {
-    await db.put('tasks', task)
-    const index = this.tasks.findIndex(item => item.id === task.id)
-    if (index >= 0) {
-      const next = [...this.tasks]
-      next[index] = task
-      this.tasks = next
-    } else {
-      this.tasks = [...this.tasks, task]
-    }
-    emitStoreUpdated({ type: 'task', action: 'save', id: task.id })
+  saveTask(task: LegacyTask) {
+    return trackStoreWrite(async () => {
+      await db.put('tasks', task)
+      const index = this.tasks.findIndex(item => item.id === task.id)
+      if (index >= 0) {
+        const next = [...this.tasks]
+        next[index] = task
+        this.tasks = next
+      } else {
+        this.tasks = [...this.tasks, task]
+      }
+      emitStoreUpdated({ type: 'task', action: 'save', id: task.id })
+    })
   },
 
-  async deleteTask(id: string) {
-    await db.delete('tasks', id)
-    this.tasks = this.tasks.filter(task => task.id !== id)
-    emitStoreUpdated({ type: 'task', action: 'delete', id })
+  deleteTask(id: string) {
+    return trackStoreWrite(async () => {
+      await db.delete('tasks', id)
+      this.tasks = this.tasks.filter(task => task.id !== id)
+      emitStoreUpdated({ type: 'task', action: 'delete', id })
+    })
   },
 
   getTask(id: string) {
@@ -386,36 +441,40 @@ export const store = {
     return this.tasks.filter(task => getTaskAssigneeIds(task).includes(personId) && task.status !== 'done')
   },
 
-  async savePerson(person: LegacyPerson) {
-    await db.put('people', person)
-    const index = this.people.findIndex(item => item.id === person.id)
-    if (index >= 0) {
-      const next = [...this.people]
-      next[index] = person
-      this.people = next
-    } else {
-      this.people = [...this.people, person]
-    }
-    emitStoreUpdated({ type: 'person', action: 'save', id: person.id })
+  savePerson(person: LegacyPerson) {
+    return trackStoreWrite(async () => {
+      await db.put('people', person)
+      const index = this.people.findIndex(item => item.id === person.id)
+      if (index >= 0) {
+        const next = [...this.people]
+        next[index] = person
+        this.people = next
+      } else {
+        this.people = [...this.people, person]
+      }
+      emitStoreUpdated({ type: 'person', action: 'save', id: person.id })
+    })
   },
 
-  async deletePerson(id: string) {
-    const patch = buildPersonDeletionPatch(id, this.tasks, this.leaveRecords, this.classSchedules, this.shortDramaGroups, this.shortDramaAssignments)
-    await db.runTransaction(['people', 'tasks', 'leaveRecords', 'classSchedules', 'shortDramaGroups', 'shortDramaAssignments'], 'readwrite', (stores) => {
-      stores.people.delete(id)
-      for (const task of patch.updatedTasks) stores.tasks.put(task)
-      for (const leaveId of patch.leaveRecordIds) stores.leaveRecords.delete(leaveId)
-      for (const scheduleId of patch.classScheduleIds) stores.classSchedules.delete(scheduleId)
-      for (const group of patch.updatedShortDramaGroups) stores.shortDramaGroups.put(group)
-      for (const assignment of patch.updatedShortDramaAssignments) stores.shortDramaAssignments.put(assignment)
+  deletePerson(id: string) {
+    return trackStoreWrite(async () => {
+      const patch = buildPersonDeletionPatch(id, this.tasks, this.leaveRecords, this.classSchedules, this.shortDramaGroups, this.shortDramaAssignments)
+      await db.runTransaction(['people', 'tasks', 'leaveRecords', 'classSchedules', 'shortDramaGroups', 'shortDramaAssignments'], 'readwrite', (stores) => {
+        stores.people.delete(id)
+        for (const task of patch.updatedTasks) stores.tasks.put(task)
+        for (const leaveId of patch.leaveRecordIds) stores.leaveRecords.delete(leaveId)
+        for (const scheduleId of patch.classScheduleIds) stores.classSchedules.delete(scheduleId)
+        for (const group of patch.updatedShortDramaGroups) stores.shortDramaGroups.put(group)
+        for (const assignment of patch.updatedShortDramaAssignments) stores.shortDramaAssignments.put(assignment)
+      })
+      this.tasks = patch.nextTasks
+      this.people = this.people.filter(person => person.id !== id)
+      this.leaveRecords = this.leaveRecords.filter((record) => record.personId !== id)
+      this.classSchedules = this.classSchedules.filter((entry) => entry.personId !== id)
+      this.shortDramaGroups = patch.nextShortDramaGroups
+      this.shortDramaAssignments = patch.nextShortDramaAssignments
+      emitStoreUpdated({ type: 'person', action: 'delete', id })
     })
-    this.tasks = patch.nextTasks
-    this.people = this.people.filter(person => person.id !== id)
-    this.leaveRecords = this.leaveRecords.filter((record) => record.personId !== id)
-    this.classSchedules = this.classSchedules.filter((entry) => entry.personId !== id)
-    this.shortDramaGroups = patch.nextShortDramaGroups
-    this.shortDramaAssignments = patch.nextShortDramaAssignments
-    emitStoreUpdated({ type: 'person', action: 'delete', id })
   },
 
   getPerson(id: string) {
@@ -426,164 +485,190 @@ export const store = {
     return this.people.filter(person => person.status === 'active')
   },
 
-  async addLog(text: string) {
-    const log = { id: crypto.randomUUID(), text, ts: new Date().toISOString() }
-    await db.put('logs', log)
-    let newLogs = [log, ...this.logs]
-    if (newLogs.length > 50) {
-      const removed = newLogs.slice(50)
-      newLogs = newLogs.slice(0, 50)
-      for (const entry of removed) await db.delete('logs', entry.id)
-    }
-    this.logs = newLogs
-    emitStoreUpdated()
+  addLog(text: string) {
+    return trackStoreWrite(async () => {
+      const log = { id: crypto.randomUUID(), text, ts: new Date().toISOString() }
+      await db.put('logs', log)
+      let newLogs = [log, ...this.logs]
+      if (newLogs.length > 50) {
+        const removed = newLogs.slice(50)
+        newLogs = newLogs.slice(0, 50)
+        for (const entry of removed) await db.delete('logs', entry.id)
+      }
+      this.logs = newLogs
+      emitStoreUpdated({ type: 'log', action: 'save', id: log.id })
+    })
   },
 
-  async saveLeaveRecord(record: LeaveRecord) {
-    await db.put('leaveRecords', record)
-    const index = this.leaveRecords.findIndex((r) => r.id === record.id)
-    if (index >= 0) {
-      const next = [...this.leaveRecords]
-      next[index] = record
-      this.leaveRecords = next
-    } else {
-      this.leaveRecords = [...this.leaveRecords, record]
-    }
-    emitStoreUpdated({ type: 'leaveRecord', action: 'save', id: record.id })
+  saveLeaveRecord(record: LeaveRecord) {
+    return trackStoreWrite(async () => {
+      await db.put('leaveRecords', record)
+      const index = this.leaveRecords.findIndex((r) => r.id === record.id)
+      if (index >= 0) {
+        const next = [...this.leaveRecords]
+        next[index] = record
+        this.leaveRecords = next
+      } else {
+        this.leaveRecords = [...this.leaveRecords, record]
+      }
+      emitStoreUpdated({ type: 'leaveRecord', action: 'save', id: record.id })
+    })
   },
 
-  async deleteLeaveRecord(id: string) {
-    await db.delete('leaveRecords', id)
-    this.leaveRecords = this.leaveRecords.filter((r) => r.id !== id)
-    emitStoreUpdated({ type: 'leaveRecord', action: 'delete', id })
+  deleteLeaveRecord(id: string) {
+    return trackStoreWrite(async () => {
+      await db.delete('leaveRecords', id)
+      this.leaveRecords = this.leaveRecords.filter((r) => r.id !== id)
+      emitStoreUpdated({ type: 'leaveRecord', action: 'delete', id })
+    })
   },
 
   leaveRecordsForDate(date: string) {
     return this.leaveRecords.filter((r) => r.date === date)
   },
 
-  async replaceClassSchedulesForPerson(personId: string, entries: ClassScheduleEntry[]) {
-    const staleIds = this.classSchedules
-      .filter((entry) => entry.personId === personId)
-      .map((entry) => entry.id)
+  replaceClassSchedulesForPerson(personId: string, entries: ClassScheduleEntry[]) {
+    return trackStoreWrite(async () => {
+      const staleIds = this.classSchedules
+        .filter((entry) => entry.personId === personId)
+        .map((entry) => entry.id)
 
-    await db.runTransaction(['classSchedules'], 'readwrite', (stores) => {
-      for (const id of staleIds) stores.classSchedules.delete(id)
-      for (const entry of entries) stores.classSchedules.put(entry)
+      await db.runTransaction(['classSchedules'], 'readwrite', (stores) => {
+        for (const id of staleIds) stores.classSchedules.delete(id)
+        for (const entry of entries) stores.classSchedules.put(entry)
+      })
+
+      this.classSchedules = [
+        ...this.classSchedules.filter((entry) => entry.personId !== personId),
+        ...entries,
+      ]
+      emitStoreUpdated({ type: 'classSchedule', action: 'replace', id: personId })
     })
-
-    this.classSchedules = [
-      ...this.classSchedules.filter((entry) => entry.personId !== personId),
-      ...entries,
-    ]
-    emitStoreUpdated({ type: 'classSchedule', action: 'replace', id: personId })
   },
 
-  async saveClassScheduleEntry(entry: ClassScheduleEntry) {
-    await db.put('classSchedules', entry)
-    const index = this.classSchedules.findIndex((item) => item.id === entry.id)
-    if (index >= 0) {
-      const next = [...this.classSchedules]
-      next[index] = entry
-      this.classSchedules = next
-    } else {
-      this.classSchedules = [...this.classSchedules, entry]
-    }
-    emitStoreUpdated({ type: 'classSchedule', action: 'save', id: entry.id })
-  },
-
-  async deleteClassSchedule(id: string) {
-    await db.delete('classSchedules', id)
-    this.classSchedules = this.classSchedules.filter((entry) => entry.id !== id)
-    emitStoreUpdated({ type: 'classSchedule', action: 'delete', id })
-  },
-
-  async deleteClassSchedulesForPerson(personId: string) {
-    const staleIds = this.classSchedules
-      .filter((entry) => entry.personId === personId)
-      .map((entry) => entry.id)
-
-    await db.runTransaction(['classSchedules'], 'readwrite', (stores) => {
-      for (const id of staleIds) stores.classSchedules.delete(id)
+  saveClassScheduleEntry(entry: ClassScheduleEntry) {
+    return trackStoreWrite(async () => {
+      await db.put('classSchedules', entry)
+      const index = this.classSchedules.findIndex((item) => item.id === entry.id)
+      if (index >= 0) {
+        const next = [...this.classSchedules]
+        next[index] = entry
+        this.classSchedules = next
+      } else {
+        this.classSchedules = [...this.classSchedules, entry]
+      }
+      emitStoreUpdated({ type: 'classSchedule', action: 'save', id: entry.id })
     })
-
-    this.classSchedules = this.classSchedules.filter((entry) => entry.personId !== personId)
-    emitStoreUpdated({ type: 'classSchedule', action: 'delete-person', id: personId })
   },
 
-  async saveShortDrama(drama: ShortDrama) {
-    await db.put('shortDramas', drama)
-    const index = this.shortDramas.findIndex(item => item.id === drama.id)
-    if (index >= 0) {
-      const next = [...this.shortDramas]
-      next[index] = drama
-      this.shortDramas = next
-    } else {
-      this.shortDramas = [...this.shortDramas, drama]
-    }
-    emitStoreUpdated({ type: 'shortDrama', action: 'save', id: drama.id })
-  },
-
-  async deleteShortDrama(id: string) {
-    const groupIds = this.shortDramaGroups.filter((group) => group.dramaId === id).map((group) => group.id)
-    const assignmentIds = this.shortDramaAssignments.filter((assignment) => assignment.dramaId === id).map((assignment) => assignment.id)
-    await db.runTransaction(['shortDramas', 'shortDramaGroups', 'shortDramaAssignments'], 'readwrite', (stores) => {
-      stores.shortDramas.delete(id)
-      for (const groupId of groupIds) stores.shortDramaGroups.delete(groupId)
-      for (const assignmentId of assignmentIds) stores.shortDramaAssignments.delete(assignmentId)
+  deleteClassSchedule(id: string) {
+    return trackStoreWrite(async () => {
+      await db.delete('classSchedules', id)
+      this.classSchedules = this.classSchedules.filter((entry) => entry.id !== id)
+      emitStoreUpdated({ type: 'classSchedule', action: 'delete', id })
     })
-    this.shortDramas = this.shortDramas.filter((drama) => drama.id !== id)
-    this.shortDramaGroups = this.shortDramaGroups.filter((group) => group.dramaId !== id)
-    this.shortDramaAssignments = this.shortDramaAssignments.filter((assignment) => assignment.dramaId !== id)
-    emitStoreUpdated({ type: 'shortDrama', action: 'delete', id })
   },
 
-  async saveShortDramaGroup(group: ShortDramaGroup) {
-    await db.put('shortDramaGroups', group)
-    const index = this.shortDramaGroups.findIndex(item => item.id === group.id)
-    if (index >= 0) {
-      const next = [...this.shortDramaGroups]
-      next[index] = group
-      this.shortDramaGroups = next
-    } else {
-      this.shortDramaGroups = [...this.shortDramaGroups, group]
-    }
-    emitStoreUpdated({ type: 'shortDramaGroup', action: 'save', id: group.id })
-  },
+  deleteClassSchedulesForPerson(personId: string) {
+    return trackStoreWrite(async () => {
+      const staleIds = this.classSchedules
+        .filter((entry) => entry.personId === personId)
+        .map((entry) => entry.id)
 
-  async deleteShortDramaGroup(id: string) {
-    const updatedAssignments = this.shortDramaAssignments
-      .filter((assignment) => assignment.groupId === id)
-      .map((assignment) => ({ ...assignment, groupId: null, updatedAt: now() }))
-    await db.runTransaction(['shortDramaGroups', 'shortDramaAssignments'], 'readwrite', (stores) => {
-      stores.shortDramaGroups.delete(id)
-      for (const assignment of updatedAssignments) stores.shortDramaAssignments.put(assignment)
+      await db.runTransaction(['classSchedules'], 'readwrite', (stores) => {
+        for (const id of staleIds) stores.classSchedules.delete(id)
+      })
+
+      this.classSchedules = this.classSchedules.filter((entry) => entry.personId !== personId)
+      emitStoreUpdated({ type: 'classSchedule', action: 'delete-person', id: personId })
     })
-    this.shortDramaGroups = this.shortDramaGroups.filter((group) => group.id !== id)
-    this.shortDramaAssignments = this.shortDramaAssignments.map((assignment) =>
-      assignment.groupId === id
-        ? updatedAssignments.find((item) => item.id === assignment.id) || assignment
-        : assignment,
-    )
-    emitStoreUpdated({ type: 'shortDramaGroup', action: 'delete', id })
   },
 
-  async saveShortDramaAssignment(assignment: ShortDramaAssignment) {
-    await db.put('shortDramaAssignments', assignment)
-    const index = this.shortDramaAssignments.findIndex(item => item.id === assignment.id)
-    if (index >= 0) {
-      const next = [...this.shortDramaAssignments]
-      next[index] = assignment
-      this.shortDramaAssignments = next
-    } else {
-      this.shortDramaAssignments = [...this.shortDramaAssignments, assignment]
-    }
-    emitStoreUpdated({ type: 'shortDramaAssignment', action: 'save', id: assignment.id })
+  saveShortDrama(drama: ShortDrama) {
+    return trackStoreWrite(async () => {
+      await db.put('shortDramas', drama)
+      const index = this.shortDramas.findIndex(item => item.id === drama.id)
+      if (index >= 0) {
+        const next = [...this.shortDramas]
+        next[index] = drama
+        this.shortDramas = next
+      } else {
+        this.shortDramas = [...this.shortDramas, drama]
+      }
+      emitStoreUpdated({ type: 'shortDrama', action: 'save', id: drama.id })
+    })
   },
 
-  async deleteShortDramaAssignment(id: string) {
-    await db.delete('shortDramaAssignments', id)
-    this.shortDramaAssignments = this.shortDramaAssignments.filter((assignment) => assignment.id !== id)
-    emitStoreUpdated({ type: 'shortDramaAssignment', action: 'delete', id })
+  deleteShortDrama(id: string) {
+    return trackStoreWrite(async () => {
+      const groupIds = this.shortDramaGroups.filter((group) => group.dramaId === id).map((group) => group.id)
+      const assignmentIds = this.shortDramaAssignments.filter((assignment) => assignment.dramaId === id).map((assignment) => assignment.id)
+      await db.runTransaction(['shortDramas', 'shortDramaGroups', 'shortDramaAssignments'], 'readwrite', (stores) => {
+        stores.shortDramas.delete(id)
+        for (const groupId of groupIds) stores.shortDramaGroups.delete(groupId)
+        for (const assignmentId of assignmentIds) stores.shortDramaAssignments.delete(assignmentId)
+      })
+      this.shortDramas = this.shortDramas.filter((drama) => drama.id !== id)
+      this.shortDramaGroups = this.shortDramaGroups.filter((group) => group.dramaId !== id)
+      this.shortDramaAssignments = this.shortDramaAssignments.filter((assignment) => assignment.dramaId !== id)
+      emitStoreUpdated({ type: 'shortDrama', action: 'delete', id })
+    })
+  },
+
+  saveShortDramaGroup(group: ShortDramaGroup) {
+    return trackStoreWrite(async () => {
+      await db.put('shortDramaGroups', group)
+      const index = this.shortDramaGroups.findIndex(item => item.id === group.id)
+      if (index >= 0) {
+        const next = [...this.shortDramaGroups]
+        next[index] = group
+        this.shortDramaGroups = next
+      } else {
+        this.shortDramaGroups = [...this.shortDramaGroups, group]
+      }
+      emitStoreUpdated({ type: 'shortDramaGroup', action: 'save', id: group.id })
+    })
+  },
+
+  deleteShortDramaGroup(id: string) {
+    return trackStoreWrite(async () => {
+      const updatedAssignments = this.shortDramaAssignments
+        .filter((assignment) => assignment.groupId === id)
+        .map((assignment) => ({ ...assignment, groupId: null, updatedAt: now() }))
+      await db.runTransaction(['shortDramaGroups', 'shortDramaAssignments'], 'readwrite', (stores) => {
+        stores.shortDramaGroups.delete(id)
+        for (const assignment of updatedAssignments) stores.shortDramaAssignments.put(assignment)
+      })
+      this.shortDramaGroups = this.shortDramaGroups.filter((group) => group.id !== id)
+      this.shortDramaAssignments = this.shortDramaAssignments.map((assignment) =>
+        assignment.groupId === id
+          ? updatedAssignments.find((item) => item.id === assignment.id) || assignment
+          : assignment,
+      )
+      emitStoreUpdated({ type: 'shortDramaGroup', action: 'delete', id })
+    })
+  },
+
+  saveShortDramaAssignment(assignment: ShortDramaAssignment) {
+    return trackStoreWrite(async () => {
+      await db.put('shortDramaAssignments', assignment)
+      const index = this.shortDramaAssignments.findIndex(item => item.id === assignment.id)
+      if (index >= 0) {
+        const next = [...this.shortDramaAssignments]
+        next[index] = assignment
+        this.shortDramaAssignments = next
+      } else {
+        this.shortDramaAssignments = [...this.shortDramaAssignments, assignment]
+      }
+      emitStoreUpdated({ type: 'shortDramaAssignment', action: 'save', id: assignment.id })
+    })
+  },
+
+  deleteShortDramaAssignment(id: string) {
+    return trackStoreWrite(async () => {
+      await db.delete('shortDramaAssignments', id)
+      this.shortDramaAssignments = this.shortDramaAssignments.filter((assignment) => assignment.id !== id)
+      emitStoreUpdated({ type: 'shortDramaAssignment', action: 'delete', id })
+    })
   },
 }

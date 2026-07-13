@@ -1,8 +1,10 @@
 import { useState, useSyncExternalStore, type FormEvent, type KeyboardEvent, type MouseEvent } from 'react'
+import { useToast } from '../../components/feedback/ToastProvider'
 import type { DashboardHeaderModel, QuickJumpSearchItem } from '../../legacy/selectors'
 import { QuoteBlock } from './QuoteBlock'
 import {
   readHomeResourceLinkState,
+  normalizeHomeResourceUrl,
   subscribeHomeResourceLinkState,
   writeHomeResourceLink,
 } from './homeResourceState'
@@ -20,6 +22,7 @@ export function DashboardHeader({
   searchQuery: string
   searchResults: QuickJumpSearchItem[]
 }) {
+  const { toast } = useToast()
   const [searchOpen, setSearchOpen] = useState(false)
   const [activeIndex, setActiveIndex] = useState(0)
   const [resourceEditorOpen, setResourceEditorOpen] = useState(false)
@@ -51,7 +54,13 @@ export function DashboardHeader({
 
   const saveResourceLink = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
-    writeHomeResourceLink(draftResourceUrl)
+    const normalizedUrl = normalizeHomeResourceUrl(draftResourceUrl)
+    if (draftResourceUrl.trim() && !normalizedUrl) {
+      toast('请输入有效的网页链接', 'error')
+      return
+    }
+    writeHomeResourceLink(normalizedUrl)
+    setDraftResourceUrl(normalizedUrl)
     setResourceEditorOpen(false)
   }
 

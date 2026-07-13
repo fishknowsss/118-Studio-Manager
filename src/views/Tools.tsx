@@ -68,12 +68,12 @@ const WEB_TOOLS: ToolLink[] = [
   },
   {
     title: 'EZGIF',
-    desc: '在线 GIF 制作、裁剪、帧编辑与格式转换，简单高效。',
+    desc: '支持在线 GIF 制作、裁剪、帧编辑与格式转换。',
     url: 'https://ezgif.com/',
   },
   {
     title: 'Bigjpg',
-    desc: 'AI 超分辨率放大图片，无损保留细节，适合低分辨率素材补救。',
+    desc: 'AI 超分辨率放大图片，用于处理低分辨率素材。',
     url: 'https://bigjpg.com/',
   },
   {
@@ -91,7 +91,7 @@ const WEB_TOOLS: ToolLink[] = [
 const INSPIRATION_LINKS: ToolLink[] = [
   {
     title: 'Vimeo Staff Picks',
-    desc: 'Vimeo 编辑精选视频，涵盖实验影像、动画与纪录短片，品质上乘。',
+    desc: 'Vimeo 编辑精选视频，涵盖实验影像、动画与纪录短片。',
     url: 'https://vimeo.com/channels/staffpicks',
   },
   {
@@ -111,7 +111,7 @@ const INSPIRATION_LINKS: ToolLink[] = [
   },
   {
     title: 'Videezy',
-    desc: '海量免费高清视频素材库，适合快速寻找动态参考与剪辑元素。',
+    desc: '免费高清视频素材库，可用于寻找动态参考与剪辑元素。',
     url: 'https://www.videezy.com/',
   },
   {

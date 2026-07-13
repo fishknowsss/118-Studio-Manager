@@ -231,6 +231,29 @@ describe('cloud sync helpers', () => {
     await expect(fetchCloudSyncMeta()).rejects.toThrow('Cloudflare Access')
   })
 
+  it('reports a non-JSON server failure without mislabeling it as Access', async () => {
+    const fetchMock = vi.fn().mockResolvedValue(new Response('upstream unavailable', {
+      status: 500,
+      headers: { 'Content-Type': 'text/plain' },
+    }))
+    vi.stubGlobal('fetch', fetchMock)
+
+    const { fetchCloudSyncMeta } = await import('../src/features/sync/syncApi')
+
+    await expect(fetchCloudSyncMeta()).rejects.toThrow('HTTP 500')
+    await expect(fetchCloudSyncMeta()).rejects.not.toThrow('Cloudflare Access')
+  })
+
+  it('reports malformed JSON responses as invalid cloud data', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response('{broken', {
+      status: 200,
+      headers: { 'Content-Type': 'application/json' },
+    })))
+
+    const { fetchCloudSyncMeta } = await import('../src/features/sync/syncApi')
+    await expect(fetchCloudSyncMeta()).rejects.toThrow('云端返回的数据格式无效')
+  })
+
   it('does not seed demo data when configured cloud boot restore fails', async () => {
     const savePerson = vi.fn()
     const saveProject = vi.fn()

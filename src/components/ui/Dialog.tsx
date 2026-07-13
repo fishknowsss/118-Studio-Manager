@@ -1,6 +1,8 @@
-import { useEffect, type ReactNode } from 'react'
+import type { ReactNode } from 'react'
 import { createPortal } from 'react-dom'
 import { useBackdropDismiss } from './useBackdropDismiss'
+import { useModalFocus } from './useModalFocus'
+import { useBodyScrollLock } from './useBodyScrollLock'
 
 type DialogProps = {
   open: boolean
@@ -26,22 +28,8 @@ export function Dialog({
   bodyScrollable = true,
 }: DialogProps) {
   const backdropDismiss = useBackdropDismiss<HTMLDivElement>(onClose)
-
-  useEffect(() => {
-    if (!open) return undefined
-
-    const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') onClose()
-    }
-
-    document.addEventListener('keydown', onKeyDown, true)
-    document.body.style.overflow = 'hidden'
-
-    return () => {
-      document.removeEventListener('keydown', onKeyDown, true)
-      document.body.style.overflow = ''
-    }
-  }, [onClose, open])
+  const dialogRef = useModalFocus(open, onClose)
+  useBodyScrollLock(open)
 
   if (!open) return null
 
@@ -52,10 +40,12 @@ export function Dialog({
       {...backdropDismiss}
     >
       <div
+        ref={dialogRef}
         className={`app-modal app-modal-react ${width === 'wide' ? 'wide' : ''} ${className || ''}`.trim()}
         role="dialog"
         aria-modal="true"
         aria-label={title}
+        tabIndex={-1}
       >
         <div className="modal-inner">
           <div className="modal-header">

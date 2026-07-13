@@ -13,6 +13,7 @@ import {
   buildProjectCardModels,
   buildProjectEventSummaryMap,
   buildProjectTimelineModel,
+  buildProjectWorkspaceItems,
   buildQuickJumpSearchItems,
   buildTaskListItemModels,
   formatRecentLogs,
@@ -918,6 +919,40 @@ describe('store selectors', () => {
       urgencyKey: 'focus-critical',
     })
     expect(cards[1].urgencyKey).toBe('focus-strong')
+  })
+
+  it('groups project workspace items by real delivery risk and next action', () => {
+    const items = buildProjectWorkspaceItems(
+      [
+        { id: 'project-risk', name: '受阻项目', status: 'active', priority: 'urgent', deliveryDate: '2026-04-18' },
+        { id: 'project-progress', name: '推进项目', status: 'active', priority: 'high', deliveryDate: '2026-04-22' },
+        { id: 'project-plan', name: '待安排项目', status: 'active', priority: 'medium' },
+        { id: 'project-done', name: '归档项目', status: 'completed', priority: 'low', deliveryDate: '2026-04-10' },
+      ],
+      [
+        { id: 'task-blocked', projectId: 'project-risk', title: '确认成片规格', status: 'blocked', endDate: '2026-04-14' },
+        { id: 'task-progress', projectId: 'project-progress', title: '合成终版', status: 'in-progress', endDate: '2026-04-20' },
+        { id: 'task-plan', projectId: 'project-plan', title: '分配剪辑', status: 'todo' },
+        { id: 'task-done', projectId: 'project-done', title: '交付归档', status: 'done' },
+      ],
+      '2026-04-12',
+    )
+
+    expect(items.map((item) => [item.id, item.groupKey])).toEqual([
+      ['project-risk', 'attention'],
+      ['project-progress', 'progressing'],
+      ['project-plan', 'planning'],
+      ['project-done', 'finished'],
+    ])
+    expect(items[0]).toMatchObject({
+      blockedTaskCount: 1,
+      nextActionLabel: '处理受阻：确认成片规格',
+      openTaskCount: 1,
+      progressPercent: 0,
+    })
+    expect(items[1].nextActionLabel).toBe('继续推进：合成终版')
+    expect(items[2].nextActionLabel).toBe('分配任务：分配剪辑')
+    expect(items[3].nextActionLabel).toBe('查看复盘与归档')
   })
 
   it('sorts project lists by the shared deadline tone order', () => {

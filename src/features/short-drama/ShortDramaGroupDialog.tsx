@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { Dialog } from '../../components/ui/Dialog'
+import { useToast } from '../../components/feedback/ToastProvider'
 import { PersonGenderAvatar } from '../../components/ui/PersonGenderAvatar'
 import { store, type LegacyPerson, type ShortDramaGroup } from '../../legacy/store'
 import { now, uid } from '../../legacy/utils'
@@ -25,6 +26,8 @@ export function ShortDramaGroupDialog({
   onClose: () => void
   people: LegacyPerson[]
 }) {
+  const { toast } = useToast()
+  const [isSaving, setIsSaving] = useState(false)
   const activePeople = useMemo(() => people.filter((person) => person.status !== 'inactive'), [people])
   const [name, setName] = useState(group?.name || '')
   const [leaderId, setLeaderId] = useState(group?.leaderId || '')
@@ -57,15 +60,12 @@ export function ShortDramaGroupDialog({
 
   const memberPageSize = memberColumns * MEMBER_ROWS
   const memberPageCount = Math.max(1, Math.ceil(activePeople.length / memberPageSize))
-
-  useEffect(() => {
-    setMemberPage((current) => Math.min(current, memberPageCount - 1))
-  }, [memberPageCount])
+  const activeMemberPage = Math.min(memberPage, memberPageCount - 1)
 
   const visiblePeople = useMemo(() => {
-    const startIndex = memberPage * memberPageSize
+    const startIndex = activeMemberPage * memberPageSize
     return activePeople.slice(startIndex, startIndex + memberPageSize)
-  }, [activePeople, memberPage, memberPageSize])
+  }, [activeMemberPage, activePeople, memberPageSize])
 
   const toggleMember = (personId: string) => {
     setMemberIds((current) =>
@@ -76,35 +76,44 @@ export function ShortDramaGroupDialog({
   }
 
   const handleSubmit = async () => {
+    if (isSaving) return
     const text = name.trim()
     if (!text) return
     const timestamp = now()
     const nextMembers = leaderId && !memberIds.includes(leaderId)
       ? [leaderId, ...memberIds]
       : memberIds
-    await store.saveShortDramaGroup({
-      id: group?.id || uid(),
-      createdAt: group?.createdAt || timestamp,
-      updatedAt: timestamp,
-      dramaId,
-      leaderId: leaderId || null,
-      memberIds: nextMembers,
-      name: text,
-      notes: notes.trim(),
-      sortOrder: group?.sortOrder ?? Date.now(),
-    })
-    onClose()
+    setIsSaving(true)
+    try {
+      await store.saveShortDramaGroup({
+        id: group?.id || uid(),
+        createdAt: group?.createdAt || timestamp,
+        updatedAt: timestamp,
+        dramaId,
+        leaderId: leaderId || null,
+        memberIds: nextMembers,
+        name: text,
+        notes: notes.trim(),
+        sortOrder: group?.sortOrder ?? Date.now(),
+      })
+      onClose()
+    } catch (error) {
+      console.error('[118SM] 保存短剧小组失败:', error)
+      toast('保存失败', 'error')
+    } finally {
+      setIsSaving(false)
+    }
   }
 
   return (
     <Dialog
       open
       title={group ? '编辑小组' : '新建小组'}
-      onClose={onClose}
+      onClose={isSaving ? () => {} : onClose}
       footer={(
         <>
-          <button className="btn btn-secondary" type="button" onClick={onClose}>取消</button>
-          <button className="btn btn-primary" type="button" onClick={() => void handleSubmit()} disabled={!name.trim()}>保存</button>
+          <button className="btn btn-secondary" type="button" onClick={onClose} disabled={isSaving}>取消</button>
+          <button className="btn btn-primary" type="button" onClick={() => void handleSubmit()} disabled={!name.trim() || isSaving}>{isSaving ? '保存中' : '保存'}</button>
         </>
       )}
     >
@@ -129,7 +138,7 @@ export function ShortDramaGroupDialog({
           </label>
           <div className="task-assignee-picker">
             <div ref={memberViewportRef} className="task-assignee-viewport">
-              {activePeople.length === 0 ? <span className="text-muted text-sm">暂无可用人员</span> : null}
+              {activePeople.length === 0 ? <span className="text-muted text-sm">先添加成员</span> : null}
               {activePeople.length > 0 ? (
                 <div className={`task-assignee-page cols-${memberColumns}`}>
                   {visiblePeople.map((person) => {
@@ -158,19 +167,19 @@ export function ShortDramaGroupDialog({
               <button
                 aria-label="成员上一页"
                 className="task-assignee-page-btn"
-                disabled={memberPage === 0 || activePeople.length === 0}
+                disabled={activeMemberPage === 0 || activePeople.length === 0}
                 type="button"
-                onClick={() => setMemberPage((current) => Math.max(0, current - 1))}
+                onClick={() => setMemberPage(Math.max(0, activeMemberPage - 1))}
               >
                 ‹
               </button>
-              <span className="task-assignee-page-indicator">{memberPage + 1} / {memberPageCount}</span>
+              <span className="task-assignee-page-indicator">{activeMemberPage + 1} / {memberPageCount}</span>
               <button
                 aria-label="成员下一页"
                 className="task-assignee-page-btn"
-                disabled={memberPage >= memberPageCount - 1 || activePeople.length === 0}
+                disabled={activeMemberPage >= memberPageCount - 1 || activePeople.length === 0}
                 type="button"
-                onClick={() => setMemberPage((current) => Math.min(memberPageCount - 1, current + 1))}
+                onClick={() => setMemberPage(Math.min(memberPageCount - 1, activeMemberPage + 1))}
               >
                 ›
               </button>

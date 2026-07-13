@@ -1,10 +1,17 @@
-import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from 'react'
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties } from 'react'
 import { createPortal } from 'react-dom'
+import { isTopOverlay, useOverlayLayer } from './overlayStack'
 
 const WEEKDAYS = ['日', '一', '二', '三', '四', '五', '六']
 const POPOVER_WIDTH = 314
 const POPOVER_HEIGHT = 386
 const VIEWPORT_PADDING = 12
+
+function getFocusableElements(container: HTMLElement) {
+  return Array.from(container.querySelectorAll<HTMLElement>(
+    'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])',
+  )).filter((element) => !element.hidden && element.getAttribute('aria-hidden') !== 'true')
+}
 
 function pad(value: number) {
   return String(value).padStart(2, '0')
@@ -72,6 +79,7 @@ export function DatePicker({
 }) {
   const wrapperRef = useRef<HTMLDivElement | null>(null)
   const popoverRef = useRef<HTMLDivElement | null>(null)
+  const triggerRef = useRef<HTMLButtonElement | null>(null)
   const selectedDate = useMemo(() => parseDateKey(value), [value])
   const todayKey = formatDateKey(new Date())
   const [open, setOpen] = useState(false)
@@ -80,6 +88,7 @@ export function DatePicker({
     const baseDate = selectedDate ?? new Date()
     return new Date(baseDate.getFullYear(), baseDate.getMonth(), 1)
   })
+  const overlayTokenRef = useOverlayLayer(open)
 
   const updatePopoverPosition = useCallback(() => {
     const trigger = wrapperRef.current?.querySelector<HTMLButtonElement>('.date-picker-trigger')
@@ -112,6 +121,7 @@ export function DatePicker({
     if (!open) return undefined
 
     const handlePointerDown = (event: MouseEvent) => {
+      if (!isTopOverlay(overlayTokenRef.current)) return
       const target = event.target as Node
       if (
         !wrapperRef.current?.contains(target) &&
@@ -121,8 +131,27 @@ export function DatePicker({
       }
     }
     const handleKeyDown = (event: KeyboardEvent) => {
+      if (!isTopOverlay(overlayTokenRef.current)) return
       if (event.key === 'Escape') {
+        event.preventDefault()
+        event.stopImmediatePropagation()
         setOpen(false)
+        return
+      }
+      if (event.key !== 'Tab') return
+      const popover = popoverRef.current
+      if (!popover) return
+      const focusable = getFocusableElements(popover)
+      if (focusable.length === 0) return
+      const first = focusable[0]
+      const last = focusable[focusable.length - 1]
+      const focused = document.activeElement instanceof HTMLElement ? document.activeElement : null
+      if (event.shiftKey && (!focused || focused === first || !popover.contains(focused))) {
+        event.preventDefault()
+        last.focus()
+      } else if (!event.shiftKey && (!focused || focused === last || !popover.contains(focused))) {
+        event.preventDefault()
+        first.focus()
       }
     }
 
@@ -135,6 +164,24 @@ export function DatePicker({
       document.removeEventListener('keydown', handleKeyDown)
       window.removeEventListener('resize', updatePopoverPosition)
       window.removeEventListener('scroll', updatePopoverPosition, true)
+    }
+  }, [open, overlayTokenRef, updatePopoverPosition])
+
+  useLayoutEffect(() => {
+    if (!open) return undefined
+    const trigger = triggerRef.current
+    updatePopoverPosition()
+    const frame = window.requestAnimationFrame(() => {
+      const popover = popoverRef.current
+      const initial = popover?.querySelector<HTMLButtonElement>('.date-picker-day.selected')
+        ?? popover?.querySelector<HTMLButtonElement>('.date-picker-day.today')
+        ?? popover?.querySelector<HTMLButtonElement>('.date-picker-day')
+      initial?.focus()
+    })
+
+    return () => {
+      window.cancelAnimationFrame(frame)
+      window.requestAnimationFrame(() => trigger?.focus())
     }
   }, [open, updatePopoverPosition])
 
@@ -233,6 +280,7 @@ export function DatePicker({
   return (
     <div ref={wrapperRef} className="date-picker">
       <button
+        ref={triggerRef}
         id={id}
         aria-expanded={open}
         aria-haspopup="dialog"

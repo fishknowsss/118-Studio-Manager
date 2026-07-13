@@ -684,18 +684,15 @@ describe('current app regressions', () => {
   it('uses the shared gender avatar component for all circular person badges', () => {
     const taskDialogSource = readFileSync(join(process.cwd(), 'src/features/tasks/TaskDialog.tsx'), 'utf8')
     const personCardSource = readFileSync(join(process.cwd(), 'src/features/people/PersonCard.tsx'), 'utf8')
-    const plannerDropZoneSource = readFileSync(join(process.cwd(), 'src/features/planner/PlannerDropZone.tsx'), 'utf8')
     const personDetailSource = readFileSync(join(process.cwd(), 'src/features/dashboard/PersonDetailPanel.tsx'), 'utf8')
     const styleSource = readFileSync(join(process.cwd(), 'css/style.css'), 'utf8')
 
     expect(taskDialogSource).toMatch(/PersonGenderAvatar/)
     expect(personCardSource).toMatch(/PersonGenderAvatar/)
-    expect(plannerDropZoneSource).toMatch(/PersonGenderAvatar/)
     expect(personDetailSource).toMatch(/PersonGenderAvatar/)
 
     expect(taskDialogSource).not.toMatch(/initials\(/)
     expect(personDetailSource).not.toMatch(/initials\(/)
-    expect(plannerDropZoneSource).not.toMatch(/initials\(/)
 
     expect(styleSource).toMatch(/\.person-gender-avatar\.male\s*\{[\s\S]*background:\s*rgba\(47, 107, 255, 0\.16\);/)
     expect(styleSource).toMatch(/\.person-gender-avatar\.female\s*\{[\s\S]*background:\s*rgba\(239, 71, 111, 0\.16\);/)
@@ -782,7 +779,7 @@ describe('current app regressions', () => {
       )
     })
 
-    const item = container.querySelector('.context-menu-item')
+    const item = document.querySelector('.context-menu-item')
     expect(item).not.toBeNull()
 
     act(() => {
@@ -795,6 +792,38 @@ describe('current app regressions', () => {
     act(() => {
       root.unmount()
     })
+    container.remove()
+  })
+
+  it('focuses and navigates context menu items with the keyboard', () => {
+    const container = document.createElement('div')
+    document.body.appendChild(container)
+    const root = createRoot(container)
+
+    act(() => {
+      root.render(
+        <ContextMenu
+          open
+          x={20}
+          y={20}
+          items={[
+            { key: 'edit', label: '编辑', onSelect: () => {} },
+            { key: 'delete', label: '删除', onSelect: () => {} },
+          ]}
+          onClose={() => {}}
+        />,
+      )
+    })
+
+    const menu = document.querySelector<HTMLElement>('[role="menu"]')
+    const items = document.querySelectorAll<HTMLElement>('[role="menuitem"]')
+    expect(menu).not.toBeNull()
+    expect(document.activeElement).toBe(items[0])
+
+    act(() => menu?.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true })))
+    expect(document.activeElement).toBe(items[1])
+
+    act(() => root.unmount())
     container.remove()
   })
 
@@ -859,7 +888,7 @@ describe('current app regressions', () => {
       )
     })
 
-    const menu = container.querySelector('.context-menu') as HTMLElement | null
+    const menu = document.querySelector('.context-menu') as HTMLElement | null
     expect(menu).not.toBeNull()
     expect(menu?.style.getPropertyValue('--context-menu-x')).toBe('120px')
     expect(menu?.style.getPropertyValue('--context-menu-y')).toBe('72px')
@@ -966,6 +995,7 @@ describe('current app regressions', () => {
       'src/features/projects/ProjectDialog.tsx',
       'src/features/projects/ProjectCard.tsx',
       'src/features/projects/ProjectTimeline.tsx',
+      'src/features/projects/ProjectWorkspace.tsx',
       'src/features/tasks/TaskDialog.tsx',
       'src/features/tasks/TaskItem.tsx',
       'src/features/people/PersonDialog.tsx',
@@ -975,13 +1005,8 @@ describe('current app regressions', () => {
       'src/features/dashboard/TaskPoolPanel.tsx',
       'src/features/dashboard/PeopleAssignmentPanel.tsx',
       'src/features/dashboard/ProjectFocusTimeline.tsx',
-      'src/features/dashboard/FocusPrimaryCard.tsx',
-      'src/features/dashboard/FocusSecondaryCards.tsx',
       'src/features/dashboard/DashboardHeader.tsx',
       'src/features/dashboard/DashboardMiniCalendar.tsx',
-      'src/features/planner/PlannerAssignedList.tsx',
-      'src/features/planner/PlannerBacklogList.tsx',
-      'src/features/planner/PlannerDropZone.tsx',
     ]
 
     for (const path of expectedFiles) {
@@ -993,8 +1018,9 @@ describe('current app regressions', () => {
     const peopleSource = readFileSync(join(process.cwd(), 'src/views/People.tsx'), 'utf8')
 
     expect(projectsSource).toMatch(/features\/projects\/ProjectDialog/)
-    expect(projectsSource).toMatch(/features\/projects\/ProjectCard/)
-    expect(projectsSource).toMatch(/features\/projects\/ProjectTimeline/)
+    expect(projectsSource).toMatch(/features\/projects\/ProjectWorkspace/)
+    expect(projectsSource).not.toMatch(/features\/projects\/ProjectCard/)
+    expect(projectsSource).not.toMatch(/features\/projects\/ProjectTimeline/)
     expect(tasksSource).toMatch(/features\/tasks\/TaskDialog/)
     expect(tasksSource).toMatch(/features\/tasks\/TaskItem/)
     expect(peopleSource).toMatch(/features\/people\/PersonDialog/)
@@ -1005,6 +1031,7 @@ describe('current app regressions', () => {
     expect(projectsSource).not.toMatch(/function ProjectDialog/)
     expect(projectsSource).not.toMatch(/function ProjectCard/)
     expect(projectsSource).not.toMatch(/function ProjectTimeline/)
+    expect(projectsSource).not.toMatch(/function ProjectWorkspace/)
     expect(tasksSource).not.toMatch(/function TaskDialog/)
     expect(tasksSource).not.toMatch(/function TaskItem/)
     expect(peopleSource).not.toMatch(/function PersonDialog/)
@@ -1014,18 +1041,6 @@ describe('current app regressions', () => {
   it('removes the legacy js view layer from the active codebase', () => {
     expect(existsSync(join(process.cwd(), 'js/views/tasks.js'))).toBe(false)
     expect(existsSync(join(process.cwd(), 'js/components.js'))).toBe(false)
-  })
-
-  it('keeps planner drag feedback state-driven instead of mutating DOM styles in handlers', () => {
-    const plannerSource = readFileSync(join(process.cwd(), 'src/features/planner/PlannerProvider.tsx'), 'utf8')
-    const assignedListSource = readFileSync(join(process.cwd(), 'src/features/planner/PlannerAssignedList.tsx'), 'utf8')
-    const backlogListSource = readFileSync(join(process.cwd(), 'src/features/planner/PlannerBacklogList.tsx'), 'utf8')
-
-    expect(plannerSource).not.toMatch(/currentTarget\.style/)
-    expect(assignedListSource).toMatch(/PlannerDropZone/)
-    expect(assignedListSource).not.toMatch(/currentTarget\.style/)
-    expect(backlogListSource).not.toMatch(/currentTarget\.style/)
-    expect(backlogListSource).toMatch(/draggable/)
   })
 
   it('uses one shared selector for calendar and planner event aggregation', () => {
@@ -1066,7 +1081,7 @@ describe('current app regressions', () => {
     const source = readFileSync(join(process.cwd(), 'src/features/dashboard/PeopleAssignmentPanel.tsx'), 'utf8')
 
     expect(source).toMatch(/const pagePeople = useMemo/)
-    expect(source).toMatch(/}, \[page, pagePeople\]\)/)
+    expect(source).toMatch(/}, \[activePage, pagePeople\]\)/)
     expect(source).not.toMatch(/pagePeopleKey/)
   })
 
@@ -1122,8 +1137,8 @@ describe('current app regressions', () => {
   it('unifies project workspace entry points across dashboard and projects views', () => {
     const dashboardSource = readFileSync(join(process.cwd(), 'src/views/Dashboard.tsx'), 'utf8')
     const projectsSource = readFileSync(join(process.cwd(), 'src/views/Projects.tsx'), 'utf8')
-    const cardSource = readFileSync(join(process.cwd(), 'src/features/projects/ProjectCard.tsx'), 'utf8')
-    const timelineSource = readFileSync(join(process.cwd(), 'src/features/projects/ProjectTimeline.tsx'), 'utf8')
+    const workspaceSource = readFileSync(join(process.cwd(), 'src/features/projects/ProjectWorkspace.tsx'), 'utf8')
+    const toolbarSource = readFileSync(join(process.cwd(), 'src/features/projects/ProjectOverviewToolbar.tsx'), 'utf8')
     const headerSource = readFileSync(join(process.cwd(), 'src/features/dashboard/DashboardHeader.tsx'), 'utf8')
     const focusStyleSource = readFileSync(join(process.cwd(), 'css/style.css'), 'utf8')
 
@@ -1132,9 +1147,12 @@ describe('current app regressions', () => {
     expect(projectsSource).toMatch(/onOpenProject/)
     expect(projectsSource).toMatch(/ProjectDetailPanel/)
     expect(projectsSource).toMatch(/projectSearch/)
-    expect(cardSource).toMatch(/aria-label=\{`查看项目/)
-    expect(cardSource).not.toMatch(/className=\{`project-card[^`]*`\} onClick=\{onEdit\}/)
-    expect(timelineSource).toMatch(/<button[\s\S]*timeline-row/)
+    expect(projectsSource).toMatch(/buildProjectWorkspaceItems/)
+    expect(projectsSource).not.toMatch(/viewMode/)
+    expect(workspaceSource).toMatch(/PROJECT_WORKSPACE_GROUPS/)
+    expect(workspaceSource).toMatch(/role="progressbar"/)
+    expect(workspaceSource).toMatch(/>\s*打开\s*</)
+    expect(toolbarSource).not.toMatch(/卡片|时间轴|viewMode/)
     expect(headerSource).toMatch(/role="combobox"/)
     expect(headerSource).toMatch(/aria-expanded=\{showDropdown\}/)
     expect(headerSource).toMatch(/aria-activedescendant=/)
@@ -1148,17 +1166,24 @@ describe('current app regressions', () => {
     const syncSharedSource = readFileSync(join(process.cwd(), 'src/features/sync/syncShared.ts'), 'utf8')
     const settingsSource = readFileSync(join(process.cwd(), 'src/views/Settings.tsx'), 'utf8')
 
-    expect(syncSharedSource).toMatch(/payload\.leaveRecords\.length > 0/)
-    expect(syncSharedSource).toMatch(/payload\.classSchedules\?\.length/)
-    expect(syncProviderSource).toMatch(/store\.leaveRecords\.length > 0/)
-    expect(syncProviderSource).toMatch(/store\.classSchedules\.length > 0/)
-    expect(syncProviderSource).toMatch(/store\.shortDramas\.length > 0/)
+    expect(syncSharedSource).toMatch(/BACKUP_COLLECTION_NAMES\.some/)
+    expect(syncProviderSource).toMatch(/const localBackup = await db\.exportAll\(\)/)
+    expect(syncProviderSource).toMatch(/hasLocalData: hasBackupContent\(localBackup\)/)
+    expect(syncProviderSource).not.toMatch(/function hasLocalData/)
     expect(bootstrapSource).toMatch(/const localBackup = await db\.exportAll\(\)/)
     expect(bootstrapSource).toMatch(/if \(!hasBackupContent\(localBackup\)\)/)
     expect(settingsSource).toMatch(/setCurrentSummary\(buildBackupSummary\(data\)\)/)
     expect(settingsSource).toMatch(/leaveRecords/)
     expect(settingsSource).toMatch(/classSchedules/)
     expect(settingsSource).toMatch(/shortDramas/)
+  })
+
+  it('tracks bulk imports, clears, and undo restores in the local write barrier', () => {
+    const actionsSource = readFileSync(join(process.cwd(), 'src/legacy/actions.ts'), 'utf8')
+    const undoSource = readFileSync(join(process.cwd(), 'src/legacy/editUndo.ts'), 'utf8')
+
+    expect(actionsSource).toMatch(/return await runTrackedStoreWrite\(operation\)/)
+    expect(undoSource.match(/runTrackedStoreWrite\(async \(\) =>/g)).toHaveLength(2)
   })
 
   it('uses node24-compatible GitHub Pages actions in deploy workflow', () => {
@@ -1168,9 +1193,18 @@ describe('current app regressions', () => {
     expect(workflowSource).toMatch(/actions\/configure-pages@v6/)
     expect(workflowSource).toMatch(/actions\/deploy-pages@v5/)
     expect(workflowSource).toMatch(/uses:\s+\.\/\.github\/actions\/upload-pages-artifact/)
-    expect(workflowSource).toMatch(/node-version:\s*24/)
+    expect(workflowSource).toMatch(/node-version-file:\s*\.nvmrc/)
     expect(workflowSource).not.toMatch(/actions\/upload-pages-artifact@v4/)
     expect(localPagesArtifactSource).toMatch(/actions\/upload-artifact@v6/)
+    expect(localPagesArtifactSource).toMatch(/shell:\s*pwsh\s+if:\s*runner\.os == 'Windows'/)
+  })
+
+  it('starts E2E on an isolated strict port instead of reusing another project server', () => {
+    const playwrightSource = readFileSync(join(process.cwd(), 'playwright.config.ts'), 'utf8')
+
+    expect(playwrightSource).toMatch(/127\.0\.0\.1:43118/)
+    expect(playwrightSource).toMatch(/--port 43118 --strictPort/)
+    expect(playwrightSource).toMatch(/reuseExistingServer:\s*false/)
   })
 
   it('publishes the vc custom domain from the site root', () => {

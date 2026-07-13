@@ -1,5 +1,5 @@
 import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs'
-import { basename, dirname, join } from 'node:path'
+import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { defineConfig } from 'vitest/config'
 import react from '@vitejs/plugin-react'
@@ -76,12 +76,6 @@ function pdfjsCMapPlugin(): Plugin {
 function manualChunks(id: string) {
   if (id.includes('/node_modules/react') || id.includes('/node_modules/scheduler')) {
     return 'vendor-react'
-  }
-  if (id.includes('/node_modules/pdfjs-dist')) {
-    return 'pdfjs'
-  }
-  if (id.includes('/src/views/')) {
-    return `view-${basename(id).replace(/\.[^.]+$/, '').toLowerCase()}`
   }
 }
 

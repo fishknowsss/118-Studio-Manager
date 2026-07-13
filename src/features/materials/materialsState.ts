@@ -1,4 +1,5 @@
 import { createSyncableSettingsStore } from '../persistence/syncableSettings'
+import { normalizeExternalHttpUrl } from '../../legacy/utils'
 
 // ─── 甲方要求 ─────────────────────────────────────────
 
@@ -68,10 +69,16 @@ function sanitizeBrief(raw: Partial<ClientBrief>): ClientBrief | null {
     requirements:  typeof raw.requirements === 'string' ? raw.requirements : '',
     styleNotes:    typeof raw.styleNotes === 'string' ? raw.styleNotes : '',
     prohibitions:  typeof raw.prohibitions === 'string' ? raw.prohibitions : '',
-    referenceUrls: Array.isArray(raw.referenceUrls) ? raw.referenceUrls.filter(
-      (r): r is { label: string; url: string } =>
-        r && typeof r.label === 'string' && typeof r.url === 'string',
-    ) : [],
+    referenceUrls: Array.isArray(raw.referenceUrls) ? raw.referenceUrls
+      .filter(
+        (r): r is { label: string; url: string } =>
+          r && typeof r.label === 'string' && typeof r.url === 'string',
+      )
+      .map((reference) => ({
+        label: reference.label.trim(),
+        url: normalizeExternalHttpUrl(reference.url),
+      }))
+      .filter((reference) => reference.label && reference.url) : [],
     createdAt:     typeof raw.createdAt === 'string' ? raw.createdAt : new Date().toISOString(),
     updatedAt:     typeof raw.updatedAt === 'string' ? raw.updatedAt : new Date().toISOString(),
   }
@@ -112,7 +119,7 @@ function sanitizeAccount(raw: Partial<AccountCredential>): AccountCredential | n
   return {
     id:        typeof raw.id === 'string' && raw.id ? raw.id : crypto.randomUUID(),
     platform:  typeof raw.platform === 'string' ? raw.platform.trim() : '',
-    url:       typeof raw.url === 'string' ? raw.url.trim() : '',
+    url:       typeof raw.url === 'string' ? normalizeExternalHttpUrl(raw.url) : '',
     account:   typeof raw.account === 'string' ? raw.account.trim() : '',
     password:  typeof raw.password === 'string' ? raw.password : '',
     note:      typeof raw.note === 'string' ? raw.note.trim() : '',
@@ -291,8 +298,5 @@ export function __resetMaterialsStateForTests() {
 }
 
 export function normalizeMaterialUrl(value: string): string {
-  const trimmed = value.trim()
-  if (!trimmed) return ''
-  if (/^https?:\/\//i.test(trimmed)) return trimmed
-  return `https://${trimmed}`
+  return normalizeExternalHttpUrl(value)
 }

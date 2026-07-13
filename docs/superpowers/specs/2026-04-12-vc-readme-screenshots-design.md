@@ -2,7 +2,7 @@
 
 ## 目标
 
-基于用户提供的备份文件 `/Users/fishknowsss/Downloads/118studio-backup-2026-04-11.json`，重做 `vc` 分支 README 中的截图部分，并把截图范围扩展为 7 张页面图。
+基于用户提供的备份文件 `<本地备份目录>/118studio-backup-2026-04-11.json`，重做 `vc` 分支 README 中的截图部分，并把截图范围扩展为 7 张页面图。
 
 ## 范围
 

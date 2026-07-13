@@ -2,20 +2,16 @@ export function ProjectOverviewToolbar({
   onPriorityChange,
   onSearchChange,
   onStatusChange,
-  onViewModeChange,
   priority,
   search,
   status,
-  viewMode,
 }: {
   onPriorityChange: (value: string) => void
   onSearchChange: (value: string) => void
   onStatusChange: (value: string) => void
-  onViewModeChange: (value: 'grid' | 'timeline') => void
   priority: string
   search: string
   status: string
-  viewMode: 'grid' | 'timeline'
 }) {
   return (
     <div className="project-overview-toolbar">
@@ -51,24 +47,6 @@ export function ProjectOverviewToolbar({
         <option value="medium">中</option>
         <option value="low">低</option>
       </select>
-      <div className="view-mode-toggle">
-        <button
-          className={`btn btn-xs ${viewMode === 'grid' ? 'btn-primary' : 'btn-ghost'}`}
-          type="button"
-          aria-pressed={viewMode === 'grid'}
-          onClick={() => onViewModeChange('grid')}
-        >
-          卡片
-        </button>
-        <button
-          className={`btn btn-xs ${viewMode === 'timeline' ? 'btn-primary' : 'btn-ghost'}`}
-          type="button"
-          aria-pressed={viewMode === 'timeline'}
-          onClick={() => onViewModeChange('timeline')}
-        >
-          时间轴
-        </button>
-      </div>
     </div>
   )
 }

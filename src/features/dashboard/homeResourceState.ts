@@ -1,4 +1,5 @@
 import { createSyncableSettingsStore } from '../persistence/syncableSettings'
+import { normalizeExternalHttpUrl } from '../../legacy/utils'
 
 export type HomeResourceLinkState = {
   url: string
@@ -10,7 +11,7 @@ function sanitizeHomeResourceLinkState(raw: unknown): HomeResourceLinkState {
   if (!raw || typeof raw !== 'object') return { url: '' }
   const value = raw as { url?: unknown }
   return {
-    url: typeof value.url === 'string' ? value.url.trim() : '',
+    url: typeof value.url === 'string' ? normalizeExternalHttpUrl(value.url) : '',
   }
 }
 
@@ -41,9 +42,5 @@ export async function reloadHomeResourceLinkStateFromDB() {
 }
 
 export function normalizeHomeResourceUrl(value: string): string {
-  const trimmed = value.trim()
-  if (!trimmed) return ''
-  if (/^https?:\/\//i.test(trimmed)) return trimmed
-  return `https://${trimmed}`
+  return normalizeExternalHttpUrl(value)
 }
-

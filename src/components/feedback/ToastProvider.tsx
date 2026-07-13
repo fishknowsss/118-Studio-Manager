@@ -1,6 +1,6 @@
 /* eslint-disable react-refresh/only-export-components */
 
-import { createContext, useContext, useMemo, useRef, useState, type ReactNode } from 'react'
+import { createContext, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 
 type ToastTone = 'default' | 'success' | 'error' | 'info'
 
@@ -34,10 +34,15 @@ export function ToastProvider({ children }: { children: ReactNode }) {
     },
   }), [])
 
+  useEffect(() => () => {
+    for (const timer of timersRef.current.values()) window.clearTimeout(timer)
+    timersRef.current.clear()
+  }, [])
+
   return (
     <ToastContext.Provider value={value}>
       {children}
-      <div className="toast-root">
+      <div className="toast-root" aria-live="polite" aria-atomic="false">
         {items.map((item) => (
           <div key={item.id} className={`toast ${item.tone}`}>
             {item.message}

@@ -23,6 +23,7 @@ export function PersonDialog({
   person: LegacyPerson | null
 }) {
   const isNew = !person
+  const [isSaving, setIsSaving] = useState(false)
   const { toast } = useToast()
   const [skillInput, setSkillInput] = useState('')
   const [form, setForm] = useState<PersonFormInput>(() => ({
@@ -57,26 +58,35 @@ export function PersonDialog({
   }
 
   const save = async () => {
+    if (isSaving) return
     if (!form.name?.trim()) {
       toast('请填写姓名', 'error')
       return
     }
 
-    await savePersonFromForm(person, form)
-    toast(isNew ? '人员已添加' : '已保存', 'success')
-    onClose()
+    setIsSaving(true)
+    try {
+      await savePersonFromForm(person, form)
+      toast(isNew ? '人员已添加' : '已保存', 'success')
+      onClose()
+    } catch (error) {
+      console.error('[118SM] 保存人员失败:', error)
+      toast('保存失败', 'error')
+    } finally {
+      setIsSaving(false)
+    }
   }
 
   return (
     <Dialog
       open
       title={isNew ? '新增人员' : '编辑人员'}
-      onClose={onClose}
+      onClose={isSaving ? () => {} : onClose}
       footer={(
         <>
-          <button className="btn btn-secondary" type="button" onClick={onClose}>取消</button>
-          <button className="btn btn-primary" type="button" onClick={() => void save()}>
-            {isNew ? '添加人员' : '保存'}
+          <button className="btn btn-secondary" type="button" onClick={onClose} disabled={isSaving}>取消</button>
+          <button className="btn btn-primary" type="button" onClick={() => void save()} disabled={isSaving}>
+            {isSaving ? '保存中' : isNew ? '添加人员' : '保存'}
           </button>
         </>
       )}

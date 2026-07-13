@@ -160,9 +160,8 @@ export function Tasks() {
                   if (target) void handleDeleteTask(target)
                 }}
                 onEdit={() => setEditingTask(filteredTasks.find((item) => item.id === task.id) || null)}
-                onMenu={(event, type) => {
-                  event.preventDefault()
-                  setContextMenu({ taskId: task.id, type, x: event.clientX, y: event.clientY })
+                onMenu={(type, x, y) => {
+                  setContextMenu({ taskId: task.id, type, x, y })
                 }}
                 onToggle={() => {
                   const target = filteredTasks.find((item) => item.id === task.id)

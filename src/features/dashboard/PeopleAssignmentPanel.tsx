@@ -55,6 +55,17 @@ export function PeopleAssignmentPanel({
   const wheelLock = useRef(false)
 
   const totalPages = Math.max(1, Math.ceil(people.length / PAGE_SIZE))
+  const activePage = Math.min(page, totalPages - 1)
+
+  const goToPage = (nextPage: number) => {
+    setPage((currentPage) => {
+      const clampedPage = Math.max(0, Math.min(nextPage, totalPages - 1))
+      if (clampedPage === currentPage) return currentPage
+      setSlideDir(clampedPage > currentPage ? 'down' : 'up')
+      setAnimKey((current) => current + 1)
+      return clampedPage
+    })
+  }
 
   // 用原生监听器（passive: false）保证 preventDefault 有效且响应更及时
   useEffect(() => {
@@ -69,19 +80,17 @@ export function PeopleAssignmentPanel({
       wheelAccum.current = 0
       wheelLock.current = true
       setTimeout(() => { wheelLock.current = false }, 300)
-      setPage(prev => {
-        const next = prev + dir
-        if (next < 0 || next >= totalPages) return prev
-        setSlideDir(next > prev ? 'down' : 'up')
-        setAnimKey(k => k + 1)
-        return next
-      })
+      const next = activePage + dir
+      if (next < 0 || next >= totalPages) return
+      setSlideDir(next > activePage ? 'down' : 'up')
+      setAnimKey(k => k + 1)
+      setPage(next)
     }
     el.addEventListener('wheel', onWheel, { passive: false })
     return () => el.removeEventListener('wheel', onWheel)
-  }, [totalPages])
+  }, [activePage, totalPages])
 
-  const start = page * PAGE_SIZE
+  const start = activePage * PAGE_SIZE
   const pagePeople = useMemo(() => people.slice(start, start + PAGE_SIZE), [people, start])
   const placeholders = Math.max(0, PAGE_SIZE - pagePeople.length)
 
@@ -98,7 +107,7 @@ export function PeopleAssignmentPanel({
       nextRects.set(person.id, node.getBoundingClientRect())
     }
 
-    if (previousPageRef.current === page) {
+    if (previousPageRef.current === activePage) {
       for (const person of pagePeople) {
         const node = cardRefs.current.get(person.id)
         const previousRect = previousRectsRef.current.get(person.id)
@@ -120,8 +129,8 @@ export function PeopleAssignmentPanel({
     }
 
     previousRectsRef.current = nextRects
-    previousPageRef.current = page
-  }, [page, pagePeople])
+    previousPageRef.current = activePage
+  }, [activePage, pagePeople])
 
   const readTransferData = (event: DragEvent<HTMLDivElement>, type: string) => {
     return event.dataTransfer?.getData(type) || ''
@@ -195,7 +204,15 @@ export function PeopleAssignmentPanel({
     <div className="panel">
       <div className="panel-header panel-header--expandable" onClick={(e) => { const r = e.currentTarget.getBoundingClientRect(); onExpand(r.left + r.width / 2, r.top + r.height / 2) }}>
         <span className="panel-title">人员</span>
-        <span className="panel-action">展开全部</span>
+        <button
+          className="panel-action"
+          type="button"
+          onClick={(event) => {
+            event.stopPropagation()
+            const r = event.currentTarget.getBoundingClientRect()
+            onExpand(r.left + r.width / 2, r.top + r.height / 2)
+          }}
+        >展开全部</button>
       </div>
       <div className="panel-body people-panel-body">
         <div className="people-panel-content" ref={contentRef}>
@@ -224,18 +241,24 @@ export function PeopleAssignmentPanel({
                 />
               ))}
               {Array.from({ length: placeholders }, (_, index) => (
-                <div key={`person-slot-${index}`} className="person-assignment-placeholder">
-                  预留
-                </div>
+                <div
+                  key={`person-slot-${index}`}
+                  aria-hidden="true"
+                  className="person-assignment-placeholder"
+                />
               ))}
             </div>
           </div>
           {totalPages > 1 && (
             <div className="people-page-dots">
               {Array.from({ length: totalPages }, (_, i) => (
-                <div
+                <button
                   key={i}
-                  className={`people-page-dot${i === page ? ' people-page-dot--active' : ''}`}
+                  type="button"
+                  className={`people-page-dot${i === activePage ? ' people-page-dot--active' : ''}`}
+                  aria-label={`第 ${i + 1} 页`}
+                  aria-current={i === activePage ? 'page' : undefined}
+                  onClick={() => goToPage(i)}
                 />
               ))}
             </div>

@@ -4,6 +4,7 @@ const DB_NAME = 'studio118db'
 const DB_VERSION = 6
 
 let dbInstance: IDBDatabase | null = null
+let openPromise: Promise<IDBDatabase> | null = null
 
 export function ensureClassSchedulesStore(db: IDBDatabase) {
   if (db.objectStoreNames.contains('classSchedules')) return null
@@ -36,9 +37,11 @@ export function ensureShortDramaStores(db: IDBDatabase) {
 
 export async function openDB() {
   if (dbInstance) return dbInstance
+  if (openPromise) return openPromise
 
-  return await new Promise<IDBDatabase>((resolve, reject) => {
+  openPromise = new Promise<IDBDatabase>((resolve, reject) => {
     const req = indexedDB.open(DB_NAME, DB_VERSION)
+    let blocked = false
 
     req.onupgradeneeded = (event) => {
       const db = (event.target as IDBOpenDBRequest).result
@@ -89,12 +92,34 @@ export async function openDB() {
     }
 
     req.onsuccess = (event) => {
-      dbInstance = (event.target as IDBOpenDBRequest).result
-      resolve(dbInstance)
+      const openedDatabase = (event.target as IDBOpenDBRequest).result
+      if (blocked) {
+        openedDatabase.close()
+        return
+      }
+      dbInstance = openedDatabase
+      openedDatabase.onversionchange = () => {
+        openedDatabase.close()
+        if (dbInstance === openedDatabase) {
+          dbInstance = null
+          openPromise = null
+        }
+      }
+      resolve(openedDatabase)
     }
 
-    req.onerror = () => reject(req.error)
+    req.onerror = () => {
+      openPromise = null
+      reject(req.error)
+    }
+    req.onblocked = () => {
+      blocked = true
+      openPromise = null
+      reject(new Error('数据库升级被其他页面阻塞，请关闭旧页面后刷新'))
+    }
   })
+
+  return openPromise
 }
 
 function getStore(name: string, mode: IDBTransactionMode = 'readonly') {
@@ -140,9 +165,18 @@ export const db = {
     })
   },
   async exportAll() {
-    const entries = await Promise.all(
-      BACKUP_COLLECTION_NAMES.map(async (name) => [name, await this.getAll(name)] as const),
-    )
+    if (!dbInstance) throw new Error('Database is not opened yet')
+    const names = [...BACKUP_COLLECTION_NAMES]
+    const transaction = dbInstance.transaction(names, 'readonly')
+    const completed = new Promise<void>((resolve, reject) => {
+      transaction.oncomplete = () => resolve()
+      transaction.onerror = () => reject(transaction.error)
+      transaction.onabort = () => reject(transaction.error)
+    })
+    const entries = await Promise.all(names.map(async (name) => (
+      [name, await fromRequest(transaction.objectStore(name).getAll())] as const
+    )))
+    await completed
     const data = Object.fromEntries(entries) as Record<string, BackupPayload[keyof BackupPayload]>
     return buildBackupPayload(data as Partial<BackupPayload>)
   },

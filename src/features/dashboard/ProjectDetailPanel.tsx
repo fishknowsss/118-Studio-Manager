@@ -357,7 +357,7 @@ export function ProjectDetailPanel({ projectId }: { projectId: string }) {
           任务 · {projectTasks.filter((t) => t.status !== 'done').length} 未完成 / 共 {projectTasks.length}
         </div>
         {taskItems.length === 0 ? (
-          <div className="empty-state"><div className="empty-text">该项目暂无任务</div></div>
+          <div className="empty-state"><div className="empty-text">为该项目新建任务</div></div>
         ) : (
           taskItems.map((task) => (
             <TaskItem
@@ -371,9 +371,8 @@ export function ProjectDetailPanel({ projectId }: { projectId: string }) {
                 const t = projectTasks.find((x) => x.id === task.id)
                 if (t) void handleDelete(t)
               }}
-              onMenu={(event, type) => {
-                event.preventDefault()
-                setContextMenu({ taskId: task.id, type, x: event.clientX, y: event.clientY })
+              onMenu={(type, x, y) => {
+                setContextMenu({ taskId: task.id, type, x, y })
               }}
               onToggle={() => {
                 const t = projectTasks.find((x) => x.id === task.id)

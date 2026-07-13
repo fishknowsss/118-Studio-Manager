@@ -85,6 +85,9 @@ export function Settings() {
   const needsBackup = useMemo(() => getNeedsBackup(logs, projects, todayDate), [logs, projects, todayDate])
   const recentLogs = useMemo(() => formatRecentLogs(logs), [logs])
   const undoState = getUndoHistoryState()
+  const cloudSyncBusy = cloudSyncState.phase === 'checking'
+    || cloudSyncState.phase === 'syncing'
+    || cloudSyncState.phase === 'restoring'
 
   useEffect(() => {
     let cancelled = false
@@ -172,8 +175,8 @@ export function Settings() {
         setTransferState(nextState)
         writePersistedTransferState(nextState)
         toast('数据已恢复', 'success')
-      } catch {
-        toast('文件格式错误', 'error')
+      } catch (error) {
+        toast(error instanceof Error ? error.message : '文件格式错误', 'error')
       }
     }
     input.click()
@@ -204,7 +207,7 @@ export function Settings() {
   }
 
   const handleRestoreCloud = async () => {
-    const ok = await confirm('云端优先，更新本地', '这会用当前云端版本覆盖本地 IndexedDB。建议先导出本地 JSON。', {
+    const ok = await confirm('云端优先，更新本地', '这会用当前云端版本覆盖本地数据。建议先导出本地 JSON。', {
       confirmLabel: '继续覆盖',
       tone: 'primary',
     })
@@ -312,8 +315,8 @@ export function Settings() {
                   <div className="settings-row-desc">立即同步到云端，并下载一份当前 JSON 到本地。</div>
                 </div>
                 <div className="settings-row-action">
-                  <button className="btn btn-primary" type="button" onClick={() => void handleManualSyncAndBackup()} disabled={!cloudSyncState.configured}>
-                    同步并备份
+                  <button className="btn btn-primary" type="button" onClick={() => void handleManualSyncAndBackup()} disabled={!cloudSyncState.configured || cloudSyncBusy}>
+                    {cloudSyncState.phase === 'syncing' ? '同步中' : '同步并备份'}
                   </button>
                 </div>
               </div>
@@ -340,8 +343,8 @@ export function Settings() {
                   <div className="settings-row-desc">拉取当前云端主数据，并覆盖本地数据。</div>
                 </div>
                 <div className="settings-row-action">
-                  <button className="btn btn-secondary" type="button" onClick={() => void handleRestoreCloud()} disabled={!cloudSyncState.configured || !cloudSyncState.hasCloudData}>
-                    更新本地
+                  <button className="btn btn-secondary" type="button" onClick={() => void handleRestoreCloud()} disabled={!cloudSyncState.configured || !cloudSyncState.hasCloudData || cloudSyncBusy}>
+                    {cloudSyncState.phase === 'restoring' ? '更新中' : '更新本地'}
                   </button>
                 </div>
               </div>
@@ -381,7 +384,7 @@ export function Settings() {
               <div className="settings-row">
                 <div className="settings-row-info">
                   <div className="settings-row-label">118 Studio Manager VC</div>
-                  <div className="settings-row-desc">本地优先，数据存于 IndexedDB，可选接入 Cloudflare Worker 云同步。</div>
+                  <div className="settings-row-desc">数据保存在当前设备，也可开启云同步。</div>
                 </div>
                 <div className="settings-row-action">
                   <span className="badge badge-active">V1.3.1</span>

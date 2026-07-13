@@ -14,9 +14,16 @@ function buildCloudSyncAccessMessage() {
 
 async function readJson<T>(response: Response): Promise<T> {
   const text = await response.text()
-  const parsed = text ? JSON.parse(text) : {}
+  let parsed: unknown = {}
+  try {
+    parsed = text ? JSON.parse(text) : {}
+  } catch {
+    throw new Error('云端返回的数据格式无效')
+  }
   if (!response.ok) {
-    const message = parsed?.error || '云端同步失败'
+    const message = parsed && typeof parsed === 'object' && 'error' in parsed && typeof parsed.error === 'string'
+      ? parsed.error
+      : '云端同步失败'
     throw new Error(message)
   }
   return parsed as T
@@ -44,7 +51,10 @@ async function requestCloudSyncJson<T>(path: string, init: RequestInit) {
 
   const contentType = response.headers.get('Content-Type')?.toLowerCase() || ''
   if (!contentType.includes('application/json')) {
-    throw new Error(buildCloudSyncAccessMessage())
+    if (response.redirected || response.status === 200 || response.status === 401 || response.status === 403) {
+      throw new Error(buildCloudSyncAccessMessage())
+    }
+    throw new Error(`云端同步失败（HTTP ${response.status}）`)
   }
 
   return await readJson<T>(response)

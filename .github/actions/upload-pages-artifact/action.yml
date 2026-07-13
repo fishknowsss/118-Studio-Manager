@@ -61,7 +61,7 @@ runs:
         INPUT_PATH: ${{ inputs.path }}
 
     - name: Archive artifact
-      shell: bash
+      shell: pwsh
       if: runner.os == 'Windows'
       run: |
         echo ::group::Archive artifact

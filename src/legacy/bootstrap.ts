@@ -12,11 +12,12 @@ import {
 import { shiftLocalDateKey, type BackupPayload } from './utils'
 import { restoreCloudSnapshotOnBoot } from '../features/sync/bootstrapSync'
 import { isCloudSyncConfigured } from '../features/sync/syncApi'
+import { readPersistedCloudSyncState } from '../features/sync/syncClientState'
 import { initializeSyncableViewState } from '../features/persistence/syncableViewState'
 import { hasBackupContent } from '../features/sync/syncShared'
 import { db } from './db'
 
-let hasBooted = false
+let bootPromise: Promise<void> | null = null
 const DEMO_DATA_VERSION = 'studio-production-v2'
 const DEMO_DATA_SETTING_KEY = 'demo:dataVersion'
 
@@ -224,21 +225,21 @@ async function seedDemoData() {
   await store.addLog('加载了演示数据')
 }
 
-export async function initializeAppData() {
-  if (hasBooted) return
-  hasBooted = true
-
+async function runAppInitialization() {
   await openDB()
   await store.loadAll()
   const localBackup = await db.exportAll()
   const cloudSyncConfigured = isCloudSyncConfigured()
+  const hasPendingLocalChanges = readPersistedCloudSyncState().pendingLocalChanges
 
   if (!hasBackupContent(localBackup)) {
     if (cloudSyncConfigured) {
-      try {
-        await restoreCloudSnapshotOnBoot()
-      } catch (error) {
-        console.warn('[118SM] 云端首启恢复失败，保留空本地数据:', error)
+      if (!hasPendingLocalChanges) {
+        try {
+          await restoreCloudSnapshotOnBoot()
+        } catch (error) {
+          console.warn('[118SM] 云端首启恢复失败，保留空本地数据:', error)
+        }
       }
     } else {
       await seedDemoData()
@@ -257,6 +258,12 @@ export async function initializeAppData() {
   await initializeSyncableViewState()
 }
 
-export function disposeLegacyApp() {
-  hasBooted = false
+export function initializeAppData() {
+  if (!bootPromise) {
+    bootPromise = runAppInitialization().catch((error) => {
+      bootPromise = null
+      throw error
+    })
+  }
+  return bootPromise
 }

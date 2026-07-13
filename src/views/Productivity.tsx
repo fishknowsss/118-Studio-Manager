@@ -8,6 +8,7 @@ import { Dialog } from '../components/ui/Dialog'
 import {
   buildProductivityPersonModels,
   buildScheduleOwnerSummaries,
+  findImportedSchedulePerson,
   type ProductivityPersonModel,
   type ScheduleOwnerSummary,
 } from '../features/productivity/productivityModels'
@@ -186,7 +187,8 @@ export function Productivity() {
     [people, tasks, today],
   )
   const totalPages = Math.max(1, Math.ceil(personModels.length / PAGE_SIZE))
-  const pageModels = personModels.slice(page * PAGE_SIZE, page * PAGE_SIZE + PAGE_SIZE)
+  const activePage = Math.min(page, totalPages - 1)
+  const pageModels = personModels.slice(activePage * PAGE_SIZE, activePage * PAGE_SIZE + PAGE_SIZE)
   const currentWeek = getWeekNumber(termStartDate, todayDate)
   const scheduleSummaries = useMemo(
     () => buildScheduleOwnerSummaries(people, classSchedules),
@@ -227,9 +229,7 @@ export function Productivity() {
         const parsed = await extractSchedulePdf(file)
         if (!parsed.personName || !parsed.entries.length) continue
 
-        const existing = knownPeople.find((person) =>
-          (parsed.studentNo && person.studentNo === parsed.studentNo) || person.name === parsed.personName,
-        )
+        const existing = findImportedSchedulePerson(knownPeople, parsed)
         const savedPerson = buildImportedPerson(parsed, existing)
         await store.savePerson(savedPerson)
 
@@ -343,10 +343,6 @@ export function Productivity() {
   }
 
   useEffect(() => {
-    setPage((current) => Math.min(current, totalPages - 1))
-  }, [totalPages])
-
-  useEffect(() => {
     window.localStorage.setItem(TERM_START_STORAGE_KEY, termStartDate)
   }, [termStartDate])
 
@@ -428,7 +424,7 @@ export function Productivity() {
       {mode === 'cards' ? (
         <ProductivityCardsView
           flippedPersonIds={flippedPersonIds}
-          page={page}
+          page={activePage}
           pageModels={pageModels}
           setPage={setPage}
           totalPages={totalPages}
@@ -484,17 +480,15 @@ function ProductivityCardsView({
       wheelAccum.current = 0
       wheelLock.current = true
       window.setTimeout(() => { wheelLock.current = false }, 300)
-      setPage((current) => {
-        const next = current + dir
-        if (next < 0 || next >= totalPages) return current
-        setSlideDir(next > current ? 'down' : 'up')
-        setAnimKey((key) => key + 1)
-        return next
-      })
+      const next = page + dir
+      if (next < 0 || next >= totalPages) return
+      setSlideDir(next > page ? 'down' : 'up')
+      setAnimKey((key) => key + 1)
+      setPage(next)
     }
     el.addEventListener('wheel', onWheel, { passive: false })
     return () => el.removeEventListener('wheel', onWheel)
-  }, [setPage, totalPages])
+  }, [page, setPage, totalPages])
 
   const goToPage = (next: number) => {
     if (next === page) return
@@ -710,7 +704,21 @@ function ScheduleEntryDialog({
   onClose: () => void
   onSave: (form: ScheduleFormState) => Promise<void>
 }) {
+  const { toast } = useToast()
   const [form, setForm] = useState<ScheduleFormState>(() => createInitialScheduleForm(people))
+  const [isSaving, setIsSaving] = useState(false)
+  const save = async () => {
+    if (isSaving) return
+    setIsSaving(true)
+    try {
+      await onSave(form)
+    } catch (error) {
+      console.error('[118SM] 保存课表失败:', error)
+      toast('保存失败', 'error')
+    } finally {
+      setIsSaving(false)
+    }
+  }
   const updateForm = <K extends keyof ScheduleFormState>(key: K, value: ScheduleFormState[K]) => {
     setForm((current) => ({ ...current, [key]: value }))
   }
@@ -727,11 +735,11 @@ function ScheduleEntryDialog({
     <Dialog
       open
       title="添加课表"
-      onClose={onClose}
+      onClose={isSaving ? () => {} : onClose}
       footer={(
         <>
-          <button className="btn btn-secondary" type="button" onClick={onClose}>取消</button>
-          <button className="btn btn-primary" type="button" onClick={() => void onSave(form)}>添加</button>
+          <button className="btn btn-secondary" type="button" onClick={onClose} disabled={isSaving}>取消</button>
+          <button className="btn btn-primary" type="button" onClick={() => void save()} disabled={isSaving}>{isSaving ? '保存中' : '添加'}</button>
         </>
       )}
     >

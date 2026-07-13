@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useToast } from '../../components/feedback/ToastProvider'
 import { Dialog } from '../../components/ui/Dialog'
-import { type AccountCredential } from './materialsState'
+import { normalizeMaterialUrl, type AccountCredential } from './materialsState'
 
 type Props = {
   account: AccountCredential | null
@@ -34,11 +34,17 @@ export function AccountDialog({ account, folders, defaultPlatform, onSave, onClo
       return
     }
 
+    const normalizedUrl = normalizeMaterialUrl(url)
+    if (url.trim() && !normalizedUrl) {
+      toast('官网地址格式无效', 'error')
+      return
+    }
+
     const now = new Date().toISOString()
     onSave({
       id:        account?.id ?? crypto.randomUUID(),
       platform:  platform.trim(),
-      url:       url.trim() ? (url.trim().startsWith('http') ? url.trim() : `https://${url.trim()}`) : '',
+      url:       normalizedUrl,
       account:   acc.trim(),
       password,
       note:      note.trim(),
@@ -65,12 +71,12 @@ export function AccountDialog({ account, folders, defaultPlatform, onSave, onClo
       <div className="form-grid">
         {/* 所在文件夹 */}
         <div className="form-field span2">
-          <label className="form-label" htmlFor="acc-platform">所在文件夹 *</label>
+          <label className="form-label" htmlFor="acc-platform">文件夹 *</label>
           <input
             id="acc-platform"
             className="form-input"
             list="acc-platform-datalist"
-            placeholder="选择已有文件夹，或直接输入新名称"
+            placeholder="选择或输入文件夹"
             value={platform}
             onChange={(e) => setPlatform(e.target.value)}
             autoComplete="off"
@@ -80,9 +86,6 @@ export function AccountDialog({ account, folders, defaultPlatform, onSave, onClo
               <option key={f} value={f} />
             ))}
           </datalist>
-          {folders.length > 0 && (
-            <div className="form-hint">输入框已列出现有文件夹，也可填写新文件夹名称自动创建</div>
-          )}
         </div>
 
         {/* 官网地址 */}

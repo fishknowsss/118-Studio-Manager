@@ -76,6 +76,10 @@ export function PersonDetailPanel({
     () => buildTaskListItemModels(personTasks, snap.projects, snap.people, todayStr),
     [personTasks, snap.projects, snap.people, todayStr],
   )
+  const activePeople = useMemo(
+    () => snap.people.filter((candidate) => candidate.status === 'active'),
+    [snap.people],
+  )
 
   const contextItems = useMemo<ContextMenuItem[]>(() => {
     if (!contextMenu) return []
@@ -97,8 +101,35 @@ export function PersonDetailPanel({
         },
       }))
     }
-    return []
-  }, [contextMenu, toast])
+    const currentTask = snap.tasks.find((task) => task.id === contextMenu.taskId)
+    const currentIds = currentTask ? getTaskAssigneeIds(currentTask) : []
+    return [
+      {
+        key: '__clear',
+        label: '清除全部负责人',
+        onSelect: () => {
+          void updateTaskQuickField(contextMenu.taskId, { assigneeIds: [] }).then((updated) => {
+            if (updated) toast('已更新', 'success')
+          })
+        },
+      },
+      ...activePeople.map((candidate) => {
+        const assigned = currentIds.includes(candidate.id)
+        return {
+          key: candidate.id,
+          label: `${assigned ? '✓ ' : ''}${candidate.name || '未命名人员'}`,
+          onSelect: () => {
+            const next = assigned
+              ? currentIds.filter((id) => id !== candidate.id)
+              : [...currentIds, candidate.id]
+            void updateTaskQuickField(contextMenu.taskId, { assigneeIds: next }).then((updated) => {
+              if (updated) toast('已更新', 'success')
+            })
+          },
+        }
+      }),
+    ]
+  }, [activePeople, contextMenu, snap.tasks, toast])
 
   if (!person) return <div className="text-muted text-sm" style={{ padding: 24 }}>成员不存在</div>
 
@@ -146,11 +177,12 @@ export function PersonDetailPanel({
       <div className="pdp-tasks-section">
         <div className="pdp-section-title">进行中任务 · {activeTasks.length}</div>
         {activeTasks.length === 0 ? (
-          <div className="text-muted text-sm">暂无进行中任务</div>
+          <div className="text-muted text-sm">为该成员分配任务</div>
         ) : (
           activeTasks.map((item) => (
             <TaskItem
               key={item.id}
+              deleteActionLabel="解除分配"
               model={item}
               onEdit={() => setEditingTask(snap.tasks.find((t) => t.id === item.id) ?? null)}
               onToggle={() => {
@@ -166,7 +198,7 @@ export function PersonDetailPanel({
                   void updateTaskQuickField(t.id, { assigneeIds: newIds }).then(() => toast('已解除分配', 'success'))
                 }
               }}
-              onMenu={(e, type) => setContextMenu({ taskId: item.id, type, x: e.clientX, y: e.clientY })}
+              onMenu={(type, x, y) => setContextMenu({ taskId: item.id, type, x, y })}
             />
           ))
         )}
@@ -177,6 +209,7 @@ export function PersonDetailPanel({
             {doneTasks.map((item) => (
               <TaskItem
                 key={item.id}
+                deleteActionLabel="解除分配"
                 model={item}
                 onEdit={() => setEditingTask(snap.tasks.find((t) => t.id === item.id) ?? null)}
                 onToggle={() => {
@@ -192,7 +225,7 @@ export function PersonDetailPanel({
                     void updateTaskQuickField(t.id, { assigneeIds: newIds }).then(() => toast('已解除分配', 'success'))
                   }
                 }}
-                onMenu={(e, type) => setContextMenu({ taskId: item.id, type, x: e.clientX, y: e.clientY })}
+                onMenu={(type, x, y) => setContextMenu({ taskId: item.id, type, x, y })}
               />
             ))}
           </>

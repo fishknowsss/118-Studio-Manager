@@ -2,7 +2,11 @@ import { describe, expect, it } from 'vitest'
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import * as pdfjsLib from 'pdfjs-dist/legacy/build/pdf.mjs'
-import { buildProductivityPersonModels, buildScheduleOwnerSummaries } from '../src/features/productivity/productivityModels'
+import {
+  buildProductivityPersonModels,
+  buildScheduleOwnerSummaries,
+  findImportedSchedulePerson,
+} from '../src/features/productivity/productivityModels'
 import { buildScheduleCourseLayouts } from '../src/features/productivity/scheduleModels'
 import { parseScheduleTextItems, type ScheduleTextItem } from '../src/features/productivity/schedulePdfParser'
 import { BACKUP_COLLECTION_NAMES } from '../src/legacy/utils'
@@ -34,6 +38,43 @@ async function parseScheduleFixture(fileName: string) {
 }
 
 describe('productivity view', () => {
+  it('does not merge people who share a name but have different student numbers', () => {
+    const people = [
+      { id: 'person-1', name: '张同学', status: 'active', studentNo: '20260001' },
+      { id: 'person-2', name: '张同学', status: 'active', studentNo: '20260002' },
+    ]
+
+    expect(findImportedSchedulePerson(people, {
+      personName: '张同学',
+      studentNo: '20260002',
+    })?.id).toBe('person-2')
+    expect(findImportedSchedulePerson(people, {
+      personName: '张同学',
+      studentNo: '20260003',
+    })).toBeUndefined()
+  })
+
+  it('only falls back to a unique name when neither side has a student number', () => {
+    const people = [
+      { id: 'person-1', name: '李同学', status: 'active', studentNo: '' },
+      { id: 'person-2', name: '王同学', status: 'active', studentNo: '' },
+      { id: 'person-3', name: '王同学', status: 'active', studentNo: '' },
+      { id: 'person-4', name: '赵同学', status: 'active', studentNo: '20260004' },
+    ]
+
+    expect(findImportedSchedulePerson(people, {
+      personName: '李同学',
+      studentNo: '',
+    })?.id).toBe('person-1')
+    expect(findImportedSchedulePerson(people, {
+      personName: '王同学',
+      studentNo: '',
+    })).toBeUndefined()
+    expect(findImportedSchedulePerson(people, {
+      personName: '赵同学',
+      studentNo: '',
+    })).toBeUndefined()
+  })
   it('registers the productivity route and sidebar entry', () => {
     const appSource = readFileSync(join(process.cwd(), 'src/App.tsx'), 'utf8')
 
@@ -79,7 +120,7 @@ describe('productivity view', () => {
     const source = readFileSync(join(process.cwd(), 'src/views/Productivity.tsx'), 'utf8')
     const styleSource = readFileSync(join(process.cwd(), 'css/style.css'), 'utf8')
 
-    expect(source).toMatch(/setSlideDir\(next > current \? 'down' : 'up'\)/)
+    expect(source).toMatch(/setSlideDir\(next > page \? 'down' : 'up'\)/)
     expect(source).toMatch(/setAnimKey/)
     expect(source).toMatch(/key=\{animKey\}/)
     expect(source).toMatch(/productivity-grid--slide-\$\{slideDir\}/)

@@ -57,6 +57,7 @@ async function seedScheduleData(page: Page) {
 }
 
 async function openSeededProductivityPage(page: Page) {
+  await page.clock.setFixedTime('2026-03-23T10:00:00+08:00')
   await page.goto('/#productivity')
   await expect(page.getByRole('heading', { name: '工效' })).toBeVisible()
   await seedScheduleData(page)

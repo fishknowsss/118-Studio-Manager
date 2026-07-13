@@ -1,6 +1,39 @@
 export const uid = () => crypto.randomUUID()
 export const now = () => new Date().toISOString()
 
+const URL_SCHEME_PATTERN = /^[a-z][a-z\d+.-]*:/i
+const HOST_PORT_PATTERN = /^(?:localhost|[^/?#:\s]+\.[^/?#:\s]+):\d+(?:[/?#]|$)/i
+const IPV6_HOST_PORT_PATTERN = /^\[[0-9a-f:.]+\]:\d+(?:[/?#]|$)/i
+
+function hasControlCharacters(value: string) {
+  return Array.from(value).some((character) => {
+    const code = character.charCodeAt(0)
+    return code <= 31 || code === 127
+  })
+}
+
+export function normalizeExternalHttpUrl(value: string): string {
+  const trimmed = value.trim()
+  if (!trimmed || hasControlCharacters(trimmed)) return ''
+
+  const candidate = trimmed.startsWith('//')
+    ? `https:${trimmed}`
+    : HOST_PORT_PATTERN.test(trimmed) || IPV6_HOST_PORT_PATTERN.test(trimmed)
+      ? `https://${trimmed}`
+      : URL_SCHEME_PATTERN.test(trimmed)
+      ? trimmed
+      : `https://${trimmed}`
+
+  try {
+    const url = new URL(candidate)
+    if ((url.protocol !== 'https:' && url.protocol !== 'http:') || !url.hostname) return ''
+    if (url.username || url.password) return ''
+    return url.toString()
+  } catch {
+    return ''
+  }
+}
+
 export type BackupRecord = Record<string, unknown>
 
 export type BackupPayload = {
@@ -20,9 +53,9 @@ export type BackupPayload = {
 
 /**
  * 所有需要备份/同步的 IndexedDB 集合名（与 BackupPayload 的字段一一对应）。
- * 新增 IndexedDB store 时，只需在此数组和 BackupPayload 类型中各加一行，
- * clearAll / exportAll / importAll / buildBackupPayload / normalizeImportedBackup
- * 都会自动包含。
+ * 此处注册后，clearAll / exportAll / importAll / buildBackupPayload /
+ * normalizeImportedBackup 会自动包含；新增 store 时仍须按项目指引同步升级
+ * DB_VERSION、备份摘要和传输状态类型。
  */
 export const BACKUP_COLLECTION_NAMES = [
   'projects',
@@ -299,26 +332,115 @@ export function buildBackupPayload(data: Partial<BackupPayload>): BackupPayload 
   }
 }
 
-export function normalizeImportedBackup(data: unknown): BackupPayload {
-  if (!data || typeof data !== 'object') {
-    throw new Error('备份文件格式无效')
+export function getBackupPayloadValidationError(
+  data: unknown,
+  { requireCurrentSchema = false }: { requireCurrentSchema?: boolean } = {},
+) {
+  if (!data || typeof data !== 'object' || Array.isArray(data)) {
+    return '备份文件格式无效'
   }
 
   const payload = data as Partial<BackupPayload>
-  const hasKnownCollection = BACKUP_COLLECTION_NAMES.some((key) =>
-    Array.isArray(payload[key]),
-  )
-
-  if (!hasKnownCollection) {
-    throw new Error('备份文件缺少可识别的数据表')
+  const rawSchemaVersion = payload.schemaVersion
+  if (
+    rawSchemaVersion !== undefined &&
+    (!Number.isInteger(rawSchemaVersion) || Number(rawSchemaVersion) < 1)
+  ) {
+    return '备份版本无效'
   }
 
+  const schemaVersion = rawSchemaVersion ?? 1
+  if (schemaVersion > BACKUP_SCHEMA_VERSION) {
+    return '备份版本高于当前应用，请先升级应用'
+  }
+  if (requireCurrentSchema && schemaVersion !== BACKUP_SCHEMA_VERSION) {
+    return '云端只接受当前版本的完整快照'
+  }
+
+  const recognizableCollectionCount = BACKUP_COLLECTION_NAMES.filter(
+    (name) => Array.isArray(payload[name]),
+  ).length
+  if (recognizableCollectionCount === 0) {
+    return '备份文件缺少可识别的数据表'
+  }
+
+  // 集合按引入版本追加：基础 5 项、v3 请假、v4 课表、v5 短剧 3 项。
+  const requiredCollectionCount = schemaVersion >= BACKUP_SCHEMA_VERSION
+    ? BACKUP_COLLECTION_NAMES.length
+    : schemaVersion >= 5
+      ? Math.min(10, BACKUP_COLLECTION_NAMES.length)
+      : schemaVersion >= 4
+        ? 7
+        : schemaVersion >= 3
+          ? 6
+          : 5
+  const missingCollections = BACKUP_COLLECTION_NAMES
+    .slice(0, requiredCollectionCount)
+    .filter(
+    (name) => !Array.isArray(payload[name]),
+  )
+  if (missingCollections.length > 0) {
+    return `备份文件不完整，缺少数据表：${missingCollections.join('、')}`
+  }
+
+  const isStringArray = (value: unknown) => (
+    Array.isArray(value) && value.every((item) => typeof item === 'string')
+  )
+
+  const hasInvalidRecordShape = (name: BackupCollectionName, record: BackupRecord) => {
+    if (name === 'people' && record.skills !== undefined && !isStringArray(record.skills)) return true
+    if (name === 'tasks' && record.assigneeIds !== undefined && !isStringArray(record.assigneeIds)) return true
+    if (name === 'shortDramaGroups') {
+      return !isStringArray(record.memberIds)
+    }
+    if (name === 'shortDramaAssignments') {
+      if (!isStringArray(record.producerIds) || !Array.isArray(record.allocations)) return true
+      return record.allocations.some((allocation) => {
+        if (!allocation || typeof allocation !== 'object' || Array.isArray(allocation)) return true
+        const personId = (allocation as BackupRecord).personId
+        return typeof personId !== 'string' || !personId.trim()
+      })
+    }
+    return false
+  }
+
+  for (const name of BACKUP_COLLECTION_NAMES) {
+    const records = payload[name]
+    if (!Array.isArray(records)) continue
+    const keyField = name === 'settings' ? 'key' : 'id'
+    const seenKeys = new Set<string>()
+    let hasDuplicateKey = false
+    const hasInvalidRecord = records.some((record) => {
+      if (!record || typeof record !== 'object' || Array.isArray(record)) return true
+      const backupRecord = record as BackupRecord
+      const rawKey = backupRecord[keyField]
+      if (typeof rawKey !== 'string' || !rawKey.trim()) return true
+      const key = rawKey.trim()
+      if (seenKeys.has(key)) {
+        hasDuplicateKey = true
+        return false
+      }
+      seenKeys.add(key)
+      return hasInvalidRecordShape(name, backupRecord)
+    })
+    if (hasInvalidRecord) return `数据表记录无效：${name}`
+    if (hasDuplicateKey) return `数据表存在重复记录：${name}`
+  }
+
+  return null
+}
+
+export function normalizeImportedBackup(data: unknown): BackupPayload {
+  const validationError = getBackupPayloadValidationError(data)
+  if (validationError) throw new Error(validationError)
+
+  const payload = data as Partial<BackupPayload>
   const collections = Object.fromEntries(
     BACKUP_COLLECTION_NAMES.map((name) => [name, payload[name]]),
   ) as Partial<BackupPayload>
 
   return buildBackupPayload({
-    schemaVersion: typeof payload.schemaVersion === 'number' ? payload.schemaVersion : BACKUP_SCHEMA_VERSION,
+    schemaVersion: typeof payload.schemaVersion === 'number' ? payload.schemaVersion : 1,
     exportedAt: typeof payload.exportedAt === 'string' ? payload.exportedAt : now(),
     ...collections,
   })

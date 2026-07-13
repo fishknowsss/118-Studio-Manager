@@ -19,7 +19,12 @@ import type {
   TaskPriority,
   TaskStatus,
 } from './store'
-import { store, getTaskAssigneeIds, syncTaskStatusWithAssignees } from './store'
+import {
+  store,
+  getTaskAssigneeIds,
+  runTrackedStoreWrite,
+  syncTaskStatusWithAssignees,
+} from './store'
 import { buildBackupSummary } from './selectors'
 import { formatFileDate, normalizeImportedBackup, now, uid } from './utils'
 import { flushSyncableViewStatePersistence, reloadSyncableViewStateFromDB } from '../features/persistence/syncableViewState'
@@ -98,7 +103,7 @@ async function runWithUndo<T>(label: string, operation: () => Promise<T>) {
   const checkpointId = await pushUndoCheckpoint(label)
 
   try {
-    return await operation()
+    return await runTrackedStoreWrite(operation)
   } catch (error) {
     discardUndoCheckpoint(checkpointId)
     throw error

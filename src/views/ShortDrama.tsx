@@ -186,7 +186,7 @@ export function ShortDrama() {
 
       {shortDramas.length === 0 ? (
         <div className="empty-state short-drama-empty">
-          <div className="empty-text">先新建一部短剧。</div>
+          <div className="empty-text">新建一部短剧</div>
           <button className="btn btn-primary" type="button" onClick={() => setEditingDrama(null)}>新短剧</button>
         </div>
       ) : (

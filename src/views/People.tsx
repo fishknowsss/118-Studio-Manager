@@ -5,12 +5,12 @@ import { PersonCard } from '../features/people/PersonCard'
 import { PersonDialog } from '../features/people/PersonDialog'
 import { deletePersonWithLog, togglePersonStatus } from '../legacy/actions'
 import { buildPersonCardModels, getFilteredPeople } from '../legacy/selectors'
-import { type LegacyPerson } from '../legacy/store'
+import { buildPersonDeletionPatch, type LegacyPerson } from '../legacy/store'
 import { useLegacyStoreSnapshot } from '../legacy/useLegacyStore'
 
 export function People() {
   const store = useLegacyStoreSnapshot()
-  const { people, tasks } = store
+  const { people, tasks, leaveRecords, classSchedules, shortDramaGroups, shortDramaAssignments } = store
 
   const [search, setSearch] = useState('')
   const [statusFilter, setStatusFilter] = useState('')
@@ -26,7 +26,26 @@ export function People() {
   }
 
   const handleDeletePerson = async (person: LegacyPerson) => {
-    const ok = await confirm('删除人员', `确认删除「${person.name}」？其名下任务将变为未分配。此操作不可撤销。`)
+    const patch = buildPersonDeletionPatch(
+      person.id,
+      tasks,
+      leaveRecords,
+      classSchedules,
+      shortDramaGroups,
+      shortDramaAssignments,
+    )
+    const effects = [
+      patch.updatedTasks.length > 0 ? `${patch.updatedTasks.length} 个任务取消分配` : '',
+      patch.leaveRecordIds.length > 0 ? `${patch.leaveRecordIds.length} 条请假记录删除` : '',
+      patch.classScheduleIds.length > 0 ? `${patch.classScheduleIds.length} 条课表记录删除` : '',
+      patch.updatedShortDramaGroups.length + patch.updatedShortDramaAssignments.length > 0
+        ? '从相关短剧安排中移除'
+        : '',
+    ].filter(Boolean)
+    const body = effects.length > 0
+      ? `确认删除「${person.name}」？删除后将${effects.join('、')}。`
+      : `确认删除「${person.name}」？`
+    const ok = await confirm('删除人员', body)
     if (!ok) return
     await deletePersonWithLog(person)
     toast('已删除', 'error')
@@ -62,7 +81,19 @@ export function People() {
           {filteredPeople.length === 0 ? (
             <div className="empty-state empty-state-full">
               <div className="empty-icon">👥</div>
-              <div className="empty-text">先新增一位成员</div>
+              <div className="empty-text">{people.length === 0 ? '先新增一位成员' : '调整搜索或筛选'}</div>
+              {people.length > 0 ? (
+                <button
+                  className="btn btn-secondary btn-sm"
+                  type="button"
+                  onClick={() => {
+                    setSearch('')
+                    setStatusFilter('')
+                  }}
+                >
+                  清除筛选
+                </button>
+              ) : null}
             </div>
           ) : (
             personCards.map((person) => (

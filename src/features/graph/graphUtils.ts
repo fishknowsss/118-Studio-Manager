@@ -27,6 +27,40 @@ export function getKindShortLabel(kind: NodeKind) {
   return '人'
 }
 
+export function getGraphSearchMatches(nodes: GraphNode[], rawKeyword: string) {
+  const keyword = rawKeyword.trim().toLowerCase()
+  if (!keyword) return []
+
+  const kindOrder: Record<NodeKind, number> = { project: 0, task: 1, person: 2 }
+  return nodes
+    .filter((node) => node.label.toLowerCase().includes(keyword))
+    .sort((left, right) => {
+      const leftStarts = left.label.toLowerCase().startsWith(keyword) ? 0 : 1
+      const rightStarts = right.label.toLowerCase().startsWith(keyword) ? 0 : 1
+      if (leftStarts !== rightStarts) return leftStarts - rightStarts
+      if (kindOrder[left.kind] !== kindOrder[right.kind]) {
+        return kindOrder[left.kind] - kindOrder[right.kind]
+      }
+      return left.label.localeCompare(right.label, 'zh-CN')
+    })
+}
+
+export type GraphNavigationKey = 'ArrowRight' | 'ArrowDown' | 'ArrowLeft' | 'ArrowUp' | 'Home' | 'End'
+
+export function getNextGraphNodeId(
+  nodeIds: string[],
+  currentId: string,
+  key: GraphNavigationKey,
+) {
+  if (nodeIds.length === 0) return null
+  if (key === 'Home') return nodeIds[0]
+  if (key === 'End') return nodeIds[nodeIds.length - 1]
+
+  const currentIndex = Math.max(0, nodeIds.indexOf(currentId))
+  const offset = key === 'ArrowRight' || key === 'ArrowDown' ? 1 : -1
+  return nodeIds[(currentIndex + offset + nodeIds.length) % nodeIds.length]
+}
+
 function estimateGraphTextWidth(text: string) {
   return Array.from(text).reduce((width, char) => {
     if (/[\u4e00-\u9fff\u3000-\u303f\uff00-\uffef]/.test(char)) return width + 18.5

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState, type MouseEventHandler, type WheelEventHandler } from 'react'
+import { useEffect, useMemo, useRef, useState, type PointerEventHandler, type WheelEventHandler } from 'react'
 import { useToast } from '../components/feedback/ToastProvider'
 import { SquidMarkSvg } from '../components/easter/SquidMark'
 import { getSquidVariant, SQUID_PERSON_NAME } from '../components/easter/squidMarkUtils'
@@ -26,7 +26,9 @@ import {
   clamp,
   cloneNodeMap,
   ensureSimulationNodes,
+  getGraphSearchMatches,
   getKindLabel,
+  getNextGraphNodeId,
   runForceSimulation,
   toScenePoint,
   truncateGraphTextByWidth,
@@ -65,6 +67,7 @@ export function Graph() {
   const [viewport, setViewport] = useState<Viewport>({ x: 0, y: 0, scale: 1 })
   const [draggingCanvas, setDraggingCanvas] = useState(false)
   const [draggingNodeId, setDraggingNodeId] = useState<string | null>(null)
+  const [keyboardFocusedNodeId, setKeyboardFocusedNodeId] = useState<string | null>(null)
   const [renderNodeMap, setRenderNodeMap] = useState<Record<string, SimNode>>({})
   const [simRevision, setSimRevision] = useState(0)
   const [tooltipScreenPos, setTooltipScreenPos] = useState<{ x: number; y: number } | null>(null)
@@ -78,6 +81,7 @@ export function Graph() {
   const originalViewRef = useRef<GraphViewSnapshot | null>(null)
   const activeSelectedNodeIdRef = useRef<string | null>(null)
   const simulationActiveRef = useRef(false)
+  const nodeElementRefs = useRef(new Map<string, SVGGElement>())
 
   useEffect(() => {
     viewportRef.current = viewport
@@ -108,30 +112,19 @@ export function Graph() {
 
   const searchKeyword = searchText.trim().toLowerCase()
 
-  const searchResults = useMemo(() => {
-    if (!searchKeyword) return [] as typeof filteredGraph.nodes
+  const allSearchMatches = useMemo(
+    () => getGraphSearchMatches(filteredGraph.nodes, searchKeyword),
+    [filteredGraph.nodes, searchKeyword],
+  )
 
-    const kindOrder: Record<string, number> = { project: 0, task: 1, person: 2 }
-
-    return filteredGraph.nodes
-      .filter((node) => node.label.toLowerCase().includes(searchKeyword))
-      .sort((left, right) => {
-        const leftStarts = left.label.toLowerCase().startsWith(searchKeyword) ? 0 : 1
-        const rightStarts = right.label.toLowerCase().startsWith(searchKeyword) ? 0 : 1
-        if (leftStarts !== rightStarts) return leftStarts - rightStarts
-
-        const leftKind = kindOrder[left.kind] ?? 0
-        const rightKind = kindOrder[right.kind] ?? 0
-        if (leftKind !== rightKind) return leftKind - rightKind
-
-        return left.label.localeCompare(right.label)
-      })
-      .slice(0, 8)
-  }, [filteredGraph, searchKeyword])
+  const searchResults = useMemo(
+    () => allSearchMatches.slice(0, 8),
+    [allSearchMatches],
+  )
 
   const searchMatchedNodeIds = useMemo(
-    () => new Set(searchResults.map((node) => node.id)),
-    [searchResults],
+    () => new Set(allSearchMatches.map((node) => node.id)),
+    [allSearchMatches],
   )
 
   const scopedGraph = useMemo(() => {
@@ -251,6 +244,9 @@ export function Graph() {
   )
 
   const focusedNodeId = activeHoveredNodeId || activeSelectedNodeId
+  const keyboardStartNodeId = activeNodes.some((node) => node.id === keyboardFocusedNodeId)
+    ? keyboardFocusedNodeId
+    : activeSelectedNodeId ?? activeNodes[0]?.id ?? null
 
   const selectedNode = useMemo(
     () => activeNodes.find((node) => node.id === activeSelectedNodeId) || null,
@@ -364,6 +360,7 @@ export function Graph() {
     rememberOriginalView()
     activeSelectedNodeIdRef.current = nodeId
     setSelectedNodeId(nodeId)
+    setKeyboardFocusedNodeId(nodeId)
     if (options?.center ?? true) centerNodeInViewport(nodeId)
   }
 
@@ -386,16 +383,19 @@ export function Graph() {
     })
   }
 
-  const handleMouseDown: MouseEventHandler<SVGSVGElement> = (event) => {
+  const handlePointerDown: PointerEventHandler<SVGSVGElement> = (event) => {
     if (event.button !== 0) return
     if ((event.target as Element).closest('.graph-node-group')) return
+    event.currentTarget.setPointerCapture(event.pointerId)
     setDraggingCanvas(true)
     setHoveredNodeId(null)
     canvasDragOriginRef.current = { x: event.clientX, y: event.clientY }
   }
 
-  const handleMouseMove: MouseEventHandler<SVGSVGElement> = (event) => {
-    setTooltipScreenPos({ x: event.clientX, y: event.clientY })
+  const handlePointerMove: PointerEventHandler<SVGSVGElement> = (event) => {
+    if (activeHoveredNodeId && !draggingNodeId && !draggingCanvas) {
+      setTooltipScreenPos({ x: event.clientX, y: event.clientY })
+    }
 
     const draggingNode = nodeDragRef.current
 
@@ -420,7 +420,10 @@ export function Graph() {
     setViewport((current) => ({ ...current, x: current.x + dx, y: current.y + dy }))
   }
 
-  const handleMouseUp = () => {
+  const handlePointerUp: PointerEventHandler<SVGSVGElement> = (event) => {
+    if (event.currentTarget.hasPointerCapture(event.pointerId)) {
+      event.currentTarget.releasePointerCapture(event.pointerId)
+    }
     const wasNodeDrag = nodeDragMovedRef.current
     nodeDragRef.current = null
     nodeDragMovedRef.current = false
@@ -431,9 +434,10 @@ export function Graph() {
     if (wasNodeDrag) setSimRevision(r => r + 1)
   }
 
-  const handleNodeMouseDown = (nodeId: string): MouseEventHandler<SVGGElement> => (event) => {
+  const handleNodePointerDown = (nodeId: string): PointerEventHandler<SVGGElement> => (event) => {
     if (event.button !== 0) return
     event.stopPropagation()
+    event.currentTarget.setPointerCapture(event.pointerId)
     rememberOriginalView()
     activeSelectedNodeIdRef.current = nodeId
     nodeDragRef.current = nodeId
@@ -490,9 +494,14 @@ export function Graph() {
           <div className="filter-bar graph-filter-bar">
             <input
               className="filter-input graph-search-input"
+              aria-label="搜索图谱节点"
               placeholder="搜索节点…"
               value={searchText}
-              onChange={(event) => setSearchText(event.target.value)}
+              onChange={(event) => {
+                clearNodeDetail()
+                originalViewRef.current = null
+                setSearchText(event.target.value)
+              }}
               onKeyDown={(event) => {
                 if (event.key === 'Enter' && searchResults[0]) {
                   event.preventDefault()
@@ -534,25 +543,25 @@ export function Graph() {
           {/* 主浮动工具栏（右侧居中） */}
           <div className="graph-canvas-toolbar">
             {/* 关系范围 */}
-            <button className={`graph-canvas-btn${displayMode === 'all' ? ' active' : ''}`} type="button" onClick={() => setDisplayMode('all')} title="全量关系">
+            <button className={`graph-canvas-btn${displayMode === 'all' ? ' active' : ''}`} type="button" aria-label="全量关系" aria-pressed={displayMode === 'all'} onClick={() => { clearNodeDetail(); originalViewRef.current = null; setDisplayMode('all') }} title="全量关系">
               <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round">
                 <polygon points="8,1.5 14.1,11.25 1.9,11.25"/>
                 <polygon points="8,14.5 1.9,4.75 14.1,4.75"/>
               </svg>
             </button>
-            <button className={`graph-canvas-btn${displayMode === 'project-task' ? ' active' : ''}`} type="button" onClick={() => setDisplayMode('project-task')} title="项目·任务">
+            <button className={`graph-canvas-btn${displayMode === 'project-task' ? ' active' : ''}`} type="button" aria-label="项目与任务" aria-pressed={displayMode === 'project-task'} onClick={() => { clearNodeDetail(); originalViewRef.current = null; setDisplayMode('project-task') }} title="项目·任务">
               <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M8 2L14 8L8 14L2 8z"/>
               </svg>
             </button>
-            <button className={`graph-canvas-btn${displayMode === 'task-person' ? ' active' : ''}`} type="button" onClick={() => setDisplayMode('task-person')} title="任务·人员">
+            <button className={`graph-canvas-btn${displayMode === 'task-person' ? ' active' : ''}`} type="button" aria-label="任务与人员" aria-pressed={displayMode === 'task-person'} onClick={() => { clearNodeDetail(); originalViewRef.current = null; setDisplayMode('task-person') }} title="任务·人员">
               <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round">
                 <circle cx="8" cy="5.5" r="2.5"/>
                 <path d="M2.5 14.5c0-3 2.5-5 5.5-5s5.5 2 5.5 5"/>
               </svg>
             </button>
             <div className="graph-canvas-sep" />
-            <button className={`graph-canvas-btn${layoutMode === 'force' ? ' active' : ''}`} type="button" onClick={() => setLayoutMode('force')} title="动态力导">
+            <button className={`graph-canvas-btn${layoutMode === 'force' ? ' active' : ''}`} type="button" aria-label="动态力导布局" aria-pressed={layoutMode === 'force'} onClick={() => setLayoutMode('force')} title="动态力导">
               <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
                 <circle cx="8" cy="3" r="1.5" />
                 <circle cx="2.5" cy="12.5" r="1.5" />
@@ -562,14 +571,14 @@ export function Graph() {
                 <line x1="4" y1="12.5" x2="12" y2="12.5" />
               </svg>
             </button>
-            <button className={`graph-canvas-btn${layoutMode === 'radial' ? ' active' : ''}`} type="button" onClick={() => setLayoutMode('radial')} title="同心分层">
+            <button className={`graph-canvas-btn${layoutMode === 'radial' ? ' active' : ''}`} type="button" aria-label="同心分层布局" aria-pressed={layoutMode === 'radial'} onClick={() => setLayoutMode('radial')} title="同心分层">
               <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5">
                 <circle cx="8" cy="8" r="6.5" />
                 <circle cx="8" cy="8" r="3.5" />
                 <circle cx="8" cy="8" r="1.2" fill="currentColor" stroke="none" />
               </svg>
             </button>
-            <button className={`graph-canvas-btn${layoutMode === 'lanes' ? ' active' : ''}`} type="button" onClick={() => setLayoutMode('lanes')} title="分组泳道">
+            <button className={`graph-canvas-btn${layoutMode === 'lanes' ? ' active' : ''}`} type="button" aria-label="分组泳道布局" aria-pressed={layoutMode === 'lanes'} onClick={() => setLayoutMode('lanes')} title="分组泳道">
               <svg viewBox="0 0 16 16" fill="currentColor">
                 <rect x="1.5" y="3" width="3.5" height="10" rx="1" />
                 <rect x="6.25" y="3" width="3.5" height="10" rx="1" />
@@ -577,7 +586,7 @@ export function Graph() {
               </svg>
             </button>
             <div className="graph-canvas-sep" />
-            <button className={`graph-canvas-btn${showLabels ? ' active' : ''}`} type="button" onClick={() => setShowLabels((v) => !v)} title={showLabels ? '隐藏标签' : '显示标签'}>
+            <button className={`graph-canvas-btn${showLabels ? ' active' : ''}`} type="button" aria-label="显示节点标签" aria-pressed={showLabels} onClick={() => setShowLabels((v) => !v)} title={showLabels ? '隐藏标签' : '显示标签'}>
               <svg viewBox="0 0 16 16" fill="currentColor">
                 <path d="M2.5 3h11v2H9.5v8h-3V5H2.5V3z" />
               </svg>
@@ -585,7 +594,7 @@ export function Graph() {
           </div>
 
           {/* 右下角已完成任务过滤 */}
-          <button className={`graph-canvas-hide-done${hideDone ? ' active' : ''}`} type="button" onClick={() => setHideDone((v) => !v)} title={hideDone ? '显示已完成任务' : '隐藏已完成任务'}>
+          <button className={`graph-canvas-hide-done${hideDone ? ' active' : ''}`} type="button" aria-pressed={hideDone} onClick={() => { clearNodeDetail(); originalViewRef.current = null; setHideDone((value) => !value) }} title={hideDone ? '显示已完成任务' : '隐藏已完成任务'}>
             <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
               <path d="M2 3h12l-4 5.5V13l-4-1.5V8.5L2 3z" />
             </svg>
@@ -597,10 +606,10 @@ export function Graph() {
             className={`graph-stage ${draggingNodeId ? 'dragging-node' : ''}`}
             viewBox={`0 0 ${SCENE_WIDTH} ${SCENE_HEIGHT}`}
             onWheel={handleWheel}
-            onMouseDown={handleMouseDown}
-            onMouseMove={handleMouseMove}
-            onMouseUp={handleMouseUp}
-            onMouseLeave={handleMouseUp}
+            onPointerDown={handlePointerDown}
+            onPointerMove={handlePointerMove}
+            onPointerUp={handlePointerUp}
+            onPointerCancel={handlePointerUp}
             onContextMenu={(event) => { event.preventDefault(); if (activeSelectedNodeId) quickBackFromDetail() }}
           >
             <defs>
@@ -683,13 +692,42 @@ export function Graph() {
                 return (
                   <g
                     key={node.id}
+                    ref={(element) => {
+                      if (element) nodeElementRefs.current.set(node.id, element)
+                      else nodeElementRefs.current.delete(node.id)
+                    }}
                     className={`graph-node-group ${node.kind} ${isLaneCanvas ? 'card-node' : ''} ${isFocused ? 'focused' : ''} ${isRelated ? 'related' : ''} ${isMatched ? 'matched' : ''} ${isDragging ? 'dragging' : ''} ${dimmed ? 'dimmed' : ''}`}
+                    role="button"
+                    tabIndex={node.id === keyboardStartNodeId ? 0 : -1}
+                    aria-label={`${node.kind === 'project' ? '项目' : node.kind === 'task' ? '任务' : '人员'}：${node.label}`}
+                    data-graph-node-id={node.id}
                     data-urgency={node.urgency}
                     transform={`translate(${node.x} ${node.y})`}
-                    onMouseDown={handleNodeMouseDown(node.id)}
+                    onPointerDown={handleNodePointerDown(node.id)}
                     onMouseEnter={() => setHoveredNodeId(node.id)}
                     onMouseLeave={() => setHoveredNodeId((current) => (current === node.id ? null : current))}
+                    onFocus={() => setKeyboardFocusedNodeId(node.id)}
                     onClick={(event) => { event.stopPropagation(); focusNode(node.id, { center: false }) }}
+                    onKeyDown={(event) => {
+                      if (event.key === 'Enter' || event.key === ' ') {
+                        event.preventDefault()
+                        event.stopPropagation()
+                        focusNode(node.id, { center: false })
+                        return
+                      }
+
+                      if (!['ArrowRight', 'ArrowDown', 'ArrowLeft', 'ArrowUp', 'Home', 'End'].includes(event.key)) return
+                      event.preventDefault()
+                      event.stopPropagation()
+                      const nextNodeId = getNextGraphNodeId(
+                        activeNodes.map((activeNode) => activeNode.id),
+                        node.id,
+                        event.key as 'ArrowRight' | 'ArrowDown' | 'ArrowLeft' | 'ArrowUp' | 'Home' | 'End',
+                      )
+                      if (!nextNodeId) return
+                      setKeyboardFocusedNodeId(nextNodeId)
+                      window.requestAnimationFrame(() => nodeElementRefs.current.get(nextNodeId)?.focus())
+                    }}
                   >
                     {isLaneCanvas ? (
                       <>
@@ -831,11 +869,11 @@ export function Graph() {
         <aside className="graph-side-panel">
           <div className="graph-side-title">快速定位</div>
           {!searchKeyword ? (
-            <div className="text-muted text-sm">输入关键词可快速定位节点，回车自动跳到首个结果</div>
+            <div className="graph-side-action">搜索节点</div>
           ) : (
             <div className="graph-related-list">
               {searchResults.length === 0 ? (
-                <div className="text-muted text-sm">没有匹配节点</div>
+                <div className="graph-side-action">修改关键词</div>
               ) : (
                 searchResults.map((node) => (
                   <button key={node.id} className="graph-related-item" type="button" onClick={() => focusNode(node.id)}>
@@ -858,7 +896,7 @@ export function Graph() {
           <div className="graph-side-title sub">关键节点</div>
           <div className="graph-related-list">
             {graphStats.topNodes.length === 0 ? (
-              <div className="text-muted text-sm">暂无节点</div>
+              <div className="graph-side-action">先创建项目、任务或人员</div>
             ) : (
               graphStats.topNodes.map((node) => (
                 <button key={node.id} className="graph-related-item compact" type="button" onClick={() => focusNode(node.id)}>
@@ -872,7 +910,7 @@ export function Graph() {
 
           <div className="graph-side-title sub">节点详情</div>
           {!selectedNode ? (
-            <div className="text-muted text-sm">点击图谱中的任意节点查看关联详情</div>
+            <div className="graph-side-action">选择节点查看详情</div>
           ) : (
             <>
               <div className="graph-detail-card">
@@ -887,7 +925,7 @@ export function Graph() {
               </div>
               <div className="graph-related-list">
                 {relatedNodes.length === 0 ? (
-                  <div className="text-muted text-sm">暂无关联</div>
+                  <div className="graph-side-action">选择其他节点</div>
                 ) : (
                   relatedNodes.map((node) => (
                     <button key={node.id} className="graph-related-item" type="button" onClick={() => focusNode(node.id)}>

@@ -1,6 +1,10 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import type { LeaveRecord } from '../../legacy/store'
 import { useBackdropDismiss } from '../../components/ui/useBackdropDismiss'
+import { useModalFocus } from '../../components/ui/useModalFocus'
+import { useBodyScrollLock } from '../../components/ui/useBodyScrollLock'
+
+const CLOSE_FALLBACK_MS = 260
 
 export function LeaveDialog({
   date,
@@ -27,6 +31,8 @@ export function LeaveDialog({
   const [selectedPersonId, setSelectedPersonId] = useState<string>('')
   const [closing, setClosing] = useState(false)
   const overlayRef = useRef<HTMLDivElement>(null)
+  const closeTimerRef = useRef<number | null>(null)
+  const closedRef = useRef(false)
 
   // sync new records into editing map
   const syncedEditing = { ...editing }
@@ -39,22 +45,31 @@ export function LeaveDialog({
     return `${parseInt(month, 10)}月${parseInt(day, 10)}日`
   })()
 
+  const finishClose = useCallback(() => {
+    if (closedRef.current) return
+    closedRef.current = true
+    if (closeTimerRef.current) window.clearTimeout(closeTimerRef.current)
+    closeTimerRef.current = null
+    onClose()
+  }, [onClose])
+
   const triggerClose = useCallback(() => {
     if (closing) return
     setClosing(true)
-  }, [closing])
+    closeTimerRef.current = window.setTimeout(finishClose, CLOSE_FALLBACK_MS)
+  }, [closing, finishClose])
+  const dialogRef = useModalFocus(true, triggerClose)
+  useBodyScrollLock(true)
   const backdropDismiss = useBackdropDismiss<HTMLDivElement>(triggerClose)
 
   useEffect(() => {
-    const handler = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') triggerClose()
+    return () => {
+      if (closeTimerRef.current) window.clearTimeout(closeTimerRef.current)
     }
-    document.addEventListener('keydown', handler, true)
-    return () => document.removeEventListener('keydown', handler, true)
-  }, [triggerClose])
+  }, [])
 
   const handleAnimationEnd = (e: React.AnimationEvent<HTMLDivElement>) => {
-    if (closing && e.target === overlayRef.current) onClose()
+    if (closing && e.target === overlayRef.current) finishClose()
   }
 
   const handleAdd = () => {
@@ -70,10 +85,10 @@ export function LeaveDialog({
       onAnimationEnd={handleAnimationEnd}
       {...backdropDismiss}
     >
-      <div className="leave-dialog">
+      <div ref={dialogRef} className="leave-dialog" role="dialog" aria-modal="true" aria-label={`${dateLabel} 请假`} tabIndex={-1}>
         <div className="leave-dialog-header">
           <span className="leave-dialog-title">{dateLabel} 请假</span>
-          <button className="leave-dialog-close" onClick={triggerClose} title="关闭">
+          <button className="leave-dialog-close" type="button" onClick={triggerClose} aria-label="关闭">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="16" height="16">
               <line x1="18" y1="6" x2="6" y2="18" />
               <line x1="6" y1="6" x2="18" y2="18" />
@@ -83,7 +98,7 @@ export function LeaveDialog({
 
         <div className="leave-dialog-body">
           {leaveRecords.length === 0 ? (
-            <div className="leave-dialog-empty">当日暂无请假记录</div>
+            <div className="leave-dialog-empty">选择成员添加请假</div>
           ) : (
             <ul className="leave-dialog-list">
               {leaveRecords.map((record) => {
@@ -100,13 +115,13 @@ export function LeaveDialog({
                       onKeyDown={(e) => {
                         if (e.key === 'Enter') {
                           e.currentTarget.blur()
-                          onSave(record.id, syncedEditing[record.id] ?? '')
                         }
                       }}
                     />
                     <button
                       className="leave-dialog-delete"
-                      title="删除请假"
+                      type="button"
+                      aria-label={`删除${name}的请假`}
                       onClick={() => onDelete(record.id)}
                     >
                       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="13" height="13">
@@ -134,6 +149,7 @@ export function LeaveDialog({
               </select>
               <button
                 className="leave-dialog-add-btn"
+                type="button"
                 disabled={!selectedPersonId}
                 onClick={handleAdd}
               >
@@ -144,7 +160,7 @@ export function LeaveDialog({
         </div>
 
         <div className="leave-dialog-footer">
-          <button className="btn btn-primary btn-sm" onClick={triggerClose}>完成</button>
+          <button className="btn btn-primary btn-sm" type="button" onClick={triggerClose}>完成</button>
         </div>
       </div>
     </div>

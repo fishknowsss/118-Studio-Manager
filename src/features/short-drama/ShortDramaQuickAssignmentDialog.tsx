@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react'
 import { Dialog } from '../../components/ui/Dialog'
+import { useToast } from '../../components/feedback/ToastProvider'
 import {
   store,
   type LegacyPerson,
@@ -60,6 +61,8 @@ export function ShortDramaQuickAssignmentDialog({
   people: LegacyPerson[]
   totalEpisodes?: number | null
 }) {
+  const { toast } = useToast()
+  const [isSaving, setIsSaving] = useState(false)
   const activePeople = useMemo(() => people.filter((person) => person.status !== 'inactive'), [people])
   const episodeOptions = useMemo(() => {
     const count = Math.max(1, Math.min(300, Number(totalEpisodes) || 100))
@@ -131,6 +134,7 @@ export function ShortDramaQuickAssignmentDialog({
   }
 
   const handleSubmit = async () => {
+    if (isSaving) return
     const selectedEntries = Object.entries(personRanges)
     if (selectedEntries.length === 0) return
     const timestamp = now()
@@ -142,36 +146,44 @@ export function ShortDramaQuickAssignmentDialog({
     }))
     const producerIds = cleanAllocations.map((allocation) => allocation.personId)
     const episodeText = buildAssignmentEpisodeText(selectedEntries.map(([, range]) => range))
-    await store.saveShortDramaAssignment({
-      id: uid(),
-      actualHours: null,
-      allocations: cleanAllocations,
-      createdAt: timestamp,
-      dramaId,
-      endDate: null,
-      episodes: episodeText,
-      estimatedHours: nextEstimatedHours,
-      finishedDurationSeconds: null,
-      groupId: groupId || null,
-      notes: '',
-      ownerId: ownerId || null,
-      producerIds,
-      startDate: null,
-      status: latestDefaults.status,
-      updatedAt: timestamp,
-    })
-    onClose()
+    setIsSaving(true)
+    try {
+      await store.saveShortDramaAssignment({
+        id: uid(),
+        actualHours: null,
+        allocations: cleanAllocations,
+        createdAt: timestamp,
+        dramaId,
+        endDate: null,
+        episodes: episodeText,
+        estimatedHours: nextEstimatedHours,
+        finishedDurationSeconds: null,
+        groupId: groupId || null,
+        notes: '',
+        ownerId: ownerId || null,
+        producerIds,
+        startDate: null,
+        status: latestDefaults.status,
+        updatedAt: timestamp,
+      })
+      onClose()
+    } catch (error) {
+      console.error('[118SM] 保存短剧分配失败:', error)
+      toast('保存失败', 'error')
+    } finally {
+      setIsSaving(false)
+    }
   }
 
   return (
     <Dialog
       open
       title="分配给人"
-      onClose={onClose}
+      onClose={isSaving ? () => {} : onClose}
       footer={(
         <>
-          <button className="btn btn-secondary" type="button" onClick={onClose}>取消</button>
-          <button className="btn btn-primary" type="button" onClick={() => void handleSubmit()} disabled={Object.keys(personRanges).length === 0}>保存</button>
+          <button className="btn btn-secondary" type="button" onClick={onClose} disabled={isSaving}>取消</button>
+          <button className="btn btn-primary" type="button" onClick={() => void handleSubmit()} disabled={Object.keys(personRanges).length === 0 || isSaving}>{isSaving ? '保存中' : '保存'}</button>
         </>
       )}
     >

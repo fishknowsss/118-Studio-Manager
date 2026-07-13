@@ -1,7 +1,10 @@
 import { useCallback, useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react'
 import { useBackdropDismiss } from './useBackdropDismiss'
+import { isTopOverlay, useOverlayLayer } from './overlayStack'
+import { useBodyScrollLock } from './useBodyScrollLock'
 
 const CLOSE_FALLBACK_MS = 260
+const FOCUSABLE_SELECTOR = 'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
 
 const VARIANTS = {
   default: { maxW: 860,  vwFrac: 0.76, maxH: 720,  vhFrac: 0.78 },
@@ -15,8 +18,9 @@ function calcOrigin(ox: number, oy: number, variant: Variant): string {
   const { maxW, vwFrac, maxH, vhFrac } = VARIANTS[variant]
   const vw = window.innerWidth
   const vh = window.innerHeight
-  const pw = Math.min(maxW, vw * vwFrac)
-  const ph = Math.min(maxH, vh * vhFrac)
+  const phoneLayout = vw <= 720
+  const pw = phoneLayout ? Math.max(1, vw - 24) : Math.min(maxW, vw * vwFrac)
+  const ph = phoneLayout ? Math.max(1, vh - 24) : Math.min(maxH, vh * vhFrac)
   const boxLeft = (vw - pw) / 2
   const boxTop  = (vh - ph) / 2
   const x = (((ox - boxLeft) / pw) * 100).toFixed(1)
@@ -25,9 +29,20 @@ function calcOrigin(ox: number, oy: number, variant: Variant): string {
 }
 
 function getFocusableElements(container: HTMLElement) {
-  return Array.from(container.querySelectorAll<HTMLElement>(
-    'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])',
-  )).filter((element) => !element.hidden && element.getAttribute('aria-hidden') !== 'true')
+  return Array.from(container.querySelectorAll<HTMLElement>(FOCUSABLE_SELECTOR))
+    .filter((element) => !element.hidden && element.getAttribute('aria-hidden') !== 'true')
+}
+
+function findOriginFocusTarget(originX: number, originY: number, overlay: HTMLElement | null) {
+  const candidates = document.elementsFromPoint?.(originX, originY) ?? []
+  for (const candidate of candidates) {
+    if (!(candidate instanceof HTMLElement) || overlay?.contains(candidate)) continue
+    const focusable = candidate.matches(FOCUSABLE_SELECTOR)
+      ? candidate
+      : candidate.closest<HTMLElement>(FOCUSABLE_SELECTOR)
+    if (focusable && !overlay?.contains(focusable)) return focusable
+  }
+  return null
 }
 
 export function ExpandPanel({
@@ -54,9 +69,13 @@ export function ExpandPanel({
   const dialogRef = useRef<HTMLDivElement>(null)
   const closeButtonRef = useRef<HTMLButtonElement>(null)
   const previousFocusRef = useRef<HTMLElement | null>(null)
+  const hasCapturedFocusRef = useRef(false)
+  const initialOriginRef = useRef({ x: originX, y: originY })
   const closeTimerRef = useRef<number | null>(null)
   const closedRef = useRef(false)
   const transformOrigin = calcOrigin(originX, originY, variant)
+  const overlayTokenRef = useOverlayLayer(true)
+  useBodyScrollLock(true)
 
   const finishClose = useCallback(() => {
     if (closedRef.current) return
@@ -89,15 +108,28 @@ export function ExpandPanel({
   }
 
   useLayoutEffect(() => {
-    previousFocusRef.current = document.activeElement instanceof HTMLElement
-      ? document.activeElement
-      : null
+    if (!hasCapturedFocusRef.current) {
+      const activeElement = document.activeElement instanceof HTMLElement
+        ? document.activeElement
+        : null
+      const needsOriginFallback = !activeElement
+        || activeElement === document.body
+        || activeElement === document.documentElement
+      const { x, y } = initialOriginRef.current
+      previousFocusRef.current = needsOriginFallback
+        ? findOriginFocusTarget(x, y, overlayRef.current) ?? activeElement
+        : activeElement
+      hasCapturedFocusRef.current = true
+    }
     closeButtonRef.current?.focus()
   }, [])
 
   useEffect(() => {
     const handler = (event: KeyboardEvent) => {
+      if (!isTopOverlay(overlayTokenRef.current)) return
       if (event.key === 'Escape') {
+        event.preventDefault()
+        event.stopImmediatePropagation()
         triggerClose()
         return
       }
@@ -132,7 +164,7 @@ export function ExpandPanel({
 
     document.addEventListener('keydown', handler, true)
     return () => document.removeEventListener('keydown', handler, true)
-  }, [triggerClose])
+  }, [overlayTokenRef, triggerClose])
 
   useEffect(() => {
     return () => {

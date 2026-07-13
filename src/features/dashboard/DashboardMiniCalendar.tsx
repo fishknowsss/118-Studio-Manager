@@ -55,6 +55,8 @@ export function DashboardMiniCalendar({
   }
 
   const currentMonthKey = model.days.find((d) => !d.isOtherMonth)?.dateKey.slice(0, 7) ?? ''
+  const keyboardStartDate = model.days.find((day) => day.isToday)?.dateKey
+    ?? model.days.find((day) => !day.isOtherMonth)?.dateKey
   const formatRomanCount = (count: number) => {
     if (count <= 0) return ''
     if (count === 1) return 'Ⅰ'
@@ -73,15 +75,19 @@ export function DashboardMiniCalendar({
     return 'task-roman-6'
   }
 
-  const handleDayClick = (day: (typeof model.days)[number], e: MouseEvent<HTMLDivElement>) => {
+  const openDay = (day: (typeof model.days)[number], element: HTMLElement) => {
     if (day.isOtherMonth && currentMonthKey) {
       const clickedMonthKey = day.dateKey.slice(0, 7)
       if (clickedMonthKey < currentMonthKey) onPrevMonth()
       else onNextMonth()
       return
     }
-    const r = e.currentTarget.getBoundingClientRect()
+    const r = element.getBoundingClientRect()
     onOpenDate(day.dateKey, r.left + r.width / 2, r.top + r.height / 2)
+  }
+
+  const handleDayClick = (day: (typeof model.days)[number], e: MouseEvent<HTMLDivElement>) => {
+    openDay(day, e.currentTarget)
   }
 
   return (
@@ -91,7 +97,15 @@ export function DashboardMiniCalendar({
         onClick={(e) => { const r = e.currentTarget.getBoundingClientRect(); onExpand(r.left + r.width / 2, r.top + r.height / 2) }}
       >
         <span className="panel-title">{model.title}</span>
-        <span className="panel-action">展开全部</span>
+        <button
+          className="panel-action"
+          type="button"
+          onClick={(event) => {
+            event.stopPropagation()
+            const r = event.currentTarget.getBoundingClientRect()
+            onExpand(r.left + r.width / 2, r.top + r.height / 2)
+          }}
+        >展开全部</button>
       </div>
       <div className="mini-cal-grid-wrap">
       <div className="mini-cal-grid">
@@ -116,7 +130,39 @@ export function DashboardMiniCalendar({
             <div
               key={day.dateKey}
               className={classes}
+              role="button"
+              tabIndex={day.dateKey === keyboardStartDate ? 0 : -1}
+              data-date-key={day.dateKey}
+              aria-label={`${day.dateKey}${day.taskCount > 0 ? `，${day.taskCount} 个任务` : ''}${day.hasLeave ? '，有人请假' : ''}`}
               onClick={(e) => handleDayClick(day, e)}
+              onKeyDown={(event) => {
+                if (event.key === 'Enter' || event.key === ' ') {
+                  event.preventDefault()
+                  openDay(day, event.currentTarget)
+                  return
+                }
+                const dayIndex = model.days.findIndex((candidate) => candidate.dateKey === day.dateKey)
+                const offset = event.key === 'ArrowLeft'
+                  ? -1
+                  : event.key === 'ArrowRight'
+                    ? 1
+                    : event.key === 'ArrowUp'
+                      ? -7
+                      : event.key === 'ArrowDown'
+                        ? 7
+                        : event.key === 'Home'
+                          ? -(dayIndex % 7)
+                          : event.key === 'End'
+                            ? 6 - (dayIndex % 7)
+                            : 0
+                if (!offset) return
+                const nextDay = model.days[dayIndex + offset]
+                if (!nextDay) return
+                event.preventDefault()
+                event.currentTarget.parentElement
+                  ?.querySelector<HTMLElement>(`[data-date-key="${nextDay.dateKey}"]`)
+                  ?.focus()
+              }}
               onDragOver={(e) => handleDragOver(e, day.dateKey)}
               onDragLeave={handleDragLeave}
               onDrop={(e) => handleDrop(e, day.dateKey)}

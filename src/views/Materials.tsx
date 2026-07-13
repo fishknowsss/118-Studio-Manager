@@ -217,10 +217,11 @@ function AccountEntry({
           className={`acc-copy-row${flash === 'password' ? ' is-copied' : ''}`}
           type="button"
           onClick={() => void copy(account.password, 'password', '密码')}
+          aria-label={`复制${account.platform}密码`}
           title="点击复制密码"
         >
           <span className="acc-copy-row-label">密码</span>
-          <span className="acc-copy-row-value acc-copy-row-pwd">{account.password}</span>
+          <span className="acc-copy-row-value acc-copy-row-pwd" aria-hidden="true">••••••••</span>
           <span className="acc-copy-row-icon">
             {flash === 'password' ? <CheckIcon /> : <CopyIcon />}
           </span>
@@ -484,7 +485,7 @@ function PlatformCard({
 
           {/* 账号列表 */}
           {accounts.length === 0 ? (
-            <div className="acc-fan-empty">此文件夹暂无账号</div>
+            <div className="acc-fan-empty">在此文件夹新建账号</div>
           ) : (
             accounts.map((account, i) => (
               <div
@@ -631,10 +632,11 @@ export function Materials() {
   // 过滤甲方要求
   const filteredBriefs = useMemo(() => {
     if (!briefProjectFilter) return briefs
+    const selectedProjectName = projectOptions.find((project) => project.id === briefProjectFilter)?.name
     return briefs.filter((b) =>
-      b.projectId === briefProjectFilter || b.projectName === briefProjectFilter,
+      b.projectId === briefProjectFilter || (!b.projectId && b.projectName === selectedProjectName),
     )
-  }, [briefs, briefProjectFilter])
+  }, [briefs, briefProjectFilter, projectOptions])
 
   const accountsByPlatform = useMemo(() => {
     const map = new Map<string, AccountCredential[]>()
@@ -779,7 +781,7 @@ export function Materials() {
   }
 
   const deletePlatform = async (platform: string) => {
-    const count = (groupedAccounts.get(platform) ?? []).length
+    const count = (accountsByPlatform.get(platform) ?? []).length
     const ok = await confirm(
       '删除文件夹',
       count > 0
@@ -936,9 +938,8 @@ export function Materials() {
                   </svg>
                 </div>
                 <div className="empty-text">
-                  {briefProjectFilter ? '该项目下暂无甲方要求' : '还没有任何甲方要求记录'}
+                  {briefProjectFilter ? '为该项目新建要求' : '新建一条甲方要求'}
                 </div>
-                <div className="empty-sub">把客户的诉求整理进来，方便团队对齐目标</div>
                 <button
                   className="btn btn-primary"
                   type="button"
@@ -987,12 +988,11 @@ export function Materials() {
                   </svg>
                 </div>
                 <div className="empty-text">
-                  {accSearch ? '没有匹配的文件夹或账号' : '还没有文件夹和账号'}
+                  {accSearch ? '换个关键词试试' : '新建文件夹或账号'}
                 </div>
-                {!accSearch && (
-                  <div className="empty-sub">先新建一个文件夹，再把账号归类整理进去</div>
-                )}
-                {!accSearch && (
+                {accSearch ? (
+                  <button className="btn btn-secondary" type="button" onClick={() => setAccSearch('')}>清除搜索</button>
+                ) : (
                   <div className="empty-actions">
                     <button className="btn btn-secondary" type="button" onClick={() => setNewFolderMode(true)}>新建文件夹</button>
                     <button className="btn btn-primary" type="button" onClick={() => setEditingAccount(null)}>新建账号</button>

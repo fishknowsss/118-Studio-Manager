@@ -13,8 +13,8 @@
 ### Task 1: 写入设计数据并确认页面取景
 
 **Files:**
-- Modify: `/Users/fishknowsss/Documents/MMSS/118SM/118studio-vc/docs/screenshots/*`
-- Modify: `/Users/fishknowsss/Documents/MMSS/118SM/118studio-vc/README.md`
+- Modify: `docs/screenshots/*`
+- Modify: `README.md`
 
 - [ ] **Step 1: 读取备份 JSON**
 
@@ -34,13 +34,13 @@ Expected: 今日、项目、任务、人员、日历、深色今日、设置都�
 ### Task 2: 生成 7 张截图
 
 **Files:**
-- Modify: `/Users/fishknowsss/Documents/MMSS/118SM/118studio-vc/docs/screenshots/vc-dashboard.png`
-- Modify: `/Users/fishknowsss/Documents/MMSS/118SM/118studio-vc/docs/screenshots/vc-projects.png`
-- Modify: `/Users/fishknowsss/Documents/MMSS/118SM/118studio-vc/docs/screenshots/vc-tasks.png`
-- Modify: `/Users/fishknowsss/Documents/MMSS/118SM/118studio-vc/docs/screenshots/vc-people.png`
-- Modify: `/Users/fishknowsss/Documents/MMSS/118SM/118studio-vc/docs/screenshots/vc-calendar.png`
-- Modify: `/Users/fishknowsss/Documents/MMSS/118SM/118studio-vc/docs/screenshots/vc-dashboard-dark.png`
-- Modify: `/Users/fishknowsss/Documents/MMSS/118SM/118studio-vc/docs/screenshots/vc-settings.png`
+- Modify: `docs/screenshots/vc-dashboard.png`
+- Modify: `docs/screenshots/vc-projects.png`
+- Modify: `docs/screenshots/vc-tasks.png`
+- Modify: `docs/screenshots/vc-people.png`
+- Modify: `docs/screenshots/vc-calendar.png`
+- Modify: `docs/screenshots/vc-dashboard-dark.png`
+- Modify: `docs/screenshots/vc-settings.png`
 
 - [ ] **Step 1: 生成亮色 6 张图**
 
@@ -60,7 +60,7 @@ Expected: 7 张图都存在，且画面包含备份数据
 ### Task 3: 更新 README 并同步
 
 **Files:**
-- Modify: `/Users/fishknowsss/Documents/MMSS/118SM/118studio-vc/README.md`
+- Modify: `README.md`
 
 - [ ] **Step 1: 更新截图区说明**
 

@@ -4,12 +4,11 @@ import { useToast } from '../components/feedback/ToastProvider'
 import { ContextMenu, type ContextMenuItem } from '../components/ui/ContextMenu'
 import { ExpandPanel } from '../components/ui/ExpandPanel'
 import { ProjectDetailPanel } from '../features/dashboard/ProjectDetailPanel'
-import { ProjectCard } from '../features/projects/ProjectCard'
 import { ProjectDialog } from '../features/projects/ProjectDialog'
 import { ProjectOverviewToolbar } from '../features/projects/ProjectOverviewToolbar'
-import { ProjectTimeline } from '../features/projects/ProjectTimeline'
+import { ProjectWorkspace } from '../features/projects/ProjectWorkspace'
 import { deleteProjectWithLog, updateProjectStatus } from '../legacy/actions'
-import { buildProjectCardModels, buildProjectTimelineModel, getFilteredProjects } from '../legacy/selectors'
+import { buildProjectWorkspaceItems, getFilteredProjects } from '../legacy/selectors'
 import {
   PROJECT_STATUSES,
   type LegacyProject,
@@ -30,7 +29,6 @@ export function Projects({
   const [statusFilter, setStatusFilter] = useState('')
   const [prioFilter, setPrioFilter] = useState('')
   const [projectSearch, setProjectSearch] = useState('')
-  const [viewMode, setViewMode] = useState<'grid' | 'timeline'>('grid')
   const [contextMenu, setContextMenu] = useState<{ projectId: string; x: number; y: number } | null>(null)
   const [editingProject, setEditingProject] = useState<LegacyProject | null | undefined>(undefined)
   const [openedProject, setOpenedProject] = useState<{ projectId: string; ox: number; oy: number } | null>(null)
@@ -53,13 +51,9 @@ export function Projects({
     })
   }, [projectSearch, statusFilteredProjects])
 
-  const projectCards = useMemo(
-    () => buildProjectCardModels(filteredProjects, tasks, todayStr),
+  const workspaceItems = useMemo(
+    () => buildProjectWorkspaceItems(filteredProjects, tasks, todayStr),
     [filteredProjects, tasks, todayStr],
-  )
-  const timeline = useMemo(
-    () => buildProjectTimelineModel(filteredProjects, 90, undefined, todayStr),
-    [filteredProjects, todayStr],
   )
 
   const hasAnyProjects = projects.length > 0
@@ -105,17 +99,15 @@ export function Projects({
   return (
     <div className="view-projects fade-in">
       <div className="view-header">
-        <h1 className="view-title">项目管理</h1>
+        <h1 className="view-title">项目工作台</h1>
         <div className="view-actions">
           <ProjectOverviewToolbar
             search={projectSearch}
             status={statusFilter}
             priority={prioFilter}
-            viewMode={viewMode}
             onSearchChange={setProjectSearch}
             onStatusChange={setStatusFilter}
             onPriorityChange={setPrioFilter}
-            onViewModeChange={setViewMode}
           />
           <button className="btn btn-primary" type="button" onClick={() => setEditingProject(null)}>
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
@@ -125,48 +117,7 @@ export function Projects({
       </div>
 
       <div className="view-body">
-        {viewMode === 'grid' ? (
-          <div className="project-grid">
-            {filteredProjects.length === 0 ? (
-              <div className="empty-state empty-state-full">
-                <div className="empty-icon">📁</div>
-                <div className="empty-text">
-                  {!hasAnyProjects
-                    ? '先新建一个项目'
-                    : hasActiveFilters
-                      ? '没有符合筛选条件的项目'
-                      : '先新建一个项目'}
-                </div>
-                {!hasAnyProjects ? (
-                  <button className="btn btn-primary" type="button" onClick={() => setEditingProject(null)}>
-                    新建项目
-                  </button>
-                ) : hasActiveFilters ? (
-                  <button className="btn btn-secondary" type="button" onClick={clearFilters}>
-                    清除筛选
-                  </button>
-                ) : null}
-              </div>
-            ) : (
-              projectCards.map((project) => (
-                <ProjectCard
-                  key={project.id}
-                  model={project}
-                  onOpen={handleOpenProject}
-                  onEdit={() => setEditingProject(projects.find((item) => item.id === project.id) || null)}
-                  onDelete={() => {
-                    const target = projects.find((item) => item.id === project.id)
-                    if (target) void handleDeleteProject(target)
-                  }}
-                  onContextMenu={(event) => {
-                    event.preventDefault()
-                    setContextMenu({ projectId: project.id, x: event.clientX, y: event.clientY })
-                  }}
-                />
-              ))
-            )}
-          </div>
-        ) : filteredProjects.length === 0 ? (
+        {filteredProjects.length === 0 ? (
           <div className="empty-state empty-state-full">
             <div className="empty-icon">📁</div>
             <div className="empty-text">
@@ -187,7 +138,19 @@ export function Projects({
             ) : null}
           </div>
         ) : (
-          <ProjectTimeline timeline={timeline} onOpenProject={handleOpenProject} />
+          <ProjectWorkspace
+            items={workspaceItems}
+            onOpen={handleOpenProject}
+            onEdit={(projectId) => setEditingProject(projects.find((item) => item.id === projectId) || null)}
+            onDelete={(projectId) => {
+              const target = projects.find((item) => item.id === projectId)
+              if (target) void handleDeleteProject(target)
+            }}
+            onStatusMenu={(event, projectId) => {
+              event.preventDefault()
+              setContextMenu({ projectId, x: event.clientX, y: event.clientY })
+            }}
+          />
         )}
       </div>
 

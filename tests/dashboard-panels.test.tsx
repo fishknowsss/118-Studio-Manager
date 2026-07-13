@@ -15,6 +15,7 @@ import { TaskPoolPanel } from '../src/features/dashboard/TaskPoolPanel'
 import { buildPersonCardModels } from '../src/legacy/selectors'
 import { store, type LegacyLog, type LegacyPerson, type LegacyProject, type LegacyTask, type LeaveRecord } from '../src/legacy/store'
 import { today } from '../src/legacy/utils'
+import { Projects } from '../src/views/Projects'
 
 function renderNode(node: ReactNode) {
   const container = document.createElement('div')
@@ -22,7 +23,7 @@ function renderNode(node: ReactNode) {
   const root = createRoot(container)
 
   act(() => {
-    root.render(node)
+    root.render(<ConfirmProvider>{node}</ConfirmProvider>)
   })
 
   return {
@@ -30,7 +31,7 @@ function renderNode(node: ReactNode) {
     root,
     rerender(nextNode: ReactNode) {
       act(() => {
-        root.render(nextNode)
+        root.render(<ConfirmProvider>{nextNode}</ConfirmProvider>)
       })
     },
     cleanup() {
@@ -42,7 +43,76 @@ function renderNode(node: ReactNode) {
   }
 }
 
+function peoplePanelNode(people: LegacyPerson[]) {
+  return (
+    <PeopleAssignmentPanel
+      people={buildPersonCardModels(people, [])}
+      draggingPersonId={null}
+      dragOverPersonId={null}
+      draggingTaskId={null}
+      onDragLeavePerson={() => {}}
+      onDragOverPerson={() => {}}
+      onExpand={() => {}}
+      onDropToPerson={() => {}}
+      onPersonStateChange={() => {}}
+      onPersonDragEnd={() => {}}
+      onPersonDragStart={() => {}}
+      onPersonClick={() => {}}
+      onReorderPeople={() => {}}
+    />
+  )
+}
+
 describe('dashboard panels', () => {
+  it('renders the expanded projects view as an action-oriented workspace without view switching', () => {
+    const previousStore = {
+      projects: store.projects,
+      tasks: store.tasks,
+      people: store.people,
+      logs: store.logs,
+    }
+    const onOpenProject = vi.fn()
+
+    store.projects = [
+      { id: 'project-risk', name: '受阻项目', status: 'active', priority: 'urgent', deliveryDate: '2026-07-15' },
+      { id: 'project-progress', name: '推进项目', status: 'active', priority: 'high', deliveryDate: '2026-07-22' },
+      { id: 'project-plan', name: '待安排项目', status: 'active', priority: 'medium' },
+    ]
+    store.tasks = [
+      { id: 'task-risk', projectId: 'project-risk', title: '确认成片规格', status: 'blocked', endDate: '2026-07-14' },
+      { id: 'task-progress', projectId: 'project-progress', title: '合成终版', status: 'in-progress', endDate: '2026-07-20' },
+      { id: 'task-plan', projectId: 'project-plan', title: '分配剪辑', status: 'todo' },
+    ]
+    store.people = []
+    store.logs = [] as LegacyLog[]
+
+    const view = renderNode(
+      <ToastProvider>
+        <Projects onOpenProject={onOpenProject} />
+      </ToastProvider>,
+    )
+
+    expect(view.container.querySelector('.project-workspace')).not.toBeNull()
+    expect(view.container.textContent).toContain('需要关注')
+    expect(view.container.textContent).toContain('正在推进')
+    expect(view.container.textContent).toContain('等待安排')
+    expect(view.container.textContent).not.toContain('卡片')
+    expect(view.container.textContent).not.toContain('时间轴')
+
+    const openButton = Array.from(view.container.querySelectorAll('button'))
+      .find((button) => button.textContent === '打开')
+    act(() => {
+      openButton?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+    })
+    expect(onOpenProject).toHaveBeenCalledWith('project-risk', 0, 0)
+
+    view.cleanup()
+    store.projects = previousStore.projects
+    store.tasks = previousStore.tasks
+    store.people = previousStore.people
+    store.logs = previousStore.logs
+  })
+
   it('keeps the dashboard lower layout balanced between task pool and people panels', () => {
     const styleSource = readFileSync(join(process.cwd(), 'css/style.css'), 'utf8')
 
@@ -56,9 +126,14 @@ describe('dashboard panels', () => {
     expect(styleSource).toMatch(/\.dash-date-block\s*\{[\s\S]*justify-self:\s*start;/)
     expect(styleSource).toMatch(/\.dash-date-big\s*\{[\s\S]*white-space:\s*nowrap;/)
     expect(styleSource).toMatch(/@media \(min-width:\s*721px\) and \(max-width:\s*1180px\)/)
+    expect(styleSource).toMatch(/@media \(min-width:\s*1181px\)/)
+    expect(styleSource).toMatch(/@media \(min-width:\s*1181px\)[\s\S]*--dash-focus-fit-h:\s*clamp\(292px,\s*35dvh,\s*304px\);/)
+    expect(styleSource).toMatch(/@media \(min-width:\s*1181px\)[\s\S]*grid-template-rows:\s*var\(--dash-header-fit-h\) var\(--dash-focus-fit-h\) minmax\(0,\s*1fr\);/)
     expect(styleSource).toMatch(/--dash-header-fit-h:\s*clamp\(52px,\s*8dvh,\s*76px\);/)
-    expect(styleSource).toMatch(/--dash-focus-fit-h:\s*262px;/)
+    expect(styleSource).toMatch(/--dash-focus-fit-h:\s*268px;/)
     expect(styleSource).toMatch(/\.today-focus\s*\{[\s\S]*grid-template-rows:\s*auto minmax\(0,\s*1fr\);/)
+    expect(styleSource).toMatch(/\.today-focus:has\(\.focus-section-header:hover\)/)
+    expect(styleSource).toMatch(/\.focus-section-header\s*\{[\s\S]*min-height:\s*32px;/)
     expect(styleSource).toMatch(/\.dashboard\s*\{[\s\S]*grid-template-rows:\s*var\(--dash-header-fit-h\) var\(--dash-focus-fit-h\) minmax\(0,\s*1fr\);/)
     expect(styleSource).toMatch(/\.dash-bottom\s*\{[\s\S]*grid-template-columns:\s*minmax\(0,\s*1fr\)\s+minmax\(0,\s*1fr\)\s+minmax\(280px,\s*0\.88fr\)/)
     expect(styleSource).toMatch(/@media \(min-width:\s*721px\) and \(max-width:\s*980px\)/)
@@ -79,8 +154,8 @@ describe('dashboard panels', () => {
     expect(styleSource).toMatch(/\.pft-row\s*\{[\s\S]*height:\s*100%;/)
     expect(styleSource).toMatch(/--pft-cols:\s*var\(--pft-identity-w\)\s+minmax\(0,\s*1\.9fr\)\s+var\(--pft-aside-w\);/)
     expect(styleSource).toMatch(/\.pft-identity\s*\{/)
-    expect(styleSource).toMatch(/\.pft-name\s*\{[\s\S]*font-size:\s*14px;/)
-    expect(styleSource).toMatch(/\.pft-action\s*\{[\s\S]*font-size:\s*11\.5px;/)
+    expect(styleSource).toMatch(/\.pft-name\s*\{[\s\S]*font-size:\s*15px;/)
+    expect(styleSource).toMatch(/\.pft-action\s*\{[\s\S]*font-size:\s*12\.5px;/)
     expect(styleSource).toMatch(/\.pft-bar-fill\s*\{/)
     expect(styleSource).toMatch(/\.pft-axis-tick\s*\{/)
     expect(styleSource).toMatch(/\.pft-today-band\s*\{/)
@@ -322,6 +397,27 @@ describe('dashboard panels', () => {
     view.cleanup()
   })
 
+  it('lets touch users change people pages and clamps a removed page', () => {
+    const people = Array.from({ length: 17 }, (_, index): LegacyPerson => ({
+      id: `person-${index + 1}`,
+      name: `成员${index + 1}`,
+      status: 'active',
+      skills: [],
+    }))
+    const view = renderNode(peoplePanelNode(people))
+    const secondPageButton = view.container.querySelector<HTMLButtonElement>('[aria-label="第 2 页"]')
+
+    expect(secondPageButton).not.toBeNull()
+    act(() => secondPageButton?.click())
+    expect(view.container.textContent).toContain('成员17')
+
+    view.rerender(peoplePanelNode(people.slice(0, 1)))
+    expect(view.container.textContent).toContain('成员1')
+    expect(view.container.querySelector('[aria-label="第 2 页"]')).toBeNull()
+
+    view.cleanup()
+  })
+
   it('shows person shortcut menu and swaps people on reorder drop in the dashboard people panel', () => {
     const onPersonStateChange = vi.fn()
     const onReorderPeople = vi.fn()
@@ -397,7 +493,7 @@ describe('dashboard panels', () => {
       firstCard?.dispatchEvent(new MouseEvent('contextmenu', { bubbles: true, cancelable: true, clientX: 24, clientY: 36 }))
     })
 
-    const buttons = Array.from(view.container.querySelectorAll('.context-menu-item')) as HTMLButtonElement[]
+    const buttons = Array.from(document.querySelectorAll('.context-menu-item')) as HTMLButtonElement[]
     expect(buttons.map((button) => button.textContent)).toEqual(['设为在岗', '设为请假', '恢复默认'])
 
     const leaveButton = buttons.find((button) => button.textContent === '设为请假')
@@ -580,7 +676,7 @@ describe('dashboard panels', () => {
     expect(cardSource).toMatch(/event\.button === 2[\s\S]*preventDefault\(\)/)
     expect(panelSource).toMatch(/const pagePeople = useMemo/)
     expect(panelSource).toMatch(/useLayoutEffect/)
-    expect(panelSource).toMatch(/\}, \[page,\s*pagePeople\]\)/)
+    expect(panelSource).toMatch(/\}, \[activePage,\s*pagePeople\]\)/)
     expect(panelSource).not.toMatch(/pagePeopleKey/)
     expect(panelSource).toMatch(/\.animate\(\[/)
   })
@@ -594,7 +690,9 @@ describe('dashboard panels', () => {
     expect(taskCountRule).not.toMatch(/max-width:\s*calc\(100%\s*-\s*24px\)/)
     // Restored original skills: slice(0,2) + has-skill-overflow + centered bottom +N
     expect(cardSource).toMatch(/model\.skills\.slice\(0,\s*2\)/)
+    expect(cardSource).toMatch(/charCount >= 6/)
     expect(cardSource).toMatch(/has-skill-overflow/)
+    expect(styleSource).toMatch(/\.person-assignment-skill-list \.skill-tag\s*\{[\s\S]*white-space:\s*normal;[\s\S]*text-overflow:\s*clip;/)
     expect(skillOverflowRule).toMatch(/position:\s*absolute/)
     expect(skillOverflowRule).toMatch(/left:\s*50%/)
     expect(skillOverflowRule).toMatch(/bottom:\s*8px/)

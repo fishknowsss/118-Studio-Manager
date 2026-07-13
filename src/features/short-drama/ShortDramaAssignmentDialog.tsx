@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react'
+import { useToast } from '../../components/feedback/ToastProvider'
 import { DatePicker } from '../../components/ui/DatePicker'
 import { Dialog } from '../../components/ui/Dialog'
 import {
@@ -36,6 +37,8 @@ export function ShortDramaAssignmentDialog({
   onClose: () => void
   people: LegacyPerson[]
 }) {
+  const { toast } = useToast()
+  const [isSaving, setIsSaving] = useState(false)
   const activePeople = useMemo(() => people.filter((person) => person.status !== 'inactive'), [people])
   const initialGroup = useMemo(
     () => groups.find((group) => group.id === (assignment?.groupId || initialGroupId)),
@@ -109,6 +112,7 @@ export function ShortDramaAssignmentDialog({
   }
 
   const handleSubmit = async () => {
+    if (isSaving) return
     const text = episodes.trim()
     if (!text) return
     const timestamp = now()
@@ -122,37 +126,45 @@ export function ShortDramaAssignmentDialog({
     const allocationEstimated = cleanAllocations.reduce((sum, allocation) => sum + (Number(allocation.estimatedHours) || 0), 0)
     const allocationActual = cleanAllocations.reduce((sum, allocation) => sum + (Number(allocation.actualHours) || 0), 0)
 
-    await store.saveShortDramaAssignment({
-      id: assignment?.id || uid(),
-      createdAt: assignment?.createdAt || timestamp,
-      updatedAt: timestamp,
-      actualHours: (toNumberOrNull(actualHours) ?? allocationActual) || null,
-      allocations: cleanAllocations,
-      dramaId,
-      endDate,
-      episodes: text,
-      estimatedHours: (toNumberOrNull(estimatedHours) ?? allocationEstimated) || null,
-      finishedDurationSeconds: parseDurationText(durationText),
-      groupId: groupId || null,
-      notes: notes.trim(),
-      ownerId: ownerId || null,
-      producerIds: cleanAllocations.map((allocation) => allocation.personId),
-      startDate,
-      status,
-    })
-    onClose()
+    setIsSaving(true)
+    try {
+      await store.saveShortDramaAssignment({
+        id: assignment?.id || uid(),
+        createdAt: assignment?.createdAt || timestamp,
+        updatedAt: timestamp,
+        actualHours: (toNumberOrNull(actualHours) ?? allocationActual) || null,
+        allocations: cleanAllocations,
+        dramaId,
+        endDate,
+        episodes: text,
+        estimatedHours: (toNumberOrNull(estimatedHours) ?? allocationEstimated) || null,
+        finishedDurationSeconds: parseDurationText(durationText),
+        groupId: groupId || null,
+        notes: notes.trim(),
+        ownerId: ownerId || null,
+        producerIds: cleanAllocations.map((allocation) => allocation.personId),
+        startDate,
+        status,
+      })
+      onClose()
+    } catch (error) {
+      console.error('[118SM] 保存短剧分配失败:', error)
+      toast('保存失败', 'error')
+    } finally {
+      setIsSaving(false)
+    }
   }
 
   return (
     <Dialog
       open
       title={assignment ? '编辑分配' : '新建分配'}
-      onClose={onClose}
+      onClose={isSaving ? () => {} : onClose}
       width="wide"
       footer={(
         <>
-          <button className="btn btn-secondary" type="button" onClick={onClose}>取消</button>
-          <button className="btn btn-primary" type="button" onClick={() => void handleSubmit()} disabled={!episodes.trim() || producerIds.length === 0}>保存</button>
+          <button className="btn btn-secondary" type="button" onClick={onClose} disabled={isSaving}>取消</button>
+          <button className="btn btn-primary" type="button" onClick={() => void handleSubmit()} disabled={!episodes.trim() || producerIds.length === 0 || isSaving}>{isSaving ? '保存中' : '保存'}</button>
         </>
       )}
     >

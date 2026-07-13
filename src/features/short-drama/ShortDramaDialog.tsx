@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { DatePicker } from '../../components/ui/DatePicker'
 import { Dialog } from '../../components/ui/Dialog'
+import { useToast } from '../../components/feedback/ToastProvider'
 import { SHORT_DRAMA_PROGRESS_STATUSES, store, type ShortDrama } from '../../legacy/store'
 import { now, uid } from '../../legacy/utils'
 import { SHORT_DRAMA_PROGRESS_LABELS } from './shortDramaModels'
@@ -12,6 +13,8 @@ export function ShortDramaDialog({
   drama: ShortDrama | null
   onClose: () => void
 }) {
+  const { toast } = useToast()
+  const [isSaving, setIsSaving] = useState(false)
   const [title, setTitle] = useState(drama?.title || '')
   const [totalEpisodes, setTotalEpisodes] = useState(String(drama?.totalEpisodes || ''))
   const [status, setStatus] = useState(drama?.status || 'not-started')
@@ -20,32 +23,41 @@ export function ShortDramaDialog({
   const [notes, setNotes] = useState(drama?.notes || '')
 
   const handleSubmit = async () => {
+    if (isSaving) return
     const text = title.trim()
     if (!text) return
     const timestamp = now()
-    await store.saveShortDrama({
-      id: drama?.id || uid(),
-      createdAt: drama?.createdAt || timestamp,
-      updatedAt: timestamp,
-      title: text,
-      totalEpisodes: Number(totalEpisodes) || null,
-      status,
-      startDate,
-      endDate,
-      notes: notes.trim(),
-    })
-    onClose()
+    setIsSaving(true)
+    try {
+      await store.saveShortDrama({
+        id: drama?.id || uid(),
+        createdAt: drama?.createdAt || timestamp,
+        updatedAt: timestamp,
+        title: text,
+        totalEpisodes: Number(totalEpisodes) || null,
+        status,
+        startDate,
+        endDate,
+        notes: notes.trim(),
+      })
+      onClose()
+    } catch (error) {
+      console.error('[118SM] 保存短剧失败:', error)
+      toast('保存失败', 'error')
+    } finally {
+      setIsSaving(false)
+    }
   }
 
   return (
     <Dialog
       open
       title={drama ? '编辑短剧' : '新建短剧'}
-      onClose={onClose}
+      onClose={isSaving ? () => {} : onClose}
       footer={(
         <>
-          <button className="btn btn-secondary" type="button" onClick={onClose}>取消</button>
-          <button className="btn btn-primary" type="button" onClick={() => void handleSubmit()} disabled={!title.trim()}>保存</button>
+          <button className="btn btn-secondary" type="button" onClick={onClose} disabled={isSaving}>取消</button>
+          <button className="btn btn-primary" type="button" onClick={() => void handleSubmit()} disabled={!title.trim() || isSaving}>{isSaving ? '保存中' : '保存'}</button>
         </>
       )}
     >

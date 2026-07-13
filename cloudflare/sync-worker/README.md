@@ -4,7 +4,8 @@
 
 - `GET /meta`
 - `GET /data`
-- `PUT /data`
+- `POST /data`（前端默认）
+- `PUT /data`（兼容）
 
 为避免在公开仓库暴露生产域名，本文统一使用占位域名。真实域名请以 Cloudflare Dashboard 或团队运维记录为准。
 
@@ -26,9 +27,9 @@ VITE_SYNC_API_URL=https://sync.example.com
 ## 最小部署步骤
 
 1. 在 Cloudflare 创建一个 KV Namespace。
-2. 把 `wrangler.toml` 里的 `id` 替换成真实的 KV Namespace ID。
-3. 把 `ALLOWED_ORIGIN` 改成你的前端域名。
-4. 使用 Wrangler 部署这个 Worker。
+2. 复制 `wrangler.example.toml` 为 `wrangler.local.toml`。
+3. 把本地配置里的 `id` 替换成真实的 KV Namespace ID，并设置同步自定义域名与 `ALLOWED_ORIGIN`。
+4. 在仓库根目录运行 `npm run check:worker` 验证打包，再运行 `npx wrangler deploy --config cloudflare/sync-worker/wrangler.local.toml`。
 5. 给 Worker 绑定一个受 Cloudflare Access 保护的同步自定义子域名。
 6. 在前端环境变量中把 `VITE_SYNC_API_URL` 指向该同步自定义子域名。
 7. 用未登录的浏览器会话验证：同步自定义域名下的 `/data` 与 `/meta` 不能直接返回同步数据。
@@ -39,6 +40,8 @@ VITE_SYNC_API_URL=https://sync.example.com
 - 前端请求是否携带了浏览器凭证。
 - 同步读请求是否避免了不必要的 CORS 预检。
 - Worker 返回是否包含 `Access-Control-Allow-Credentials: true`。
+
+Worker 会拒绝来源不匹配、结构不完整或超过 5 MiB 的写入请求。`workers.dev` 和预览地址应保持关闭，避免绕过 Access 保护的自定义域名。
 
 ## 数据结构
 

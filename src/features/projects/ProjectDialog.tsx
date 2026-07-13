@@ -15,6 +15,7 @@ export function ProjectDialog({
 }) {
   const isNew = !project
   const { toast } = useToast()
+  const [isSaving, setIsSaving] = useState(false)
   const [form, setForm] = useState<ProjectFormInput>(() => ({
     name: project?.name || '',
     status: project?.status || 'active',
@@ -29,26 +30,35 @@ export function ProjectDialog({
   }))
 
   const save = async () => {
+    if (isSaving) return
     if (!form.name?.trim()) {
       toast('请填写项目名称', 'error')
       return
     }
 
-    await saveProjectFromForm(project, form)
-    toast(isNew ? '项目已创建' : '已保存', 'success')
-    onClose()
+    setIsSaving(true)
+    try {
+      await saveProjectFromForm(project, form)
+      toast(isNew ? '项目已创建' : '已保存', 'success')
+      onClose()
+    } catch (error) {
+      console.error('[118SM] 保存项目失败:', error)
+      toast('保存失败', 'error')
+    } finally {
+      setIsSaving(false)
+    }
   }
 
   return (
     <Dialog
       open
       title={isNew ? '新建项目' : '编辑项目'}
-      onClose={onClose}
+      onClose={isSaving ? () => {} : onClose}
       footer={(
         <>
-          <button className="btn btn-secondary" type="button" onClick={onClose}>取消</button>
-          <button className="btn btn-primary" type="button" onClick={() => void save()}>
-            {isNew ? '创建项目' : '保存'}
+          <button className="btn btn-secondary" type="button" onClick={onClose} disabled={isSaving}>取消</button>
+          <button className="btn btn-primary" type="button" onClick={() => void save()} disabled={isSaving}>
+            {isSaving ? '保存中' : isNew ? '创建项目' : '保存'}
           </button>
         </>
       )}

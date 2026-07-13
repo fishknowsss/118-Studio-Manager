@@ -40,6 +40,7 @@ export function TaskDialog({
   task: LegacyTask | null
 }) {
   const isNew = !task
+  const [isSaving, setIsSaving] = useState(false)
   const { toast } = useToast()
   const [form, setForm] = useState<TaskFormInput>(() => ({
     title: task?.title || '',
@@ -94,15 +95,12 @@ export function TaskDialog({
 
   const assigneePageSize = assigneeColumns * ASSIGNEE_ROWS
   const assigneePageCount = Math.max(1, Math.ceil(displayPeople.length / assigneePageSize))
-
-  useEffect(() => {
-    setAssigneePage((current) => Math.min(current, assigneePageCount - 1))
-  }, [assigneePageCount])
+  const activeAssigneePage = Math.min(assigneePage, assigneePageCount - 1)
 
   const visiblePeople = useMemo(() => {
-    const startIndex = assigneePage * assigneePageSize
+    const startIndex = activeAssigneePage * assigneePageSize
     return displayPeople.slice(startIndex, startIndex + assigneePageSize)
-  }, [assigneePage, assigneePageSize, displayPeople])
+  }, [activeAssigneePage, assigneePageSize, displayPeople])
 
   const toggleAssignee = (personId: string) => {
     setForm((cur) => ({
@@ -114,28 +112,37 @@ export function TaskDialog({
   }
 
   const save = async () => {
+    if (isSaving) return
     if (!form.title?.trim()) {
       toast('请填写任务标题', 'error')
       return
     }
 
-    await saveTaskFromForm(task, form)
-    toast(isNew ? '任务已创建' : '已保存', 'success')
-    onClose()
+    setIsSaving(true)
+    try {
+      await saveTaskFromForm(task, form)
+      toast(isNew ? '任务已创建' : '已保存', 'success')
+      onClose()
+    } catch (error) {
+      console.error('[118SM] 保存任务失败:', error)
+      toast('保存失败', 'error')
+    } finally {
+      setIsSaving(false)
+    }
   }
 
   return (
     <Dialog
       open
       title={isNew ? '新建任务' : '编辑任务'}
-      onClose={onClose}
+      onClose={isSaving ? () => {} : onClose}
       backdropScrollable={false}
       className={`task-dialog ${className || ''}`.trim()}
       footer={(
         <>
-          <button className="btn btn-secondary" type="button" onClick={onClose}>取消</button>
-          <button className="btn btn-primary" type="button" onClick={() => void save()}>
-            {isNew ? '创建任务' : '保存'}
+          <button className="btn btn-secondary" type="button" onClick={onClose} disabled={isSaving}>取消</button>
+          <button className="btn btn-primary" type="button" onClick={() => void save()} disabled={isSaving}>
+            {isSaving ? '保存中' : isNew ? '创建任务' : '保存'}
           </button>
         </>
       )}
@@ -176,7 +183,7 @@ export function TaskDialog({
           </label>
           <div className="task-assignee-picker">
             <div ref={assigneeViewportRef} className="task-assignee-viewport">
-              {displayPeople.length === 0 ? <span className="text-muted text-sm">暂无可用人员</span> : null}
+              {displayPeople.length === 0 ? <span className="text-muted text-sm">先添加成员</span> : null}
               {displayPeople.length > 0 ? (
                 <div className={`task-assignee-page cols-${assigneeColumns}`}>
                   {visiblePeople.map((person) => {
@@ -210,19 +217,19 @@ export function TaskDialog({
               <button
                 aria-label="负责人上一页"
                 className="task-assignee-page-btn"
-                disabled={assigneePage === 0 || displayPeople.length === 0}
+                disabled={activeAssigneePage === 0 || displayPeople.length === 0}
                 type="button"
-                onClick={() => setAssigneePage((current) => Math.max(0, current - 1))}
+                onClick={() => setAssigneePage(Math.max(0, activeAssigneePage - 1))}
               >
                 ‹
               </button>
-              <span className="task-assignee-page-indicator">{assigneePage + 1} / {assigneePageCount}</span>
+              <span className="task-assignee-page-indicator">{activeAssigneePage + 1} / {assigneePageCount}</span>
               <button
                 aria-label="负责人下一页"
                 className="task-assignee-page-btn"
-                disabled={assigneePage >= assigneePageCount - 1 || displayPeople.length === 0}
+                disabled={activeAssigneePage >= assigneePageCount - 1 || displayPeople.length === 0}
                 type="button"
-                onClick={() => setAssigneePage((current) => Math.min(assigneePageCount - 1, current + 1))}
+                onClick={() => setAssigneePage(Math.min(assigneePageCount - 1, activeAssigneePage + 1))}
               >
                 ›
               </button>

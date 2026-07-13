@@ -230,6 +230,17 @@ export type ProjectCardModel = {
   urgencyKey: string
 }
 
+export type ProjectWorkspaceGroupKey = 'attention' | 'progressing' | 'planning' | 'finished'
+
+export type ProjectWorkspaceItemModel = ProjectCardModel & {
+  blockedTaskCount: number
+  groupKey: ProjectWorkspaceGroupKey
+  nextActionLabel: string
+  openTaskCount: number
+  overdueTaskCount: number
+  progressPercent: number
+}
+
 export type TaskListItemModel = {
   assigneeNames: string[]
   dateText: string
@@ -836,6 +847,93 @@ export function buildProjectCardModels(
       taskCount: projectTasks.length,
       urgencyKey: toneMap[project.id] || 'focus-neutral',
     } satisfies ProjectCardModel
+  })
+}
+
+const PROJECT_WORKSPACE_TASK_STATUS_ORDER: Record<string, number> = {
+  blocked: 0,
+  'in-progress': 1,
+  todo: 2,
+}
+
+function compareProjectWorkspaceTasks(left: LegacyTask, right: LegacyTask, referenceDate: string) {
+  const leftOverdue = Boolean(left.endDate && left.endDate < referenceDate)
+  const rightOverdue = Boolean(right.endDate && right.endDate < referenceDate)
+  if (leftOverdue !== rightOverdue) return leftOverdue ? -1 : 1
+
+  const statusGap = (PROJECT_WORKSPACE_TASK_STATUS_ORDER[left.status || 'todo'] ?? 3)
+    - (PROJECT_WORKSPACE_TASK_STATUS_ORDER[right.status || 'todo'] ?? 3)
+  if (statusGap !== 0) return statusGap
+
+  const priorityGap = (PRIORITY_ORDER[left.priority || 'medium'] ?? 2)
+    - (PRIORITY_ORDER[right.priority || 'medium'] ?? 2)
+  if (priorityGap !== 0) return priorityGap
+
+  const leftDate = left.scheduledDate || left.endDate || left.startDate || '9999-12-31'
+  const rightDate = right.scheduledDate || right.endDate || right.startDate || '9999-12-31'
+  if (leftDate !== rightDate) return leftDate.localeCompare(rightDate)
+
+  return (left.title || '').localeCompare(right.title || '', 'zh-CN')
+}
+
+export function buildProjectWorkspaceItems(
+  projects: LegacyProject[],
+  tasks: LegacyTask[],
+  referenceDate = shiftLocalDateKey(new Date(), 0),
+): ProjectWorkspaceItemModel[] {
+  const cardsByProjectId = Object.fromEntries(
+    buildProjectCardModels(projects, tasks, referenceDate).map((card) => [card.id, card]),
+  )
+  const tasksByProjectId: Record<string, LegacyTask[]> = {}
+
+  for (const task of tasks) {
+    if (!task.projectId) continue
+    tasksByProjectId[task.projectId] ||= []
+    tasksByProjectId[task.projectId].push(task)
+  }
+
+  return projects.map((project) => {
+    const card = cardsByProjectId[project.id]
+    const projectTasks = tasksByProjectId[project.id] || []
+    const openTasks = projectTasks
+      .filter((task) => task.status !== 'done')
+      .sort((left, right) => compareProjectWorkspaceTasks(left, right, referenceDate))
+    const blockedTaskCount = openTasks.filter((task) => task.status === 'blocked').length
+    const overdueTaskCount = openTasks.filter((task) => task.endDate && task.endDate < referenceDate).length
+    const isFinished = project.status === 'completed' || project.status === 'cancelled'
+    const isDeadlineOverdue = (daysFromReference(getProjectDeadlineKey(project), referenceDate) ?? 0) < 0
+    const hasRisk = !isFinished && (blockedTaskCount > 0 || overdueTaskCount > 0 || isDeadlineOverdue)
+    const nextTask = openTasks[0]
+
+    let groupKey: ProjectWorkspaceGroupKey = 'planning'
+    if (isFinished) groupKey = 'finished'
+    else if (hasRisk) groupKey = 'attention'
+    else if (project.status === 'active' && openTasks.some((task) => task.status === 'in-progress')) groupKey = 'progressing'
+
+    let nextActionLabel = '添加首个任务'
+    if (project.status === 'completed') nextActionLabel = '查看复盘与归档'
+    else if (project.status === 'cancelled') nextActionLabel = '查看项目记录'
+    else if (nextTask?.status === 'blocked') nextActionLabel = `处理受阻：${nextTask.title || '未命名任务'}`
+    else if (nextTask?.endDate && nextTask.endDate < referenceDate) nextActionLabel = `处理逾期：${nextTask.title || '未命名任务'}`
+    else if (nextTask?.status === 'in-progress') nextActionLabel = `继续推进：${nextTask.title || '未命名任务'}`
+    else if (nextTask) {
+      nextActionLabel = getTaskAssigneeIds(nextTask).length > 0
+        ? `开始任务：${nextTask.title || '未命名任务'}`
+        : `分配任务：${nextTask.title || '未命名任务'}`
+    }
+
+    const taskCount = card?.taskCount || projectTasks.length
+    const doneCount = card?.doneCount || projectTasks.filter((task) => task.status === 'done').length
+
+    return {
+      ...card,
+      blockedTaskCount,
+      groupKey,
+      nextActionLabel,
+      openTaskCount: openTasks.length,
+      overdueTaskCount,
+      progressPercent: taskCount > 0 ? Math.round((doneCount / taskCount) * 100) : 0,
+    } satisfies ProjectWorkspaceItemModel
   })
 }
 

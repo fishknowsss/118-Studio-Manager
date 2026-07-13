@@ -2,9 +2,40 @@ import { existsSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
 import { buildGraphData } from '../src/features/graph/graphData'
-import { buildLaneLayout, buildRadialLayout, ensureSimulationNodes, truncateGraphTextByWidth } from '../src/features/graph/graphUtils'
+import {
+  buildLaneLayout,
+  buildRadialLayout,
+  ensureSimulationNodes,
+  getGraphSearchMatches,
+  getNextGraphNodeId,
+  truncateGraphTextByWidth,
+} from '../src/features/graph/graphUtils'
 
 describe('graph canvas layout', () => {
+  it('moves roving keyboard focus across every graph node', () => {
+    const nodeIds = ['project:a', 'task:a', 'person:a']
+
+    expect(getNextGraphNodeId(nodeIds, 'project:a', 'ArrowRight')).toBe('task:a')
+    expect(getNextGraphNodeId(nodeIds, 'task:a', 'ArrowDown')).toBe('person:a')
+    expect(getNextGraphNodeId(nodeIds, 'person:a', 'ArrowRight')).toBe('project:a')
+    expect(getNextGraphNodeId(nodeIds, 'project:a', 'ArrowLeft')).toBe('person:a')
+    expect(getNextGraphNodeId(nodeIds, 'task:a', 'Home')).toBe('project:a')
+    expect(getNextGraphNodeId(nodeIds, 'task:a', 'End')).toBe('person:a')
+  })
+
+  it('keeps every matching node in the graph search scope', () => {
+    const graph = buildGraphData(
+      [],
+      Array.from({ length: 10 }, (_, index) => ({
+        id: `task-${index}`,
+        title: `同类任务 ${index}`,
+        status: 'todo',
+      })),
+      [],
+    )
+
+    expect(getGraphSearchMatches(graph.nodes, '同类')).toHaveLength(10)
+  })
   it('keeps the riskiest project-task-person chain near the top of the lane canvas', () => {
     const graph = buildGraphData(
       [
