@@ -18,7 +18,7 @@ import { TaskDialog } from '../src/features/tasks/TaskDialog'
 
 describe('current app regressions', () => {
   it('formats local calendar dates without UTC rollback', () => {
-    const localMidnight = new Date('2026-04-12T00:30:00+08:00')
+    const localMidnight = new Date(2026, 3, 12, 0, 30)
 
     expect(formatLocalDateKey(localMidnight)).toBe('2026-04-12')
   })

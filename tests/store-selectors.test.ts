@@ -532,7 +532,7 @@ describe('store selectors', () => {
         {
           id: 'p-created',
           name: '旧项目',
-          createdAt: '2026-04-20T00:30:00+08:00',
+          createdAt: new Date(2026, 3, 20, 0, 30).toISOString(),
         },
       ],
       [],
@@ -570,7 +570,7 @@ describe('store selectors', () => {
           name: '仅创建时间项目',
           status: 'active',
           priority: 'medium',
-          createdAt: '2026-04-01T00:30:00+08:00',
+          createdAt: new Date(2026, 3, 1, 0, 30).toISOString(),
         },
       ],
       [],
@@ -1092,7 +1092,7 @@ describe('store selectors', () => {
       {
         id: 'log-1',
         text: '导出备份',
-        ts: '2026-04-12T08:05:00+08:00',
+        ts: new Date(2026, 3, 12, 8, 5).toISOString(),
       },
     ])
 
