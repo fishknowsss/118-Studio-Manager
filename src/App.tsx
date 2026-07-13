@@ -1,4 +1,4 @@
-import React, { lazy, Suspense, useEffect, useRef, useState, useSyncExternalStore } from 'react'
+import React, { useEffect, useRef, useState, useSyncExternalStore } from 'react'
 import { ConfirmProvider } from './components/feedback/ConfirmProvider'
 import { ToastProvider } from './components/feedback/ToastProvider'
 import { PlannerProvider } from './features/planner/PlannerProvider'
@@ -13,13 +13,12 @@ import {
 } from './features/theme/themeStore'
 import { initializeAppData } from './legacy/bootstrap'
 import { Dashboard } from './views/Dashboard'
-
-const Materials = lazy(() => import('./views/Materials').then((module) => ({ default: module.Materials })))
-const Productivity = lazy(() => import('./views/Productivity').then((module) => ({ default: module.Productivity })))
-const Graph = lazy(() => import('./views/Graph').then((module) => ({ default: module.Graph })))
-const ShortDrama = lazy(() => import('./views/ShortDrama').then((module) => ({ default: module.ShortDrama })))
-const Tools = lazy(() => import('./views/Tools').then((module) => ({ default: module.Tools })))
-const Settings = lazy(() => import('./views/Settings').then((module) => ({ default: module.Settings })))
+import { Graph } from './views/Graph'
+import { Materials } from './views/Materials'
+import { Productivity } from './views/Productivity'
+import { Settings } from './views/Settings'
+import { ShortDrama } from './views/ShortDrama'
+import { Tools } from './views/Tools'
 
 const VIEWS: Record<string, React.ComponentType> = {
   dashboard: Dashboard,
@@ -280,9 +279,7 @@ export default function App() {
               <main className="main-content">
                 <div id="view-container">
                   <ViewErrorBoundary key={view}>
-                    <Suspense fallback={<div className="view-loading" role="status">正在打开</div>}>
-                      <CurrentView />
-                    </Suspense>
+                    <CurrentView />
                   </ViewErrorBoundary>
                 </div>
               </main>

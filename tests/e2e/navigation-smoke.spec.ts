@@ -1,6 +1,6 @@
 import { expect, test } from '@playwright/test'
 
-test('懒加载页面可以连续打开且没有运行时错误', async ({ page }) => {
+test('侧栏页面可以连续打开且没有运行时错误', async ({ page }) => {
   const runtimeErrors: string[] = []
   page.on('pageerror', (error) => runtimeErrors.push(error.message))
   page.on('console', (message) => {

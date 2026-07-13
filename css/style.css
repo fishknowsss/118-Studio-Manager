@@ -11088,13 +11088,6 @@ select.form-input { cursor: pointer; }
 .qm-input:focus { border-color: var(--c-primary); }
 .qm-input-src { max-width: 140px; }
 
-.view-loading {
-  display: grid;
-  min-height: 40vh;
-  place-items: center;
-  color: var(--c-text-2);
-}
-
 .view-load-error {
   display: flex;
   min-height: 40vh;
