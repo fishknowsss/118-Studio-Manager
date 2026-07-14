@@ -1239,11 +1239,14 @@ html[data-easter-mode='konami'] .assignee-chip.selected:has(.assignee-chip-avata
 }
 /* quote block: 行内布局，文字区域 + 右侧按钮 */
 .dash-quote-block {
+  position: relative;
   display: flex;
   align-items: center;
   gap: 10px;
+  height: 100%;
   max-width: 560px;
-  padding: 8px 10px;
+  padding: 7px 46px 7px 10px;
+  overflow: hidden;
   border-radius: var(--r-md);
   transition: background .15s;
   margin-right: 8px;
@@ -1252,6 +1255,7 @@ html[data-easter-mode='konami'] .assignee-chip.selected:has(.assignee-chip-avata
 .dash-quote-content {
   flex: 1;
   min-width: 0;
+  overflow: hidden;
   text-align: right;
 }
 .dash-quote-line {
@@ -1259,40 +1263,58 @@ html[data-easter-mode='konami'] .assignee-chip.selected:has(.assignee-chip-avata
   align-items: baseline;
   justify-content: flex-end;
   gap: 8px;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
+  min-width: 0;
+  overflow: hidden;
 }
 .dash-quote-text {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
   font-size: 15px;
   color: var(--c-text-2);
   font-style: italic;
-  line-height: 1.5;
+  line-height: 1.4;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 .dash-quote-src {
+  max-width: 42%;
+  overflow: hidden;
   font-size: 13px;
   color: var(--c-text-3);
+  line-height: 1.4;
+  text-overflow: ellipsis;
   white-space: nowrap;
   flex-shrink: 0;
 }
 .dash-motivation {
+  overflow: hidden;
   font-size: 14px;
   color: var(--c-teal);
   font-weight: 600;
-  margin-top: 4px;
+  line-height: 1.35;
+  margin-top: 2px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 /* 按钮从右侧滑入 */
 .dash-quote-actions {
+  position: absolute;
+  top: 50%;
+  right: 10px;
   display: flex;
   flex-direction: column;
   gap: 4px;
   flex-shrink: 0;
   opacity: 0;
-  transform: translateX(6px);
+  transform: translate(6px, -50%);
   pointer-events: none;
   transition: opacity .15s, transform .15s;
 }
 .dash-quote-actions.visible {
   opacity: 1;
-  transform: translateX(0);
+  transform: translate(0, -50%);
   pointer-events: auto;
 }
 .dash-quote-btn {
@@ -8938,8 +8960,16 @@ select.form-input { cursor: pointer; }
 }
 
 @media (min-width: 1181px) {
+  .app-shell[data-view='dashboard'] {
+    --dashboard-header-fit-h: clamp(52px, 8dvh, 76px);
+  }
+
+  .app-shell[data-view='dashboard'] .sidebar-brand {
+    height: var(--dashboard-header-fit-h);
+  }
+
   .dashboard {
-    --dash-header-fit-h: clamp(52px, 8dvh, 76px);
+    --dash-header-fit-h: var(--dashboard-header-fit-h, var(--header-h));
     --dash-focus-fit-h: clamp(292px, 35dvh, 304px);
     display: grid;
     grid-template-rows: var(--dash-header-fit-h) var(--dash-focus-fit-h) minmax(0, 1fr);
@@ -9051,8 +9081,16 @@ select.form-input { cursor: pointer; }
 }
 
 @media (min-width: 721px) and (max-width: 1180px) {
+  .app-shell[data-view='dashboard'] {
+    --dashboard-header-fit-h: clamp(52px, 8dvh, 76px);
+  }
+
+  .app-shell[data-view='dashboard'] .sidebar-brand {
+    height: var(--dashboard-header-fit-h);
+  }
+
   .dashboard {
-    --dash-header-fit-h: clamp(52px, 8dvh, 76px);
+    --dash-header-fit-h: var(--dashboard-header-fit-h, var(--header-h));
     /* Header(~26) + gaps + 4 readable rows without dead top padding */
     --dash-focus-fit-h: 268px;
     --dash-fit-gap: clamp(6px, 0.9dvh, 12px);
@@ -9517,8 +9555,27 @@ select.form-input { cursor: pointer; }
 }
 
 @media (min-width: 721px) and (max-width: 1180px) and (max-height: 760px) {
+  .app-shell[data-view='dashboard'] {
+    --dashboard-header-fit-h: clamp(44px, 7.4dvh, 58px);
+  }
+
+  .dash-quote-block {
+    padding-top: 0;
+    padding-right: 34px;
+    padding-bottom: 0;
+  }
+
+  .dash-quote-actions {
+    right: 6px;
+    gap: 2px;
+  }
+
+  .dash-quote-btn {
+    width: 22px;
+    height: 22px;
+  }
+
   .dashboard {
-    --dash-header-fit-h: clamp(44px, 7.4dvh, 58px);
     --dash-focus-fit-h: clamp(240px, 34dvh, 258px);
     --dash-panel-pad-y: clamp(5px, 0.9dvh, 9px);
     --dash-panel-pad-x: clamp(8px, 1vw, 14px);
@@ -9587,8 +9644,27 @@ select.form-input { cursor: pointer; }
 }
 
 @media (min-width: 1181px) and (max-height: 760px) {
+  .app-shell[data-view='dashboard'] {
+    --dashboard-header-fit-h: clamp(44px, 7.4dvh, 58px);
+  }
+
+  .dash-quote-block {
+    padding-top: 0;
+    padding-right: 34px;
+    padding-bottom: 0;
+  }
+
+  .dash-quote-actions {
+    right: 6px;
+    gap: 2px;
+  }
+
+  .dash-quote-btn {
+    width: 22px;
+    height: 22px;
+  }
+
   .dashboard {
-    --dash-header-fit-h: clamp(44px, 7.4dvh, 58px);
     --dash-focus-fit-h: 240px;
     --dash-panel-pad-y: clamp(5px, 0.9dvh, 9px);
     --dash-panel-pad-x: clamp(8px, 1vw, 14px);

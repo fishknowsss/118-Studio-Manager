@@ -168,3 +168,72 @@ test('宽屏常规窗口无需缩放即可显示完整日历和技能名称', as
   expect(layout.calendarScrollHeight).toBeLessThanOrEqual(layout.calendarClientHeight + 1)
   expect(layout.skillWhiteSpaces.every((whiteSpace) => whiteSpace === 'normal')).toBe(true)
 })
+
+test('首页语句固定为两行且侧栏品牌分隔线与顶栏对齐', async ({ page }) => {
+  await page.addInitScript(() => {
+    Math.random = () => 0.07
+  })
+
+  for (const viewport of [
+    { width: 1440, height: 900 },
+    { width: 1366, height: 650 },
+    { width: 1024, height: 768 },
+    { width: 390, height: 844 },
+  ]) {
+    await page.setViewportSize(viewport)
+    await page.goto('/#dashboard')
+    await expect(page.locator('.dash-quote-src')).toBeVisible()
+
+    const layout = await page.evaluate(() => {
+      const header = document.querySelector<HTMLElement>('.dash-header')
+      const brand = document.querySelector<HTMLElement>('.sidebar-brand')
+      const block = document.querySelector<HTMLElement>('.dash-quote-block')
+      const line = document.querySelector<HTMLElement>('.dash-quote-line')
+      const text = document.querySelector<HTMLElement>('.dash-quote-text')
+      const source = document.querySelector<HTMLElement>('.dash-quote-src')
+      const motivation = document.querySelector<HTMLElement>('.dash-motivation')
+
+      if (!header || !brand || !block || !line || !text || !source || !motivation) {
+        throw new Error('首页语句或顶栏节点不完整')
+      }
+
+      const headerRect = header.getBoundingClientRect()
+      const brandRect = brand.getBoundingClientRect()
+      const blockRect = block.getBoundingClientRect()
+      const lineRect = line.getBoundingClientRect()
+      const textRect = text.getBoundingClientRect()
+      const sourceRect = source.getBoundingClientRect()
+      const motivationRect = motivation.getBoundingClientRect()
+
+      return {
+        headerClientHeight: header.clientHeight,
+        headerScrollHeight: header.scrollHeight,
+        headerTop: headerRect.top,
+        headerBottom: headerRect.bottom,
+        brandBottom: brandRect.bottom,
+        brandVisible: getComputedStyle(brand).display !== 'none',
+        blockTop: blockRect.top,
+        blockBottom: blockRect.bottom,
+        lineHeight: lineRect.height,
+        firstLineHeight: Math.max(textRect.height, sourceRect.height),
+        motivationTop: motivationRect.top,
+        firstLineBottom: lineRect.bottom,
+        textWhiteSpace: getComputedStyle(text).whiteSpace,
+        sourceWhiteSpace: getComputedStyle(source).whiteSpace,
+        motivationWhiteSpace: getComputedStyle(motivation).whiteSpace,
+      }
+    })
+
+    expect(layout.headerScrollHeight).toBeLessThanOrEqual(layout.headerClientHeight)
+    expect(layout.blockTop).toBeGreaterThanOrEqual(layout.headerTop)
+    expect(layout.blockBottom).toBeLessThanOrEqual(layout.headerBottom)
+    expect(layout.lineHeight).toBeLessThanOrEqual(layout.firstLineHeight + 1)
+    expect(layout.motivationTop).toBeGreaterThanOrEqual(layout.firstLineBottom)
+    expect(layout.textWhiteSpace).toBe('nowrap')
+    expect(layout.sourceWhiteSpace).toBe('nowrap')
+    expect(layout.motivationWhiteSpace).toBe('nowrap')
+    if (layout.brandVisible) {
+      expect(Math.abs(layout.brandBottom - layout.headerBottom)).toBeLessThanOrEqual(0.5)
+    }
+  }
+})

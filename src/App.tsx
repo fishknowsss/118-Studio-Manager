@@ -208,7 +208,12 @@ export default function App() {
       <ConfirmProvider>
         <CloudSyncProvider>
           <PlannerProvider>
-            <div id="app" className="app-shell" data-easter-mode={easterMode ? 'konami' : undefined}>
+            <div
+              id="app"
+              className="app-shell"
+              data-easter-mode={easterMode ? 'konami' : undefined}
+              data-view={view}
+            >
               {entryFlashVisible ? (
                 <div className="konami-entry-flash" aria-live="polite">
                   <div className="konami-entry-flash-backdrop" />
