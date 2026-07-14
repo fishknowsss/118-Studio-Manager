@@ -1,11 +1,15 @@
 import { useRef, useState } from 'react'
 import { useBackdropDismiss } from '../../components/ui/useBackdropDismiss'
-import { PHILOSOPHY_QUOTES, MOTIVATIONS } from '../../content/quotes'
+import {
+  PHILOSOPHY_QUOTES,
+  MOTIVATIONS,
+  pickQuoteSelection,
+  type QuoteItem,
+  type QuoteSelection,
+} from '../../content/quotes'
 
 const LS_CUSTOM_QUOTES = '118studio:custom-quotes'
 const LS_CUSTOM_MOTIVATIONS = '118studio:custom-motivations'
-
-type QuoteItem = { text: string; src: string }
 
 function loadLS<T>(key: string): T[] {
   try {
@@ -18,10 +22,6 @@ function saveLS<T>(key: string, data: T[]) {
   localStorage.setItem(key, JSON.stringify(data))
 }
 
-function pickRand<T>(arr: T[]): T {
-  return arr[Math.floor(Math.random() * arr.length)]
-}
-
 export function QuoteBlock() {
   const [customQuotes, setCustomQuotes] = useState<QuoteItem[]>(() => loadLS<QuoteItem>(LS_CUSTOM_QUOTES))
   const [customMotivations, setCustomMotivations] = useState<string[]>(() => loadLS<string>(LS_CUSTOM_MOTIVATIONS))
@@ -29,8 +29,7 @@ export function QuoteBlock() {
   const allQuotes = [...PHILOSOPHY_QUOTES, ...customQuotes]
   const allMotivations = [...MOTIVATIONS, ...customMotivations]
 
-  const [quote, setQuote] = useState<QuoteItem>(() => pickRand(allQuotes))
-  const [motivation, setMotivation] = useState<string>(() => pickRand(allMotivations))
+  const [selection, setSelection] = useState<QuoteSelection>(() => pickQuoteSelection(customQuotes, customMotivations))
   const [hovered, setHovered] = useState(false)
   const [showManager, setShowManager] = useState(false)
   const [tab, setTab] = useState<'quotes' | 'motivations'>('quotes')
@@ -40,10 +39,7 @@ export function QuoteBlock() {
   const leaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   const refresh = () => {
-    const qs = [...PHILOSOPHY_QUOTES, ...customQuotes]
-    const ms = [...MOTIVATIONS, ...customMotivations]
-    setQuote(pickRand(qs))
-    setMotivation(pickRand(ms))
+    setSelection(pickQuoteSelection(customQuotes, customMotivations))
   }
 
   const handleMouseEnter = () => {
@@ -99,10 +95,10 @@ export function QuoteBlock() {
       >
         <div className="dash-quote-content">
           <div className="dash-quote-line">
-            <span className="dash-quote-text">"{quote.text}"</span>
-            <span className="dash-quote-src">— {quote.src || '佚名'}</span>
+            <span className="dash-quote-text">"{selection.quote.text}"</span>
+            <span className="dash-quote-src">— {selection.quote.src || '佚名'}</span>
           </div>
-          <div className="dash-motivation">{motivation}</div>
+          <div className="dash-motivation">{selection.motivation}</div>
         </div>
         <div className={`dash-quote-actions${hovered ? ' visible' : ''}`}>
           <button

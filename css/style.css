@@ -1262,19 +1262,19 @@ html[data-easter-mode='konami'] .assignee-chip.selected:has(.assignee-chip-avata
   flex-wrap: wrap;
 }
 .dash-quote-text {
-  font-size: 14px;
+  font-size: 15px;
   color: var(--c-text-2);
   font-style: italic;
   line-height: 1.5;
 }
 .dash-quote-src {
-  font-size: 12px;
+  font-size: 13px;
   color: var(--c-text-3);
   white-space: nowrap;
   flex-shrink: 0;
 }
 .dash-motivation {
-  font-size: 13px;
+  font-size: 14px;
   color: var(--c-teal);
   font-weight: 600;
   margin-top: 4px;
@@ -11034,12 +11034,12 @@ select.form-input { cursor: pointer; }
   gap: 2px;
 }
 .qm-item-text {
-  font-size: var(--fs-base);
+  font-size: 14px;
   color: var(--c-text-2);
   line-height: 1.5;
 }
 .qm-item-src {
-  font-size: var(--fs-xs);
+  font-size: 12px;
   color: var(--c-text-3);
 }
 .qm-builtin-badge {
