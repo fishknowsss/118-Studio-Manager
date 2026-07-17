@@ -171,7 +171,7 @@ test('宽屏常规窗口无需缩放即可显示完整日历和技能名称', as
 
 test('首页语句固定为两行且侧栏品牌分隔线与顶栏对齐', async ({ page }) => {
   await page.addInitScript(() => {
-    Math.random = () => 0.07
+    Math.random = () => 0.999999
   })
 
   for (const viewport of [
@@ -214,8 +214,11 @@ test('首页语句固定为两行且侧栏品牌分隔线与顶栏对齐', async
         brandVisible: getComputedStyle(brand).display !== 'none',
         blockTop: blockRect.top,
         blockBottom: blockRect.bottom,
+        blockWidth: blockRect.width,
         lineHeight: lineRect.height,
         firstLineHeight: Math.max(textRect.height, sourceRect.height),
+        textClientWidth: text.clientWidth,
+        textScrollWidth: text.scrollWidth,
         motivationTop: motivationRect.top,
         firstLineBottom: lineRect.bottom,
         textWhiteSpace: getComputedStyle(text).whiteSpace,
@@ -232,8 +235,58 @@ test('首页语句固定为两行且侧栏品牌分隔线与顶栏对齐', async
     expect(layout.textWhiteSpace).toBe('nowrap')
     expect(layout.sourceWhiteSpace).toBe('nowrap')
     expect(layout.motivationWhiteSpace).toBe('nowrap')
+    if (viewport.width === 1440) {
+      expect(layout.blockWidth).toBeGreaterThanOrEqual(680)
+      expect(layout.textScrollWidth).toBeLessThanOrEqual(layout.textClientWidth)
+    }
     if (layout.brandVisible) {
       expect(Math.abs(layout.brandBottom - layout.headerBottom)).toBeLessThanOrEqual(0.5)
+    }
+  }
+
+  await page.setViewportSize({ width: 1440, height: 900 })
+  await page.goto('/#dashboard')
+  await page.locator('.dash-quote-block').hover()
+  await page.getByRole('button', { name: '管理语句' }).click()
+  const quoteManager = page.getByRole('dialog', { name: '语句管理' })
+  await expect(quoteManager).toBeVisible()
+  await quoteManager.getByRole('button', { name: '关闭' }).click()
+  await expect(quoteManager).toHaveCount(0)
+})
+
+test('全部侧栏分页沿用首页顶栏分隔线基准', async ({ page }) => {
+  for (const viewport of [
+    { width: 1440, height: 900 },
+    { width: 1024, height: 768 },
+    { width: 800, height: 900 },
+  ]) {
+    await page.setViewportSize(viewport)
+    await page.goto('/#dashboard')
+
+    const dashboardBottom = await page.locator('.dash-header').evaluate((element) => (
+      element.getBoundingClientRect().bottom
+    ))
+
+    for (const navigationLabel of ['资料', '工效', '短剧', '图谱', '工具', '设置']) {
+      await page.getByRole('button', { name: navigationLabel, exact: true }).click()
+      await expect(page.locator('.view-header')).toBeVisible()
+
+      const layout = await page.evaluate(() => {
+        const brand = document.querySelector<HTMLElement>('.sidebar-brand')
+        const header = document.querySelector<HTMLElement>('.view-header')
+        if (!brand || !header) throw new Error('侧栏品牌区或分页顶栏不存在')
+
+        return {
+          brandBottom: brand.getBoundingClientRect().bottom,
+          headerBottom: header.getBoundingClientRect().bottom,
+          headerClientHeight: header.clientHeight,
+          headerScrollHeight: header.scrollHeight,
+        }
+      })
+
+      expect(Math.abs(layout.brandBottom - dashboardBottom)).toBeLessThanOrEqual(0.5)
+      expect(Math.abs(layout.headerBottom - dashboardBottom)).toBeLessThanOrEqual(0.5)
+      expect(layout.headerScrollHeight).toBeLessThanOrEqual(layout.headerClientHeight)
     }
   }
 })

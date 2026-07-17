@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react'
+import { useRef, useState, useSyncExternalStore } from 'react'
 import { useBackdropDismiss } from '../../components/ui/useBackdropDismiss'
 import {
   PHILOSOPHY_QUOTES,
@@ -7,24 +7,22 @@ import {
   type QuoteItem,
   type QuoteSelection,
 } from '../../content/quotes'
-
-const LS_CUSTOM_QUOTES = '118studio:custom-quotes'
-const LS_CUSTOM_MOTIVATIONS = '118studio:custom-motivations'
-
-function loadLS<T>(key: string): T[] {
-  try {
-    const raw = localStorage.getItem(key)
-    return raw ? (JSON.parse(raw) as T[]) : []
-  } catch { return [] }
-}
-
-function saveLS<T>(key: string, data: T[]) {
-  localStorage.setItem(key, JSON.stringify(data))
-}
+import {
+  readCustomMotivations,
+  readCustomQuotes,
+  subscribeCustomMotivations,
+  subscribeCustomQuotes,
+  writeCustomMotivations,
+  writeCustomQuotes,
+} from './quoteLibraryState'
 
 export function QuoteBlock() {
-  const [customQuotes, setCustomQuotes] = useState<QuoteItem[]>(() => loadLS<QuoteItem>(LS_CUSTOM_QUOTES))
-  const [customMotivations, setCustomMotivations] = useState<string[]>(() => loadLS<string>(LS_CUSTOM_MOTIVATIONS))
+  const customQuotes = useSyncExternalStore(subscribeCustomQuotes, readCustomQuotes, readCustomQuotes)
+  const customMotivations = useSyncExternalStore(
+    subscribeCustomMotivations,
+    readCustomMotivations,
+    readCustomMotivations,
+  )
 
   const allQuotes = [...PHILOSOPHY_QUOTES, ...customQuotes]
   const allMotivations = [...MOTIVATIONS, ...customMotivations]
@@ -56,31 +54,27 @@ export function QuoteBlock() {
     if (!t) return
     const item: QuoteItem = { text: t, src: newSrc.trim() }
     const next = [...customQuotes, item]
-    setCustomQuotes(next)
-    saveLS(LS_CUSTOM_QUOTES, next)
+    writeCustomQuotes(next)
     setNewText('')
     setNewSrc('')
   }
 
   const deleteCustomQuote = (i: number) => {
     const next = customQuotes.filter((_, idx) => idx !== i)
-    setCustomQuotes(next)
-    saveLS(LS_CUSTOM_QUOTES, next)
+    writeCustomQuotes(next)
   }
 
   const addMotivation = () => {
     const t = newMotivationText.trim()
     if (!t) return
     const next = [...customMotivations, t]
-    setCustomMotivations(next)
-    saveLS(LS_CUSTOM_MOTIVATIONS, next)
+    writeCustomMotivations(next)
     setNewMotivationText('')
   }
 
   const deleteCustomMotivation = (i: number) => {
     const next = customMotivations.filter((_, idx) => idx !== i)
-    setCustomMotivations(next)
-    saveLS(LS_CUSTOM_MOTIVATIONS, next)
+    writeCustomMotivations(next)
   }
 
   const closeManager = () => setShowManager(false)

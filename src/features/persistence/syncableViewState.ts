@@ -7,6 +7,10 @@ import {
   initializeHomeResourceLinkState,
   reloadHomeResourceLinkStateFromDB,
 } from '../dashboard/homeResourceState'
+import {
+  initializeQuoteLibraryState,
+  reloadQuoteLibraryStateFromDB,
+} from '../dashboard/quoteLibraryState'
 import { waitForSyncableSettingsWrites } from './syncableSettings'
 
 export async function initializeSyncableViewState() {
@@ -14,6 +18,7 @@ export async function initializeSyncableViewState() {
     initializeMaterialsState(),
     initializeDashboardPersonPanelState(),
     initializeHomeResourceLinkState(),
+    initializeQuoteLibraryState(),
   ])
 }
 
@@ -22,6 +27,7 @@ export async function reloadSyncableViewStateFromDB() {
     reloadMaterialsStateFromDB(),
     reloadDashboardPersonPanelStateFromDB(),
     reloadHomeResourceLinkStateFromDB(),
+    reloadQuoteLibraryStateFromDB(),
   ])
 }
 

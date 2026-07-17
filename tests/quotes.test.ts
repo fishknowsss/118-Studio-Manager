@@ -1,5 +1,10 @@
 import { describe, expect, it, vi } from 'vitest'
-import { BUILTIN_QUOTE_MOTIVATION_PAIRS, pickQuoteSelection } from '../src/content/quotes'
+import {
+  BUILTIN_QUOTE_MOTIVATION_PAIRS,
+  getQuoteDisplayUnits,
+  MAX_SELECTABLE_QUOTE_DISPLAY_UNITS,
+  pickQuoteSelection,
+} from '../src/content/quotes'
 
 describe('quote library', () => {
   it('keeps each built-in quote bound to its matching motivation', () => {
@@ -38,5 +43,25 @@ describe('quote library', () => {
     })
 
     vi.restoreAllMocks()
+  })
+
+  it('does not select custom quotes that are too long for the top bar', () => {
+    vi.spyOn(Math, 'random').mockReturnValue(0.999999)
+
+    const selection = pickQuoteSelection(
+      [{ text: '这是一条明显超过顶栏合理展示长度的自定义格言。'.repeat(8), src: '测试' }],
+      ['对应激励语'],
+    )
+
+    expect(selection.quote.src).not.toBe('测试')
+    vi.restoreAllMocks()
+  })
+
+  it('keeps every built-in quote within a readable display length', () => {
+    for (const pair of BUILTIN_QUOTE_MOTIVATION_PAIRS) {
+      expect(getQuoteDisplayUnits(pair.text), pair.text).toBeLessThanOrEqual(
+        MAX_SELECTABLE_QUOTE_DISPLAY_UNITS,
+      )
+    }
   })
 })

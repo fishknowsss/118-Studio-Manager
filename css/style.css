@@ -1242,10 +1242,12 @@ html[data-easter-mode='konami'] .assignee-chip.selected:has(.assignee-chip-avata
   position: relative;
   display: flex;
   align-items: center;
+  flex: 0 1 720px;
   gap: 10px;
   height: 100%;
-  max-width: 560px;
-  padding: 7px 46px 7px 10px;
+  width: min(720px, 54vw);
+  max-width: 720px;
+  padding: 7px 10px;
   overflow: hidden;
   border-radius: var(--r-md);
   transition: background .15s;
@@ -1257,7 +1259,9 @@ html[data-easter-mode='konami'] .assignee-chip.selected:has(.assignee-chip-avata
   min-width: 0;
   overflow: hidden;
   text-align: right;
+  transition: padding-right .15s;
 }
+.dash-quote-block:hover .dash-quote-content { padding-right: 36px; }
 .dash-quote-line {
   display: flex;
   align-items: baseline;
@@ -1279,7 +1283,7 @@ html[data-easter-mode='konami'] .assignee-chip.selected:has(.assignee-chip-avata
   white-space: nowrap;
 }
 .dash-quote-src {
-  max-width: 42%;
+  max-width: 32%;
   overflow: hidden;
   font-size: 13px;
   color: var(--c-text-3);
@@ -8959,17 +8963,50 @@ select.form-input { cursor: pointer; }
   }
 }
 
-@media (min-width: 1181px) {
-  .app-shell[data-view='dashboard'] {
-    --dashboard-header-fit-h: clamp(52px, 8dvh, 76px);
+@media (min-width: 721px) {
+  .app-shell {
+    --app-header-fit-h: clamp(52px, 8dvh, 76px);
   }
 
-  .app-shell[data-view='dashboard'] .sidebar-brand {
-    height: var(--dashboard-header-fit-h);
+  .app-shell .sidebar-brand {
+    height: var(--app-header-fit-h);
   }
 
   .dashboard {
-    --dash-header-fit-h: var(--dashboard-header-fit-h, var(--header-h));
+    --dash-header-fit-h: var(--app-header-fit-h, var(--header-h));
+  }
+
+  #view-container > :is(
+    .view-materials,
+    .productivity-view,
+    .view-short-drama,
+    .view-graph,
+    .view-tools,
+    .view-settings
+  ) > .view-header {
+    height: var(--app-header-fit-h);
+    min-height: 0;
+    padding-top: 0;
+    padding-bottom: 0;
+    align-items: center;
+    flex-wrap: nowrap;
+  }
+
+  #view-container > :is(
+    .view-materials,
+    .productivity-view,
+    .view-short-drama,
+    .view-graph,
+    .view-tools,
+    .view-settings
+  ) > .view-header .view-actions {
+    width: auto;
+    justify-content: flex-end;
+  }
+}
+
+@media (min-width: 1181px) {
+  .dashboard {
     --dash-focus-fit-h: clamp(292px, 35dvh, 304px);
     display: grid;
     grid-template-rows: var(--dash-header-fit-h) var(--dash-focus-fit-h) minmax(0, 1fr);
@@ -9081,16 +9118,7 @@ select.form-input { cursor: pointer; }
 }
 
 @media (min-width: 721px) and (max-width: 1180px) {
-  .app-shell[data-view='dashboard'] {
-    --dashboard-header-fit-h: clamp(52px, 8dvh, 76px);
-  }
-
-  .app-shell[data-view='dashboard'] .sidebar-brand {
-    height: var(--dashboard-header-fit-h);
-  }
-
   .dashboard {
-    --dash-header-fit-h: var(--dashboard-header-fit-h, var(--header-h));
     /* Header(~26) + gaps + 4 readable rows without dead top padding */
     --dash-focus-fit-h: 268px;
     --dash-fit-gap: clamp(6px, 0.9dvh, 12px);
@@ -9137,7 +9165,7 @@ select.form-input { cursor: pointer; }
 
   .dash-quote-block {
     width: 100%;
-    max-width: 460px;
+    max-width: none;
     margin-right: 0;
     padding-right: 0;
   }
@@ -9555,15 +9583,16 @@ select.form-input { cursor: pointer; }
 }
 
 @media (min-width: 721px) and (max-width: 1180px) and (max-height: 760px) {
-  .app-shell[data-view='dashboard'] {
-    --dashboard-header-fit-h: clamp(44px, 7.4dvh, 58px);
+  .app-shell {
+    --app-header-fit-h: clamp(44px, 7.4dvh, 58px);
   }
 
   .dash-quote-block {
     padding-top: 0;
-    padding-right: 34px;
     padding-bottom: 0;
   }
+
+  .dash-quote-block:hover .dash-quote-content { padding-right: 28px; }
 
   .dash-quote-actions {
     right: 6px;
@@ -9644,15 +9673,16 @@ select.form-input { cursor: pointer; }
 }
 
 @media (min-width: 1181px) and (max-height: 760px) {
-  .app-shell[data-view='dashboard'] {
-    --dashboard-header-fit-h: clamp(44px, 7.4dvh, 58px);
+  .app-shell {
+    --app-header-fit-h: clamp(44px, 7.4dvh, 58px);
   }
 
   .dash-quote-block {
     padding-top: 0;
-    padding-right: 34px;
     padding-bottom: 0;
   }
+
+  .dash-quote-block:hover .dash-quote-content { padding-right: 28px; }
 
   .dash-quote-actions {
     right: 6px;
