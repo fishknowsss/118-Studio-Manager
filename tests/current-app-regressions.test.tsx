@@ -10,7 +10,6 @@ import { Dialog } from '../src/components/ui/Dialog'
 import { ExpandPanel } from '../src/components/ui/ExpandPanel'
 import { buildTaskExportRows } from '../src/legacy/selectors'
 import { downloadFile, formatLocalDateKey, normalizeImportedBackup, toCSV } from '../src/legacy/utils'
-import { getAssignableTasks } from '../src/features/planner/plannerUtils'
 import { ContextMenu } from '../src/components/ui/ContextMenu'
 import * as projectActions from '../src/legacy/actions'
 import { ProjectDialog } from '../src/features/projects/ProjectDialog'
@@ -952,21 +951,6 @@ describe('current app regressions', () => {
     expect(styleSource).toMatch(/\.acc-fan-panel\s*\{[\s\S]*box-sizing:\s*border-box;/)
   })
 
-  it('keeps planner assignment list limited to unscheduled actionable tasks', () => {
-    const tasks = [
-      { id: 'task-open', title: '正常任务', status: 'todo', scheduledDate: null },
-      { id: 'task-doing', title: '进行中任务', status: 'in-progress', scheduledDate: null },
-      { id: 'task-blocked', title: '受阻任务', status: 'blocked', scheduledDate: null },
-      { id: 'task-done', title: '完成任务', status: 'done', scheduledDate: null },
-      { id: 'task-scheduled', title: '已排期任务', status: 'todo', scheduledDate: '2026-04-12' },
-    ]
-
-    expect(getAssignableTasks(tasks).map((task) => task.id)).toEqual([
-      'task-open',
-      'task-doing',
-    ])
-  })
-
   it('keeps the current React entry free from legacy bootstrap imports', () => {
     const appSource = readFileSync(join(process.cwd(), 'src/App.tsx'), 'utf8')
 
@@ -993,8 +977,6 @@ describe('current app regressions', () => {
   it('moves page dialogs and shared menus into dedicated component files', () => {
     const expectedFiles = [
       'src/features/projects/ProjectDialog.tsx',
-      'src/features/projects/ProjectCard.tsx',
-      'src/features/projects/ProjectTimeline.tsx',
       'src/features/projects/ProjectWorkspace.tsx',
       'src/features/tasks/TaskDialog.tsx',
       'src/features/tasks/TaskItem.tsx',

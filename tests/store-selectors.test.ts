@@ -12,7 +12,6 @@ import {
   buildPersonCardModels,
   buildProjectCardModels,
   buildProjectEventSummaryMap,
-  buildProjectTimelineModel,
   buildProjectWorkspaceItems,
   buildQuickJumpSearchItems,
   buildTaskListItemModels,
@@ -837,50 +836,6 @@ describe('store selectors', () => {
     expect(getProjectEventsForDate(eventMap, '2026-04-18')).toEqual([
       { label: 'DDL · 毕业设计', toneKey: 'focus-critical', type: 'ddl' },
     ])
-  })
-
-  it('builds project timeline rows using local calendar dates instead of UTC parsing', () => {
-    const timeline = buildProjectTimelineModel([
-      {
-        id: 'project-1',
-        name: '答辩周',
-        createdAt: '2026-04-12T00:30:00+08:00',
-        ddl: '2026-04-15',
-      },
-      {
-        id: 'project-2',
-        name: '中期项目',
-        createdAt: '2026-04-11T00:30:00+08:00',
-        ddl: '2026-04-18',
-      },
-    ], 14, undefined, '2026-04-12')
-
-    expect(timeline.startDate).toBe('2026-04-01')
-    expect(timeline.rows[0]).toMatchObject({
-      id: 'project-1',
-      offsetDays: 14,
-      durationDays: 1,
-      startDate: '2026-04-15',
-      endDate: '2026-04-15',
-      urgencyKey: 'focus-critical',
-    })
-    expect(timeline.rows[1]).toMatchObject({
-      startDate: '2026-04-18',
-      endDate: '2026-04-18',
-    })
-    expect(timeline.rows[1].urgencyKey).toBe('focus-strong')
-    expect(timeline.todayOffsetDays).toBe(11)
-
-    const outsideRange = buildProjectTimelineModel([
-      {
-        id: 'project-1',
-        name: '答辩周',
-        createdAt: '2026-04-12T00:30:00+08:00',
-        ddl: '2026-04-15',
-      },
-    ], 14, undefined, '2026-05-12')
-
-    expect(outsideRange.todayOffsetDays).toBeNull()
   })
 
   it('builds project card models with progress summary', () => {

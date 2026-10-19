@@ -51,31 +51,6 @@ type RecentLogItem = {
   time: string
 }
 
-type TimelineDay = {
-  day: number
-  isMonthStart: boolean
-  isWeekend: boolean
-  key: string
-  monthLabel: string | null
-}
-
-type TimelineRow = {
-  durationDays: number
-  endDate: string
-  id: string
-  name: string
-  offsetDays: number
-  startDate: string
-  urgencyKey: string
-}
-
-type TimelineModel = {
-  days: TimelineDay[]
-  rows: TimelineRow[]
-  startDate: string
-  todayOffsetDays: number | null
-}
-
 export type DashboardHeaderModel = {
   dateText: string
   weekdayText: string
@@ -753,66 +728,6 @@ export function getProjectEventsForDate(
   return [
     ...day.ddls.map((item) => ({ label: `DDL · ${item.label}`, toneKey: item.toneKey, type: 'ddl' as const })),
   ]
-}
-
-export function buildProjectTimelineModel(
-  projects: LegacyProject[],
-  rangeDays = 90,
-  forcedStartDate?: string,
-  referenceDate = shiftLocalDateKey(new Date(), 0),
-): TimelineModel {
-  const toneMap = buildProjectDeadlineToneMap(projects, referenceDate)
-  const defaultProjectDate = shiftLocalDateKey(new Date(), 0)
-  const projectStartKeys = projects
-    .map((project) => getProjectStartDate(project, defaultProjectDate))
-    .filter((value): value is string => Boolean(value))
-    .sort()
-
-  const firstProjectDate = forcedStartDate || projectStartKeys[0] || shiftLocalDateKey(new Date(), 0)
-  const firstProjectDateObject = parseLocalDateKey(firstProjectDate) || parseLocalDateKey(shiftLocalDateKey(new Date(), 0))
-  const startDate = firstProjectDateObject
-    ? `${firstProjectDateObject.getFullYear()}-${String(firstProjectDateObject.getMonth() + 1).padStart(2, '0')}-01`
-    : shiftLocalDateKey(new Date(), 0)
-  const start = parseLocalDateKey(startDate) || new Date()
-
-  const days = Array.from({ length: rangeDays }, (_, index) => {
-    const current = new Date(start.getFullYear(), start.getMonth(), start.getDate() + index, 12, 0, 0, 0)
-    const key = coerceToLocalDateKey(current.toISOString()) || shiftLocalDateKey(current, 0)
-
-    return {
-      day: current.getDate(),
-      isMonthStart: current.getDate() === 1,
-      isWeekend: current.getDay() === 0 || current.getDay() === 6,
-      key,
-      monthLabel: current.getDate() === 1 ? `${current.getMonth() + 1}月` : null,
-    }
-  })
-
-  const startRef = parseLocalDateKey(startDate) || new Date()
-  const rangeEndDate = shiftLocalDateKey(startRef, Math.max(0, rangeDays - 1))
-  const todayOffsetDays = referenceDate >= startDate && referenceDate <= rangeEndDate
-    ? daysFromReference(referenceDate, startDate)
-    : null
-  const rows = projects.map((project) => {
-    const projectStartDate = getProjectStartDate(project, defaultProjectDate)
-    const projectEndDate = getProjectEndDate(project, projectStartDate)
-    const startDateObject = parseLocalDateKey(projectStartDate) || startRef
-    const endDateObject = parseLocalDateKey(projectEndDate) || startDateObject
-    const offsetDays = Math.max(0, Math.round((startDateObject.getTime() - startRef.getTime()) / 86400000))
-    const durationDays = Math.max(1, Math.round((endDateObject.getTime() - startDateObject.getTime()) / 86400000))
-
-    return {
-      durationDays,
-      endDate: projectEndDate,
-      id: project.id,
-      name: project.name || '未命名项目',
-      offsetDays,
-      startDate: projectStartDate,
-      urgencyKey: toneMap[project.id] || 'focus-neutral',
-    }
-  })
-
-  return { days, rows, startDate, todayOffsetDays }
 }
 
 export function buildProjectCardModels(

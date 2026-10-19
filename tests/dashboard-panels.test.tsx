@@ -14,7 +14,7 @@ import { ProjectFocusTimeline } from '../src/features/dashboard/ProjectFocusTime
 import { TaskPoolPanel } from '../src/features/dashboard/TaskPoolPanel'
 import { buildPersonCardModels } from '../src/legacy/selectors'
 import { store, type LegacyLog, type LegacyPerson, type LegacyProject, type LegacyTask, type LeaveRecord } from '../src/legacy/store'
-import { today } from '../src/legacy/utils'
+import { shiftLocalDateKey, today } from '../src/legacy/utils'
 import { Projects } from '../src/views/Projects'
 
 function renderNode(node: ReactNode) {
@@ -72,15 +72,17 @@ describe('dashboard panels', () => {
       logs: store.logs,
     }
     const onOpenProject = vi.fn()
+    const todayStr = today()
+    const referenceDate = new Date()
 
     store.projects = [
-      { id: 'project-risk', name: '受阻项目', status: 'active', priority: 'urgent', deliveryDate: '2026-07-15' },
-      { id: 'project-progress', name: '推进项目', status: 'active', priority: 'high', deliveryDate: '2026-07-22' },
+      { id: 'project-risk', name: '受阻项目', status: 'active', priority: 'urgent', deliveryDate: shiftLocalDateKey(referenceDate, 1) },
+      { id: 'project-progress', name: '推进项目', status: 'active', priority: 'high', deliveryDate: shiftLocalDateKey(referenceDate, 8) },
       { id: 'project-plan', name: '待安排项目', status: 'active', priority: 'medium' },
     ]
     store.tasks = [
-      { id: 'task-risk', projectId: 'project-risk', title: '确认成片规格', status: 'blocked', endDate: '2026-07-14' },
-      { id: 'task-progress', projectId: 'project-progress', title: '合成终版', status: 'in-progress', endDate: '2026-07-20' },
+      { id: 'task-risk', projectId: 'project-risk', title: '确认成片规格', status: 'blocked', endDate: todayStr },
+      { id: 'task-progress', projectId: 'project-progress', title: '合成终版', status: 'in-progress', endDate: shiftLocalDateKey(referenceDate, 6) },
       { id: 'task-plan', projectId: 'project-plan', title: '分配剪辑', status: 'todo' },
     ]
     store.people = []
