@@ -179,7 +179,7 @@ docs/
 
 ```bash
 npm run lint
-npm run build
+npm test
 ```
 
 ## 版本更新记录
