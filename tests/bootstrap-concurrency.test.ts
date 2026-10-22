@@ -99,4 +99,29 @@ describe('application bootstrap', () => {
     expect(restoreCloudSnapshotOnBoot).not.toHaveBeenCalled()
     expect(saveProject).not.toHaveBeenCalled()
   })
+
+  it('preserves real records mixed with older demo project names', async () => {
+    const clearAll = vi.fn()
+    const saveProject = vi.fn()
+    vi.doMock('../src/legacy/db', () => ({
+      openDB: vi.fn(),
+      db: {
+        clearAll,
+        exportAll: vi.fn().mockResolvedValue(buildBackupPayload({
+          projects: ['品牌宣传片 · 第三季', '线下活动视觉设计', '社交媒体内容 · 4月'].map((name, i) => ({ id: `project-${i}`, name })),
+          tasks: [{ id: 'real-task', title: '实际制作任务' }],
+          people: [{ id: 'real-person', name: '实际成员' }],
+        })),
+      },
+    }))
+    vi.doMock('../src/legacy/store', () => ({ store: { loadAll: vi.fn(), saveProject } }))
+    vi.doMock('../src/features/sync/syncApi', () => ({ isCloudSyncConfigured: () => false }))
+    vi.doMock('../src/features/persistence/syncableViewState', () => ({ initializeSyncableViewState: vi.fn() }))
+
+    const { initializeAppData } = await import('../src/legacy/bootstrap')
+    await initializeAppData()
+    expect(clearAll).not.toHaveBeenCalled()
+    expect(saveProject).not.toHaveBeenCalled()
+  })
+
 })

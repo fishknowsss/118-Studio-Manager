@@ -9,11 +9,12 @@ type RefEntry = { label: string; url: string }
 type Props = {
   brief: ClientBrief | null
   projectOptions: { id: string; name: string }[]
-  onSave: (brief: ClientBrief) => void
+  onSave: (brief: ClientBrief) => Promise<void> | void
   onClose: () => void
 }
 
 export function ClientBriefDialog({ brief, projectOptions, onSave, onClose }: Props) {
+  const [isSaving, setIsSaving] = useState(false)
   const isNew = !brief
   const { toast } = useToast()
 
@@ -42,7 +43,8 @@ export function ClientBriefDialog({ brief, projectOptions, onSave, onClose }: Pr
     setRefs((prev) => prev.filter((_, i) => i !== index))
   }
 
-  const save = () => {
+  const save = async () => {
+    if (isSaving) return
     if (!clientName.trim()) {
       toast('请填写甲方名称', 'error')
       return
@@ -75,31 +77,38 @@ export function ClientBriefDialog({ brief, projectOptions, onSave, onClose }: Pr
     }
 
     const now = new Date().toISOString()
-    onSave({
-      id:            brief?.id ?? crypto.randomUUID(),
-      projectId:     projectId || null,
-      projectName:   resolvedProjectName.trim(),
-      clientName:    clientName.trim(),
-      requirements:  requirements.trim(),
-      styleNotes:    styleNotes.trim(),
-      prohibitions:  prohibitions.trim(),
-      referenceUrls: validRefs,
-      createdAt:     brief?.createdAt ?? now,
-      updatedAt:     now,
-    })
+    setIsSaving(true)
+    try {
+      await onSave({
+        id:            brief?.id ?? crypto.randomUUID(),
+        projectId:     projectId || null,
+        projectName:   resolvedProjectName.trim(),
+        clientName:    clientName.trim(),
+        requirements:  requirements.trim(),
+        styleNotes:    styleNotes.trim(),
+        prohibitions:  prohibitions.trim(),
+        referenceUrls: validRefs,
+        createdAt:     brief?.createdAt ?? now,
+        updatedAt:     now,
+      })
+    } catch {
+      return
+    } finally {
+      setIsSaving(false)
+    }
   }
 
   return (
     <Dialog
       open
       title={isNew ? '新建甲方要求' : '编辑甲方要求'}
-      onClose={onClose}
+      onClose={isSaving ? () => {} : onClose}
       width="wide"
       footer={(
         <>
-          <button className="btn btn-secondary" type="button" onClick={onClose}>取消</button>
-          <button className="btn btn-primary" type="button" onClick={save}>
-            {isNew ? '创建' : '保存'}
+          <button className="btn btn-secondary" type="button" onClick={onClose} disabled={isSaving}>取消</button>
+          <button className="btn btn-primary" type="button" onClick={() => void save()} disabled={isSaving}>
+            {isSaving ? '保存中' : isNew ? '创建' : '保存'}
           </button>
         </>
       )}

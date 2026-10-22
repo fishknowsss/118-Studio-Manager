@@ -25,6 +25,12 @@ vi.mock('../src/components/feedback/ToastProvider', () => ({
   },
 }))
 
+vi.mock('../src/features/persistence/CrossTabProvider', () => ({
+  CrossTabProvider({ children }: { children: ReactNode }) {
+    return <>{children}</>
+  },
+}))
+
 vi.mock('../src/features/planner/PlannerProvider', () => ({
   PlannerProvider({ children }: { children: ReactNode }) {
     return <>{children}</>

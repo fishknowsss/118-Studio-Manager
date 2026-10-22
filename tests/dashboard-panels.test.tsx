@@ -394,8 +394,8 @@ describe('dashboard panels', () => {
     expect(firstCardSkills?.length).toBeLessThanOrEqual(2)
     expect(secondCard?.textContent).toContain('佳宁')
     expect(secondCard?.textContent).toContain('After Effects')
-    expect(maleMark?.textContent).toBe('♂')
-    expect(femaleMark?.textContent).toBe('♀')
+    expect(maleMark?.querySelector('svg')).not.toBeNull()
+    expect(femaleMark?.querySelector('svg')).not.toBeNull()
     expect(firstCard?.querySelector('.person-assignment-avatar')).toBeNull()
 
     view.cleanup()

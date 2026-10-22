@@ -52,7 +52,7 @@ export function subscribeCustomQuotes(listener: () => void) {
 }
 
 export function writeCustomQuotes(quotes: QuoteItem[]) {
-  customQuotesStore.write(quotes)
+  return customQuotesStore.write(quotes)
 }
 
 export function readCustomMotivations() {
@@ -64,7 +64,7 @@ export function subscribeCustomMotivations(listener: () => void) {
 }
 
 export function writeCustomMotivations(motivations: string[]) {
-  customMotivationsStore.write(motivations)
+  return customMotivationsStore.write(motivations)
 }
 
 export async function initializeQuoteLibraryState() {

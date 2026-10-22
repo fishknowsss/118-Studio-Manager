@@ -9,7 +9,7 @@ import {
   type ShortDramaAssignment,
   type ShortDramaGroup,
 } from './store'
-import { shiftLocalDateKey, type BackupPayload } from './utils'
+import { shiftLocalDateKey } from './utils'
 import { restoreCloudSnapshotOnBoot } from '../features/sync/bootstrapSync'
 import { isCloudSyncConfigured } from '../features/sync/syncApi'
 import { readPersistedCloudSyncState } from '../features/sync/syncClientState'
@@ -20,18 +20,6 @@ import { db } from './db'
 let bootPromise: Promise<void> | null = null
 const DEMO_DATA_VERSION = 'studio-production-v2'
 const DEMO_DATA_SETTING_KEY = 'demo:dataVersion'
-
-function isLegacyDemoSnapshot(backup: BackupPayload) {
-  const projectNames = new Set(backup.projects.map((project) => String(project.name || '')))
-  const hasCurrentVersion = backup.settings.some((setting) => (
-    setting.key === DEMO_DATA_SETTING_KEY && setting.value === DEMO_DATA_VERSION
-  ))
-
-  return !hasCurrentVersion
-    && projectNames.has('品牌宣传片 · 第三季')
-    && projectNames.has('线下活动视觉设计')
-    && projectNames.has('社交媒体内容 · 4月')
-}
 
 async function seedDemoData() {
   const uid = () => crypto.randomUUID()
@@ -244,9 +232,6 @@ async function runAppInitialization() {
     } else {
       await seedDemoData()
     }
-  } else if (!cloudSyncConfigured && isLegacyDemoSnapshot(localBackup)) {
-    await db.clearAll()
-    await seedDemoData()
   }
 
   await store.loadAll()

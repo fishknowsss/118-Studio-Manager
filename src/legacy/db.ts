@@ -1,3 +1,4 @@
+import { publishDatabaseChange } from './crossTab'
 import { buildBackupPayload, BACKUP_COLLECTION_NAMES, normalizeImportedBackup, type BackupPayload } from './utils'
 
 const DB_NAME = 'studio118db'
@@ -134,12 +135,26 @@ function fromRequest<T>(request: IDBRequest<T>) {
   })
 }
 
+function transactionCompleted(transaction: IDBTransaction) {
+  return new Promise<void>((resolve, reject) => {
+    transaction.oncomplete = () => resolve()
+    transaction.onerror = () => reject(transaction.error || new Error('数据库写入失败'))
+    transaction.onabort = () => reject(transaction.error || new Error('数据库事务已中止'))
+  })
+}
+
+async function writeRequest<T>(request: IDBRequest<T>) {
+  const completed = transactionCompleted(request.transaction!)
+  const [result] = await Promise.all([fromRequest(request), completed])
+  return result
+}
+
 export const db = {
   getAll: (name: string) => fromRequest(getStore(name).getAll()),
   get: (name: string, id: string) => fromRequest(getStore(name).get(id)),
-  put: (name: string, value: unknown) => fromRequest(getStore(name, 'readwrite').put(value)),
-  delete: (name: string, id: string) => fromRequest(getStore(name, 'readwrite').delete(id)),
-  clear: (name: string) => fromRequest(getStore(name, 'readwrite').clear()),
+  put: (name: string, value: unknown) => writeRequest(getStore(name, 'readwrite').put(value)),
+  delete: (name: string, id: string) => writeRequest(getStore(name, 'readwrite').delete(id)),
+  clear: (name: string) => writeRequest(getStore(name, 'readwrite').clear()),
   getAllByIndex(name: string, indexName: string, value: IDBValidKey | IDBKeyRange) {
     return fromRequest(getStore(name).index(indexName).getAll(value))
   },
@@ -151,32 +166,33 @@ export const db = {
     if (!dbInstance) throw new Error('Database is not opened yet')
     const tx = dbInstance.transaction(storeNames, mode)
     const stores = Object.fromEntries(storeNames.map(name => [name, tx.objectStore(name)]))
-    callback(stores)
-    return new Promise<void>((resolve, reject) => {
-      tx.oncomplete = () => resolve()
-      tx.onerror = () => reject(tx.error)
-      tx.onabort = () => reject(tx.error)
-    })
+    const completed = transactionCompleted(tx)
+    try {
+      callback(stores)
+    } catch (error) {
+      tx.abort()
+      return completed.catch(() => { throw error })
+    }
+    return completed
   },
   async clearAll() {
     const names = [...BACKUP_COLLECTION_NAMES]
     await this.runTransaction(names, 'readwrite', (stores) => {
       for (const name of names) stores[name].clear()
     })
+    publishDatabaseChange()
   },
   async exportAll() {
     if (!dbInstance) throw new Error('Database is not opened yet')
     const names = [...BACKUP_COLLECTION_NAMES]
     const transaction = dbInstance.transaction(names, 'readonly')
-    const completed = new Promise<void>((resolve, reject) => {
-      transaction.oncomplete = () => resolve()
-      transaction.onerror = () => reject(transaction.error)
-      transaction.onabort = () => reject(transaction.error)
-    })
-    const entries = await Promise.all(names.map(async (name) => (
-      [name, await fromRequest(transaction.objectStore(name).getAll())] as const
-    )))
-    await completed
+    const completed = transactionCompleted(transaction)
+    const [entries] = await Promise.all([
+      Promise.all(names.map(async (name) => (
+        [name, await fromRequest(transaction.objectStore(name).getAll())] as const
+      ))),
+      completed,
+    ])
     const data = Object.fromEntries(entries) as Record<string, BackupPayload[keyof BackupPayload]>
     return buildBackupPayload(data as Partial<BackupPayload>)
   },
@@ -189,5 +205,6 @@ export const db = {
         for (const record of backup[name]) stores[name].put(record)
       }
     })
+    publishDatabaseChange()
   },
 }

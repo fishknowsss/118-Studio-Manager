@@ -103,7 +103,7 @@ export function readBriefs(): ClientBrief[] {
 }
 
 export function writeBriefs(briefs: ClientBrief[]) {
-  briefsStore.write(briefs)
+  return briefsStore.write(briefs)
 }
 
 export function subscribeBriefs(listener: () => void) {
@@ -150,7 +150,7 @@ export function readAccounts(): AccountCredential[] {
 }
 
 export function writeAccounts(accounts: AccountCredential[]) {
-  accountsStore.write(accounts)
+  return accountsStore.write(accounts)
 }
 
 export function subscribeAccounts(listener: () => void) {
@@ -238,12 +238,12 @@ export function writeFolders(folders: string[]) {
       colors[item] = current.colors[item]
     }
   }
-  foldersStore.write({ items, colors })
+  return foldersStore.write({ items, colors })
 }
 
 export function writeFolderSettings(settings: MaterialFolderSettings) {
   const next = sanitizeFolderSettings(settings)
-  foldersStore.write(next)
+  return foldersStore.write(next)
 }
 
 export function getFolderCustomColor(settings: MaterialFolderSettings, folder: string) {

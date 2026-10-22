@@ -1,3 +1,4 @@
+import { publishDatabaseChange } from './crossTab'
 import { db } from './db'
 import { now } from './utils'
 
@@ -305,6 +306,7 @@ export async function waitForStoreWrites() {
 
 function emitStoreUpdated(detail: Record<string, unknown> = {}) {
   store.version++
+  if (!detail.source) publishDatabaseChange()
   document.dispatchEvent(new CustomEvent('storeUpdated', { detail }))
   listeners.forEach((listener) => listener(detail))
 }
@@ -330,7 +332,7 @@ export const store = {
     return this.version
   },
 
-  async loadAll() {
+  async loadAll(source: 'reload' | 'cross-tab' = 'reload') {
     const [rawProjects, rawTasks, people, logs, leaveRecords, classSchedules, shortDramas, shortDramaGroups, shortDramaAssignments] = await Promise.all([
       db.getAll('projects') as Promise<ProjectRecord[]>,
       db.getAll('tasks') as Promise<LegacyTask[]>,
@@ -366,7 +368,7 @@ export const store = {
       allocations: assignment.allocations || [],
       producerIds: assignment.producerIds || [],
     }))
-    emitStoreUpdated({ source: 'reload' })
+    emitStoreUpdated({ source })
   },
 
   saveProject(project: LegacyProject) {

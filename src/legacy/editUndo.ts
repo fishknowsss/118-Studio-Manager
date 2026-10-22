@@ -16,6 +16,7 @@ const MAX_UNDO_COUNT = 10
 const undoStack: UndoEntry[] = []
 const listeners = new Set<() => void>()
 let version = 0
+let historyEpoch = 0
 
 function emitUndoChanged() {
   version += 1
@@ -44,8 +45,10 @@ export function getUndoHistoryState() {
 }
 
 export async function pushUndoCheckpoint(label: string) {
+  const epoch = historyEpoch
   await flushSyncableViewStatePersistence()
   const snapshot = await db.exportAll()
+  if (epoch !== historyEpoch) throw new Error('数据已在另一页面更新，请确认后重试')
   const id = crypto.randomUUID()
 
   undoStack.unshift({
@@ -63,6 +66,13 @@ export async function pushUndoCheckpoint(label: string) {
   return id
 }
 
+export function clearUndoHistory() {
+  historyEpoch += 1
+  if (undoStack.length === 0) return
+  undoStack.length = 0
+  emitUndoChanged()
+}
+
 export function discardUndoCheckpoint(id: string) {
   const index = undoStack.findIndex((entry) => entry.id === id)
   if (index < 0) return
@@ -71,11 +81,13 @@ export function discardUndoCheckpoint(id: string) {
 }
 
 export async function undoLastEdit() {
+  const epoch = historyEpoch
   const entry = undoStack[0]
   if (!entry) return null
 
   return await runTrackedStoreWrite(async () => {
     await flushSyncableViewStatePersistence()
+    if (epoch !== historyEpoch) return null
     await db.importAll(entry.snapshot)
     await reloadSyncableViewStateFromDB()
     await store.loadAll()
@@ -92,6 +104,7 @@ export async function undoLastEdit() {
 }
 
 export async function undoEditById(id: string) {
+  const epoch = historyEpoch
   const index = undoStack.findIndex((entry) => entry.id === id)
   if (index < 0) return null
 
@@ -100,6 +113,7 @@ export async function undoEditById(id: string) {
 
   return await runTrackedStoreWrite(async () => {
     await flushSyncableViewStatePersistence()
+    if (epoch !== historyEpoch) return null
     await db.importAll(target.snapshot)
     await reloadSyncableViewStateFromDB()
     await store.loadAll()

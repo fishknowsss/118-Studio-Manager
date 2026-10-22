@@ -3,6 +3,16 @@
   color-scheme: light;
 
   --c-primary:       #4166F5;
+  --c-teal-text: #127B76;
+  --c-sage-text: #267449;
+  --c-overdue-text: #B82E3B;
+  --c-rose-text: #AE2E6B;
+  --c-today-text: #935100;
+  --c-soon-text: #7B5900;
+  --c-done-text: #13764F;
+  --c-blocked-text: #B82E3B;
+  --c-primary-text: #3154D9;
+  --c-near-text: #3154D9;
   --c-primary-light: #EEF2FF;
   --c-primary-dark:  #2D4FD6;
   --c-teal:          #39C5BB;
@@ -28,7 +38,7 @@
 
   --c-text:          #0F172A;
   --c-text-2:        #475569;
-  --c-text-3:        #94A3B8;
+  --c-text-3:        #586B82;
 
   --c-done:          #10B981;
   --c-blocked:       #E54D4D;
@@ -55,6 +65,16 @@
 
 [data-theme='dark'] {
   color-scheme: dark;
+  --c-teal-text: #6CDDD1;
+  --c-sage-text: #8ED0AC;
+  --c-overdue-text: #FF9CA8;
+  --c-rose-text: #FCA2C9;
+  --c-today-text: #FFC087;
+  --c-soon-text: #E9CE76;
+  --c-done-text: #6CDBAB;
+  --c-blocked-text: #FF9CA8;
+  --c-primary-text: #ACBDFF;
+  --c-near-text: #ACBDFF;
 
   --c-bg:            #0F172A;
   --c-surface:       #1E293B;
@@ -63,7 +83,7 @@
 
   --c-text:          #F8FAFC;
   --c-text-2:        #CBD5E1;
-  --c-text-3:        #64748B;
+  --c-text-3:        #A6B4C8;
 
   --c-primary-light: rgba(65, 102, 245, 0.18);
   --c-teal-light:    rgba(57, 197, 187, 0.15);
@@ -113,26 +133,26 @@ html.theme-switching *::after {
 
 
 
-/* 今日焦点：左侧边框加内发光，强化不同紧急度的视觉区分 */
+/* 焦点通过内容与浅色面区分紧急度。 */
 [data-theme='dark'] .focus-highlight.focus-overdue {
-  box-shadow: inset 5px 0 18px -4px rgba(217, 70, 138, 0.45);
-  border-left-width: 4px;
+  box-shadow: none;
+  border-left-width: 1px;
 }
 [data-theme='dark'] .focus-highlight.focus-critical {
-  box-shadow: inset 5px 0 18px -4px rgba(229, 77, 77, 0.45);
-  border-left-width: 4px;
+  box-shadow: none;
+  border-left-width: 1px;
 }
 [data-theme='dark'] .focus-highlight.focus-strong {
-  box-shadow: inset 5px 0 18px -4px rgba(232, 132, 15, 0.45);
-  border-left-width: 4px;
+  box-shadow: none;
+  border-left-width: 1px;
 }
 [data-theme='dark'] .focus-highlight.focus-medium {
-  box-shadow: inset 5px 0 18px -4px rgba(202, 138, 4, 0.40);
-  border-left-width: 4px;
+  box-shadow: none;
+  border-left-width: 1px;
 }
 [data-theme='dark'] .focus-highlight.focus-calm {
-  box-shadow: inset 5px 0 18px -4px rgba(65, 102, 245, 0.40);
-  border-left-width: 4px;
+  box-shadow: none;
+  border-left-width: 1px;
 }
 [data-theme='dark'] .focus-highlight.focus-neutral {
   background: rgba(148, 163, 184, 0.10);
@@ -151,13 +171,13 @@ html.theme-switching *::after {
 }
 
 
-/* 次要焦点卡片：同样加内发光 */
+/* 次要焦点卡片 */
 [data-theme='dark'] .focus-card-meta { color: var(--c-text-2); }
-[data-theme='dark'] .focus-card.focus-overdue { box-shadow: inset 4px 0 14px -4px rgba(217, 70, 138, 0.40); }
-[data-theme='dark'] .focus-card.focus-critical { box-shadow: inset 4px 0 14px -4px rgba(229, 77, 77, 0.40); }
-[data-theme='dark'] .focus-card.focus-strong   { box-shadow: inset 4px 0 14px -4px rgba(232, 132, 15, 0.40); }
-[data-theme='dark'] .focus-card.focus-medium   { box-shadow: inset 4px 0 14px -4px rgba(202, 138, 4, 0.35); }
-[data-theme='dark'] .focus-card.focus-calm     { box-shadow: inset 4px 0 14px -4px rgba(65, 102, 245, 0.35); }
+[data-theme='dark'] .focus-card.focus-overdue { box-shadow: none; }
+[data-theme='dark'] .focus-card.focus-critical { box-shadow: none; }
+[data-theme='dark'] .focus-card.focus-strong   { box-shadow: none; }
+[data-theme='dark'] .focus-card.focus-medium   { box-shadow: none; }
+[data-theme='dark'] .focus-card.focus-calm     { box-shadow: none; }
 [data-theme='dark'] .focus-card.focus-neutral {
   background: rgba(148, 163, 184, 0.10);
   border-left-color: rgba(148, 163, 184, 0.30);
@@ -216,17 +236,17 @@ html.theme-switching *::after {
   border-color: color-mix(in srgb, var(--c-primary) 40%, transparent);
 }
 
-/* hover 时保留彩色侧光并叠加外阴影，避免 box-shadow 被覆盖导致侧光消失 */
-[data-theme='dark'] .focus-highlight.focus-overdue:hover { box-shadow: inset 6px 0 22px -4px rgba(217, 70, 138, 0.65), var(--shadow-lg); }
-[data-theme='dark'] .focus-highlight.focus-critical:hover { box-shadow: inset 6px 0 22px -4px rgba(229, 77, 77, 0.65), var(--shadow-lg); }
-[data-theme='dark'] .focus-highlight.focus-strong:hover   { box-shadow: inset 6px 0 22px -4px rgba(232, 132, 15, 0.65), var(--shadow-lg); }
-[data-theme='dark'] .focus-highlight.focus-medium:hover   { box-shadow: inset 6px 0 22px -4px rgba(202, 138, 4, 0.60), var(--shadow-lg); }
-[data-theme='dark'] .focus-highlight.focus-calm:hover     { box-shadow: inset 6px 0 22px -4px rgba(65, 102, 245, 0.60), var(--shadow-lg); }
-[data-theme='dark'] .focus-card.focus-overdue:hover { box-shadow: inset 5px 0 16px -4px rgba(217, 70, 138, 0.60), var(--shadow-lg); }
-[data-theme='dark'] .focus-card.focus-critical:hover { box-shadow: inset 5px 0 16px -4px rgba(229, 77, 77, 0.60), var(--shadow-lg); }
-[data-theme='dark'] .focus-card.focus-strong:hover   { box-shadow: inset 5px 0 16px -4px rgba(232, 132, 15, 0.60), var(--shadow-lg); }
-[data-theme='dark'] .focus-card.focus-medium:hover   { box-shadow: inset 5px 0 16px -4px rgba(202, 138, 4, 0.55), var(--shadow-lg); }
-[data-theme='dark'] .focus-card.focus-calm:hover     { box-shadow: inset 5px 0 16px -4px rgba(65, 102, 245, 0.55), var(--shadow-lg); }
+/* 焦点卡片的悬停状态 */
+[data-theme='dark'] .focus-highlight.focus-overdue:hover { box-shadow: none; }
+[data-theme='dark'] .focus-highlight.focus-critical:hover { box-shadow: none; }
+[data-theme='dark'] .focus-highlight.focus-strong:hover   { box-shadow: none; }
+[data-theme='dark'] .focus-highlight.focus-medium:hover   { box-shadow: none; }
+[data-theme='dark'] .focus-highlight.focus-calm:hover     { box-shadow: none; }
+[data-theme='dark'] .focus-card.focus-overdue:hover { box-shadow: none; }
+[data-theme='dark'] .focus-card.focus-critical:hover { box-shadow: none; }
+[data-theme='dark'] .focus-card.focus-strong:hover   { box-shadow: none; }
+[data-theme='dark'] .focus-card.focus-medium:hover   { box-shadow: none; }
+[data-theme='dark'] .focus-card.focus-calm:hover     { box-shadow: none; }
 
 /* 小日历格子包裹层：深色下用 surface 避免与背景同色 */
 [data-theme='dark'] .mini-cal-grid-wrap {
@@ -830,7 +850,7 @@ html[data-easter-mode='konami'] .assignee-chip.selected:has(.assignee-chip-avata
 html[data-easter-mode='konami'] .assignee-chip.selected:has(.assignee-chip-avatar.female) {
   border-color: rgba(176, 142, 46, 0.38);
   background: rgba(191, 157, 53, 0.14);
-  color: var(--c-primary);
+  color: var(--c-primary-text);
 }
 
 @keyframes konamiBreath {
@@ -958,7 +978,7 @@ html[data-easter-mode='konami'] .assignee-chip.selected:has(.assignee-chip-avata
   font-size: 16px;
   font-weight: 600;
   color: var(--c-text-3);
-  text-transform: uppercase;
+  text-transform: none;
   letter-spacing: .06em;
 }
 
@@ -990,7 +1010,7 @@ html[data-easter-mode='konami'] .assignee-chip.selected:has(.assignee-chip-avata
   text-align: left;
 }
 .nav-item:hover { background: var(--c-bg); color: var(--c-text); }
-.nav-item.active { background: var(--c-primary-light); color: var(--c-primary); }
+.nav-item.active { background: var(--c-primary-light); color: var(--c-primary-text); }
 .nav-item.active .nav-icon { stroke: var(--c-primary); }
 
 .nav-icon { width: 18px; height: 18px; stroke: currentColor; flex-shrink: 0; }
@@ -1026,7 +1046,7 @@ html[data-easter-mode='konami'] .assignee-chip.selected:has(.assignee-chip-avata
   justify-content: center;
   gap: 10px;
   padding: 40px;
-  color: var(--c-overdue);
+  color: var(--c-overdue-text);
 }
 .app-init-error code {
   font-size: var(--fs-sm);
@@ -1044,6 +1064,8 @@ html[data-easter-mode='konami'] .assignee-chip.selected:has(.assignee-chip-avata
   height: 100%;
   display: grid;
   grid-template-rows: auto auto 1fr;
+  grid-template-columns: minmax(0, 1fr);
+  min-width: 0;
   overflow: hidden;
 }
 
@@ -1131,7 +1153,7 @@ html[data-easter-mode='konami'] .assignee-chip.selected:has(.assignee-chip-avata
   font-weight: 500;
   color: var(--c-text-3);
   margin-top: 3px;
-  text-transform: uppercase;
+  text-transform: none;
   letter-spacing: .06em;
 }
 .dash-search-wrap {
@@ -1219,22 +1241,22 @@ html[data-easter-mode='konami'] .assignee-chip.selected:has(.assignee-chip-avata
   flex-shrink: 0;
   min-width: 34px;
   text-align: center;
-  font-size: 10px;
+  font-size: 11px;
   font-weight: 700;
   border-radius: 4px;
   line-height: 1.8;
   padding: 0 4px;
 }
 .dash-search-kind.project {
-  color: var(--c-near);
+  color: var(--c-near-text);
   background: var(--c-near-bg);
 }
 .dash-search-kind.task {
-  color: var(--c-today);
+  color: var(--c-today-text);
   background: var(--c-today-bg);
 }
 .dash-search-kind.person {
-  color: var(--c-teal);
+  color: var(--c-teal-text);
   background: var(--c-teal-light);
 }
 /* quote block: 行内布局，文字区域 + 右侧按钮 */
@@ -1295,7 +1317,7 @@ html[data-easter-mode='konami'] .assignee-chip.selected:has(.assignee-chip-avata
 .dash-motivation {
   overflow: hidden;
   font-size: 14px;
-  color: var(--c-teal);
+  color: var(--c-teal-text);
   font-weight: 600;
   line-height: 1.35;
   margin-top: 2px;
@@ -1334,7 +1356,7 @@ html[data-easter-mode='konami'] .assignee-chip.selected:has(.assignee-chip-avata
   transition: color .12s, border-color .12s, background .12s;
 }
 .dash-quote-btn:hover {
-  color: var(--c-primary);
+  color: var(--c-primary-text);
   border-color: var(--c-primary);
   background: var(--c-primary-light);
 }
@@ -1385,7 +1407,7 @@ html[data-easter-mode='konami'] .assignee-chip.selected:has(.assignee-chip-avata
   background: color-mix(in srgb, var(--c-primary) 4.5%, transparent);
 }
 .focus-section-header:hover .focus-label,
-.focus-section-header:focus-visible .focus-label { color: var(--c-primary); }
+.focus-section-header:focus-visible .focus-label { color: var(--c-primary-text); }
 .focus-section-header:focus-visible {
   outline: 2px solid color-mix(in srgb, var(--c-primary) 55%, transparent);
   outline-offset: 1px;
@@ -1502,7 +1524,7 @@ html[data-easter-mode='konami'] .assignee-chip.selected:has(.assignee-chip-avata
 .pft-hidden-count {
   flex: 0 0 auto;
   color: var(--c-text-3);
-  font-size: 10px;
+  font-size: 11px;
   font-weight: 700;
 }
 .pft-axis-track {
@@ -1535,7 +1557,7 @@ html[data-easter-mode='konami'] .assignee-chip.selected:has(.assignee-chip-avata
 }
 .pft-axis-tick-label {
   color: var(--c-text-3);
-  font-size: 10px;
+  font-size: 11px;
   font-weight: 700;
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
@@ -1549,7 +1571,7 @@ html[data-easter-mode='konami'] .assignee-chip.selected:has(.assignee-chip-avata
   background: var(--c-primary);
 }
 .pft-axis-tick.is-today .pft-axis-tick-label {
-  color: var(--c-primary);
+  color: var(--c-primary-text);
   font-weight: 800;
   background: color-mix(in srgb, var(--c-primary) 8%, var(--c-surface));
   border: 1px solid color-mix(in srgb, var(--c-primary) 18%, transparent);
@@ -1560,7 +1582,7 @@ html[data-easter-mode='konami'] .assignee-chip.selected:has(.assignee-chip-avata
 .pft-axis-aside {
   text-align: right;
   color: var(--c-text-3);
-  font-size: 10px;
+  font-size: 11px;
   font-weight: 700;
   padding: 0 12px 2px 0;
 }
@@ -1661,8 +1683,8 @@ html[data-easter-mode='konami'] .assignee-chip.selected:has(.assignee-chip-avata
   font-weight: 650;
   line-height: 1.15;
 }
-.pft-action[data-kind='blocked'] { color: var(--c-overdue); font-weight: 800; }
-.pft-action[data-kind='checkpoint'] { color: var(--c-primary); }
+.pft-action[data-kind='blocked'] { color: var(--c-overdue-text); font-weight: 800; }
+.pft-action[data-kind='checkpoint'] { color: var(--c-primary-text); }
 .pft-action[data-kind='task'] { color: var(--c-text); }
 .pft-action[data-kind='unscheduled'] { color: var(--c-text-3); }
 .pft-aside {
@@ -1695,8 +1717,8 @@ html[data-easter-mode='konami'] .assignee-chip.selected:has(.assignee-chip-avata
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
 }
-.pft-delivery.is-overdue { color: var(--c-overdue); }
-.pft-delivery.is-today { color: var(--c-primary); }
+.pft-delivery.is-overdue { color: var(--c-overdue-text); }
+.pft-delivery.is-today { color: var(--c-primary-text); }
 
 /* Track: grid → bar → 开/审/交 markers（标记与进度条共用纵轴中心） */
 .pft-track {
@@ -1817,7 +1839,7 @@ html[data-easter-mode='konami'] .assignee-chip.selected:has(.assignee-chip-avata
   background: var(--c-bg);
   border-radius: var(--r-lg);
   padding: 12px 14px;
-  border-left: 4px solid var(--c-border);
+  border-left: 1px solid var(--c-border);
   display: flex;
   flex-direction: column;
   justify-content: center;
@@ -1871,16 +1893,16 @@ html[data-easter-mode='konami'] .assignee-chip.selected:has(.assignee-chip-avata
   font-size: 12px;
   font-weight: 600;
 }
-.focus-highlight.focus-overdue .focus-highlight-days-num { color: var(--c-rose); }
-.focus-highlight.focus-critical .focus-highlight-days-num { color: var(--c-overdue); }
-.focus-highlight.focus-strong   .focus-highlight-days-num { color: var(--c-today); }
-.focus-highlight.focus-medium   .focus-highlight-days-num { color: var(--c-soon); }
-.focus-highlight.focus-calm     .focus-highlight-days-num { color: var(--c-near); }
-.focus-highlight.focus-overdue .focus-highlight-ddl { color: var(--c-rose); }
-.focus-highlight.focus-critical .focus-highlight-ddl { color: var(--c-overdue); }
-.focus-highlight.focus-strong   .focus-highlight-ddl { color: var(--c-today); }
-.focus-highlight.focus-medium   .focus-highlight-ddl { color: var(--c-soon); }
-.focus-highlight.focus-calm     .focus-highlight-ddl { color: var(--c-near); }
+.focus-highlight.focus-overdue .focus-highlight-days-num { color: var(--c-rose-text); }
+.focus-highlight.focus-critical .focus-highlight-days-num { color: var(--c-overdue-text); }
+.focus-highlight.focus-strong   .focus-highlight-days-num { color: var(--c-today-text); }
+.focus-highlight.focus-medium   .focus-highlight-days-num { color: var(--c-soon-text); }
+.focus-highlight.focus-calm     .focus-highlight-days-num { color: var(--c-near-text); }
+.focus-highlight.focus-overdue .focus-highlight-ddl { color: var(--c-rose-text); }
+.focus-highlight.focus-critical .focus-highlight-ddl { color: var(--c-overdue-text); }
+.focus-highlight.focus-strong   .focus-highlight-ddl { color: var(--c-today-text); }
+.focus-highlight.focus-medium   .focus-highlight-ddl { color: var(--c-soon-text); }
+.focus-highlight.focus-calm     .focus-highlight-ddl { color: var(--c-near-text); }
 .focus-highlight.focus-neutral  .focus-highlight-ddl { color: var(--c-text-2); }
 
 
@@ -1908,7 +1930,7 @@ html[data-easter-mode='konami'] .assignee-chip.selected:has(.assignee-chip-avata
   gap: 3px;
   flex-shrink: 0;
   max-width: 220px;
-  border-left: 2px solid color-mix(in srgb, var(--focus-accent, var(--c-border)) 40%, transparent);
+  border-left: 1px solid var(--c-border);
   padding-left: 10px;
 }
 .focus-highlight-tasks--two-cols {
@@ -1963,7 +1985,7 @@ html[data-easter-mode='konami'] .assignee-chip.selected:has(.assignee-chip-avata
   background: var(--c-bg);
   border-radius: var(--r-lg);
   padding: 16px 14px;
-  border-left: 3px solid var(--c-border);
+  border-left: 1px solid var(--c-border);
   display: flex;
   flex-direction: column;
   justify-content: center;
@@ -2014,11 +2036,11 @@ html[data-easter-mode='konami'] .assignee-chip.selected:has(.assignee-chip-avata
   font-weight: 600;
   white-space: nowrap;
 }
-.focus-overdue .focus-card-ddl { color: var(--c-rose); }
-.focus-critical .focus-card-ddl { color: var(--c-overdue); }
-.focus-strong   .focus-card-ddl { color: var(--c-today); }
-.focus-medium   .focus-card-ddl { color: var(--c-soon); }
-.focus-calm     .focus-card-ddl { color: var(--c-near); }
+.focus-overdue .focus-card-ddl { color: var(--c-rose-text); }
+.focus-critical .focus-card-ddl { color: var(--c-overdue-text); }
+.focus-strong   .focus-card-ddl { color: var(--c-today-text); }
+.focus-medium   .focus-card-ddl { color: var(--c-soon-text); }
+.focus-calm     .focus-card-ddl { color: var(--c-near-text); }
 .focus-neutral  .focus-card-ddl { color: var(--c-text-2); }
 .focus-card-meta {
   font-size: 11px;
@@ -2046,11 +2068,11 @@ html[data-easter-mode='konami'] .assignee-chip.selected:has(.assignee-chip-avata
 .focus-card-days-unit {
   font-size: 11px;
 }
-.focus-overdue .focus-card-days-num { color: var(--c-rose); }
-.focus-critical .focus-card-days-num { color: var(--c-overdue); }
-.focus-strong   .focus-card-days-num { color: var(--c-today); }
-.focus-medium   .focus-card-days-num { color: var(--c-soon); }
-.focus-calm     .focus-card-days-num { color: var(--c-near); }
+.focus-overdue .focus-card-days-num { color: var(--c-rose-text); }
+.focus-critical .focus-card-days-num { color: var(--c-overdue-text); }
+.focus-strong   .focus-card-days-num { color: var(--c-today-text); }
+.focus-medium   .focus-card-days-num { color: var(--c-soon-text); }
+.focus-calm     .focus-card-days-num { color: var(--c-near-text); }
 .focus-empty {
   font-size: 13px;
   color: var(--c-text-3);
@@ -2093,12 +2115,12 @@ html[data-easter-mode='konami'] .assignee-chip.selected:has(.assignee-chip-avata
   font-size: 12px;
   font-weight: 700;
   color: var(--c-text-3);
-  text-transform: uppercase;
+  text-transform: none;
   letter-spacing: .07em;
 }
 .panel-action {
   font-size: 12px;
-  color: var(--c-primary);
+  color: var(--c-primary-text);
   font-weight: 600;
   cursor: pointer;
   border: 0;
@@ -2143,9 +2165,9 @@ html[data-easter-mode='konami'] .assignee-chip.selected:has(.assignee-chip-avata
 }
 .task-row:hover .task-row-ctx-hint { opacity: 1; }
 .task-row.drop-target { border-color: var(--c-primary); background: var(--c-primary-light); transform: none; }
-.task-row.priority-urgent { border-left: 2px solid var(--c-overdue); border-right: 2px solid var(--c-overdue); }
-.task-row.priority-high   { border-left: 2px solid var(--c-today);   border-right: 2px solid var(--c-today); }
-.task-row.priority-medium { border-left: 2px solid var(--c-near);    border-right: 2px solid var(--c-near); }
+.task-row.priority-urgent { border-left: 1px solid var(--c-border); border-right: 1px solid var(--c-border); }
+.task-row.priority-high   { border-left: 1px solid var(--c-border);   border-right: 1px solid var(--c-border); }
+.task-row.priority-medium { border-left: 1px solid var(--c-border);    border-right: 1px solid var(--c-border); }
 .task-row.priority-urgent:hover { background: color-mix(in srgb, var(--c-overdue) 8%, var(--c-surface)); border-left-color: var(--c-overdue); border-right-color: var(--c-overdue); }
 .task-row.priority-high:hover   { background: color-mix(in srgb, var(--c-today)   8%, var(--c-surface)); border-left-color: var(--c-today);   border-right-color: var(--c-today); }
 .task-row.priority-medium:hover { background: color-mix(in srgb, var(--c-near)    8%, var(--c-surface)); border-left-color: var(--c-near);    border-right-color: var(--c-near); }
@@ -2223,12 +2245,12 @@ html[data-easter-mode='konami'] .assignee-chip.selected:has(.assignee-chip-avata
 .task-detail-card-action:hover {
   background: var(--c-surface);
   border-color: var(--c-primary);
-  color: var(--c-primary);
+  color: var(--c-primary-text);
   transform: translateY(-1px);
 }
 .task-detail-card-action.is-danger:hover {
   border-color: var(--c-overdue);
-  color: var(--c-overdue);
+  color: var(--c-overdue-text);
 }
 .task-detail-card-action svg {
   width: 15px;
@@ -2361,7 +2383,7 @@ html[data-easter-mode='konami'] .assignee-chip.selected:has(.assignee-chip-avata
   flex-shrink: 0;
 }
 .pool-hide-done-btn:hover { background: var(--c-bg); color: var(--c-text-2); border-color: var(--c-border); box-shadow: var(--shadow-md); transform: translateY(-1px); }
-.pool-hide-done-btn.is-active { background: var(--c-primary-light); color: var(--c-primary); border-color: transparent; }
+.pool-hide-done-btn.is-active { background: var(--c-primary-light); color: var(--c-primary-text); border-color: transparent; }
 .pool-hide-done-btn.is-active:hover { background: var(--c-primary-light); border-color: var(--c-primary); box-shadow: var(--shadow-md); transform: translateY(-1px); }
 
 .task-row-body {
@@ -2410,7 +2432,7 @@ html[data-easter-mode='konami'] .assignee-chip.selected:has(.assignee-chip-avata
 
 .task-meta-label {
   flex-shrink: 0;
-  font-size: 10px;
+  font-size: 11px;
   font-weight: 700;
   color: var(--c-text-3);
   letter-spacing: .02em;
@@ -2437,7 +2459,7 @@ html[data-easter-mode='konami'] .assignee-chip.selected:has(.assignee-chip-avata
 
 .task-meta-chip.is-overdue .task-meta-label,
 .task-meta-chip.is-overdue .task-meta-value {
-  color: var(--c-overdue);
+  color: var(--c-overdue-text);
 }
 
 .task-row-deadline {
@@ -2451,7 +2473,7 @@ html[data-easter-mode='konami'] .assignee-chip.selected:has(.assignee-chip-avata
 }
 
 .task-row-deadline.is-overdue {
-  color: var(--c-overdue);
+  color: var(--c-overdue-text);
 }
 
 .task-row-deadline.is-placeholder {
@@ -2461,9 +2483,9 @@ html[data-easter-mode='konami'] .assignee-chip.selected:has(.assignee-chip-avata
 /* Status icon for task pool rows */
 .pool-status-icon { flex-shrink: 0; }
 .pool-status-icon.todo        { color: var(--c-border); }
-.pool-status-icon.in-progress { color: var(--c-primary); }
-.pool-status-icon.done        { color: var(--c-done); }
-.pool-status-icon.blocked     { color: var(--c-overdue); }
+.pool-status-icon.in-progress { color: var(--c-primary-text); }
+.pool-status-icon.done        { color: var(--c-done-text); }
+.pool-status-icon.blocked     { color: var(--c-overdue-text); }
 
 /* Priority dots */
 .prio-dot {
@@ -2627,8 +2649,8 @@ html[data-easter-mode='konami'] .assignee-chip.selected:has(.assignee-chip-avata
   color: #29dfd3;
 }
 .person-status-mark--leave {
-  color: var(--c-rose);
-  font-size: 10px;
+  color: var(--c-rose-text);
+  font-size: 11px;
   font-weight: 700;
   line-height: 1;
   letter-spacing: .02em;
@@ -2706,7 +2728,7 @@ html[data-easter-mode='konami'] .assignee-chip.selected:has(.assignee-chip-avata
   overflow-wrap: anywhere;
 }
 .person-assignment-skills .skill-tag.skill-tag-compact {
-  font-size: 10px;
+  font-size: 11px;
   padding: 1px 4px;
   line-height: 1.2;
   letter-spacing: -0.03em;
@@ -2720,7 +2742,7 @@ html[data-easter-mode='konami'] .assignee-chip.selected:has(.assignee-chip-avata
   border-radius: 999px;
   background: var(--c-border-light);
   color: var(--c-text-2);
-  font-size: 10px;
+  font-size: 11px;
   line-height: 1.2;
   font-weight: 600;
 }
@@ -2776,7 +2798,7 @@ html[data-easter-mode='konami'] .assignee-chip.selected:has(.assignee-chip-avata
 }
 .mini-cal-btn:hover {
   background: var(--c-surface);
-  color: var(--c-primary);
+  color: var(--c-primary-text);
   box-shadow: inset 0 0 0 1px var(--c-border-light), 0 4px 10px rgba(65, 102, 245, .12);
   transform: translateY(-1px);
 }
@@ -2806,7 +2828,7 @@ html[data-easter-mode='konami'] .assignee-chip.selected:has(.assignee-chip-avata
 
 .mini-cal-dow {
   text-align: center;
-  font-size: 10px;
+  font-size: 11px;
   font-weight: 600;
   color: var(--c-text-3);
   padding: 3px 0 7px;
@@ -2846,9 +2868,9 @@ html[data-easter-mode='konami'] .assignee-chip.selected:has(.assignee-chip-avata
   z-index: 3;
   font-variant-numeric: tabular-nums;
 }
-.mini-cal-day.task-roman-1 .mini-cal-task-count { color: var(--c-sage); }
-.mini-cal-day.task-roman-2 .mini-cal-task-count { color: var(--c-teal); }
-.mini-cal-day.task-roman-3 .mini-cal-task-count { color: var(--c-primary); }
+.mini-cal-day.task-roman-1 .mini-cal-task-count { color: var(--c-sage-text); }
+.mini-cal-day.task-roman-2 .mini-cal-task-count { color: var(--c-teal-text); }
+.mini-cal-day.task-roman-3 .mini-cal-task-count { color: var(--c-primary-text); }
 .mini-cal-day.task-roman-4 .mini-cal-task-count { color: #F97316; }
 .mini-cal-day.task-roman-5 .mini-cal-task-count { color: #E11D48; }
 .mini-cal-day.task-roman-6 .mini-cal-task-count { color: #991B1B; }
@@ -2873,7 +2895,7 @@ html[data-easter-mode='konami'] .assignee-chip.selected:has(.assignee-chip-avata
 }
 .mini-cal-day.today {
   background: color-mix(in srgb, var(--c-primary-light) 82%, var(--c-surface));
-  color: var(--c-primary);
+  color: var(--c-primary-text);
   font-weight: 700;
   border-radius: 12px;
   box-shadow:
@@ -2972,7 +2994,7 @@ html[data-easter-mode='konami'] .assignee-chip.selected:has(.assignee-chip-avata
   position: absolute;
   left: 6px;
   bottom: 6px;
-  font-size: 10px;
+  font-size: 11px;
   font-weight: 800;
   line-height: 12px;
   color: #DB2777;
@@ -2996,7 +3018,7 @@ html[data-easter-mode='konami'] .assignee-chip.selected:has(.assignee-chip-avata
     inset 0 0 0 2.5px var(--c-primary),
     0 0 0 4px rgba(65, 102, 245, .16),
     0 14px 28px rgba(65, 102, 245, .22);
-  color: var(--c-primary);
+  color: var(--c-primary-text);
   transform: translateY(-3px) scale(1.04);
   z-index: 6;
 }
@@ -3196,7 +3218,7 @@ html[data-easter-mode='konami'] .assignee-chip.selected:has(.assignee-chip-avata
   display: flex;
   align-items: center;
   gap: 5px;
-  font-size: 10px;
+  font-size: 11px;
   color: var(--c-text-3);
   font-weight: 500;
 }
@@ -3204,7 +3226,7 @@ html[data-easter-mode='konami'] .assignee-chip.selected:has(.assignee-chip-avata
   font-size: 11px;
   font-weight: 800;
   line-height: 1;
-  color: var(--c-primary);
+  color: var(--c-primary-text);
 }
 .cal-legend-frame,
 .cal-legend-leave {
@@ -3214,7 +3236,7 @@ html[data-easter-mode='konami'] .assignee-chip.selected:has(.assignee-chip-avata
   width: 14px;
   height: 14px;
   border-radius: 4px;
-  font-size: 9px;
+  font-size: 11px;
   font-weight: 800;
   line-height: 1;
 }
@@ -3291,7 +3313,7 @@ html[data-easter-mode='konami'] .assignee-chip.selected:has(.assignee-chip-avata
   font-weight: 700;
   color: var(--c-text-3);
   padding: 4px;
-  text-transform: uppercase;
+  text-transform: none;
   letter-spacing: .05em;
 }
 .cal-grid {
@@ -3324,7 +3346,7 @@ html[data-easter-mode='konami'] .assignee-chip.selected:has(.assignee-chip-avata
   line-height: 1;
 }
 .cal-cell.today .cal-day-num {
-  color: var(--c-primary);
+  color: var(--c-primary-text);
 }
 .cal-event {
   font-size: var(--fs-2xs);
@@ -3336,13 +3358,13 @@ html[data-easter-mode='konami'] .assignee-chip.selected:has(.assignee-chip-avata
   text-overflow: ellipsis;
   line-height: 1.4;
 }
-.cal-event.ddl.focus-overdue { background: var(--c-rose-bg); color: var(--c-rose); }
-.cal-event.ddl.focus-critical { background: var(--c-overdue-bg); color: var(--c-overdue); }
-.cal-event.ddl.focus-strong { background: var(--c-today-bg); color: var(--c-today); }
-.cal-event.ddl.focus-medium { background: var(--c-soon-bg); color: var(--c-soon); }
-.cal-event.ddl.focus-calm { background: var(--c-near-bg); color: var(--c-near); }
+.cal-event.ddl.focus-overdue { background: var(--c-rose-bg); color: var(--c-rose-text); }
+.cal-event.ddl.focus-critical { background: var(--c-overdue-bg); color: var(--c-overdue-text); }
+.cal-event.ddl.focus-strong { background: var(--c-today-bg); color: var(--c-today-text); }
+.cal-event.ddl.focus-medium { background: var(--c-soon-bg); color: var(--c-soon-text); }
+.cal-event.ddl.focus-calm { background: var(--c-near-bg); color: var(--c-near-text); }
 .cal-event.ddl.focus-neutral { background: var(--c-bg); color: var(--c-text-2); }
-.cal-event.ddl.urg-done { background: var(--c-sage-light); color: var(--c-sage); }
+.cal-event.ddl.urg-done { background: var(--c-sage-light); color: var(--c-sage-text); }
 .cal-event.more { background: var(--c-bg); color: var(--c-text-3); }
 .cal-leave-chip {
   background: rgba(244, 63, 94, .08);
@@ -3509,7 +3531,7 @@ html[data-easter-mode='konami'] .assignee-chip.selected:has(.assignee-chip-avata
   align-items: center;
   gap: 5px;
   font-size: var(--fs-xs);
-  color: var(--c-today);
+  color: var(--c-today-text);
   white-space: nowrap;
 }
 
@@ -3570,7 +3592,7 @@ html[data-easter-mode='konami'] .assignee-chip.selected:has(.assignee-chip-avata
 .brief-project-badge {
   font-size: var(--fs-xs);
   font-weight: 700;
-  color: var(--c-primary);
+  color: var(--c-primary-text);
   background: var(--c-primary-light);
   border: 1px solid rgba(65,102,245,.2);
   border-radius: 999px;
@@ -3592,7 +3614,7 @@ html[data-easter-mode='konami'] .assignee-chip.selected:has(.assignee-chip-avata
   padding: 9px 12px;
   background: var(--c-bg);
   border-radius: var(--r-md);
-  border-left: 3px solid var(--c-border);
+  border-left: 1px solid var(--c-border);
 }
 .brief-section-danger {
   border-left-color: var(--c-overdue);
@@ -3623,7 +3645,7 @@ html[data-easter-mode='konami'] .assignee-chip.selected:has(.assignee-chip-avata
   flex: 0 0 auto;
   font-size: var(--fs-xs);
   font-weight: 700;
-  color: var(--c-primary);
+  color: var(--c-primary-text);
   line-height: 24px;
 }
 .brief-ref-links {
@@ -3637,7 +3659,7 @@ html[data-easter-mode='konami'] .assignee-chip.selected:has(.assignee-chip-avata
   align-items: center;
   gap: 4px;
   font-size: var(--fs-sm);
-  color: var(--c-primary);
+  color: var(--c-primary-text);
   padding: 3px 9px;
   border-radius: var(--r-sm);
   border: 1px solid rgba(65,102,245,.2);
@@ -3870,7 +3892,7 @@ html[data-easter-mode='konami'] .assignee-chip.selected:has(.assignee-chip-avata
   overflow-y: auto;
   background: var(--c-surface);
   border: 1.5px solid var(--c-border);
-  border-left: 3px solid var(--acc-panel-color, var(--c-primary));
+  border-left: 1px solid var(--c-border);
   border-radius: var(--r-lg);
   box-shadow: var(--shadow-lg);
   padding: 6px 6px 8px;
@@ -3878,8 +3900,8 @@ html[data-easter-mode='konami'] .assignee-chip.selected:has(.assignee-chip-avata
   z-index: 1000;
 }
 .acc-fan-panel.panel-left {
-  border-left: 1.5px solid var(--c-border);
-  border-right: 3px solid var(--acc-panel-color, var(--c-primary));
+  border-left: 1px solid var(--c-border);
+  border-right: 1px solid var(--c-border);
   animation-name: fan-panel-in-left;
 }
 .acc-fan-panel::-webkit-scrollbar { width: 4px; }
@@ -3931,7 +3953,7 @@ html[data-easter-mode='konami'] .assignee-chip.selected:has(.assignee-chip-avata
 }
 .acc-fan-action-del:hover {
   background: var(--c-overdue-bg);
-  color: var(--c-overdue);
+  color: var(--c-overdue-text);
 }
 
 /* 重命名内联输入框 */
@@ -4055,7 +4077,7 @@ html[data-easter-mode='konami'] .assignee-chip.selected:has(.assignee-chip-avata
 }
 .acc-copy-row:hover .acc-copy-row-label,
 .acc-copy-row.is-copied .acc-copy-row-label {
-  color: var(--c-primary);
+  color: var(--c-primary-text);
 }
 
 .acc-copy-row-value {
@@ -4087,7 +4109,7 @@ html[data-easter-mode='konami'] .assignee-chip.selected:has(.assignee-chip-avata
 }
 .acc-copy-row.is-copied .acc-copy-row-icon {
   opacity: 1;
-  color: var(--c-primary);
+  color: var(--c-primary-text);
 }
 
 /* URL 行（在 acc-entry-head 中作为左侧弹性项） */
@@ -4110,7 +4132,7 @@ html[data-easter-mode='konami'] .assignee-chip.selected:has(.assignee-chip-avata
   white-space: nowrap;
 }
 .acc-entry-url:hover {
-  color: var(--c-primary);
+  color: var(--c-primary-text);
 }
 
 /* 账号条目头部：URL 左 + 操作按钮右 */
@@ -4157,11 +4179,11 @@ html[data-easter-mode='konami'] .assignee-chip.selected:has(.assignee-chip-avata
 }
 .acc-entry-action-move:hover {
   background: color-mix(in srgb, var(--c-primary) 12%, transparent);
-  color: var(--c-primary);
+  color: var(--c-primary-text);
 }
 .acc-entry-action-del:hover {
   background: var(--c-overdue-bg);
-  color: var(--c-overdue);
+  color: var(--c-overdue-text);
 }
 
 /* 移至文件夹内联面板 */
@@ -4197,7 +4219,7 @@ html[data-easter-mode='konami'] .assignee-chip.selected:has(.assignee-chip-avata
 }
 .acc-move-tag:hover {
   background: color-mix(in srgb, var(--c-primary) 10%, transparent);
-  color: var(--c-primary);
+  color: var(--c-primary-text);
   border-color: var(--c-primary);
 }
 
@@ -4415,7 +4437,7 @@ html[data-easter-mode='konami'] .assignee-chip.selected:has(.assignee-chip-avata
 .graph-canvas-hide-done.active {
   background: var(--c-today-bg);
   border-color: rgba(232, 132, 15, 0.4);
-  color: var(--c-today);
+  color: var(--c-today-text);
 }
 .graph-canvas-hide-done:hover:not(.active) {
   background: var(--c-bg);
@@ -4487,7 +4509,7 @@ html[data-easter-mode='konami'] .assignee-chip.selected:has(.assignee-chip-avata
 .graph-hide-done-btn.active {
   background: var(--c-today-bg);
   border-color: rgba(232, 132, 15, 0.45);
-  color: var(--c-today);
+  color: var(--c-today-text);
 }
 .graph-hide-done-btn:hover:not(.active) {
   background: var(--c-surface);
@@ -4505,7 +4527,7 @@ html[data-easter-mode='konami'] .assignee-chip.selected:has(.assignee-chip-avata
   border-radius: 999px;
   border: 1px solid rgba(65, 102, 245, 0.34);
   background: var(--c-surface);
-  color: var(--c-near);
+  color: var(--c-near-text);
   display: inline-flex;
   align-items: center;
   gap: 7px;
@@ -4897,7 +4919,7 @@ html[data-easter-mode='konami'] .squid-mark {
   color: var(--c-text-3);
   font-weight: 700;
   letter-spacing: .04em;
-  text-transform: uppercase;
+  text-transform: none;
 }
 .graph-side-title.sub {
   margin-top: 8px;
@@ -4985,13 +5007,13 @@ html[data-easter-mode='konami'] .squid-mark {
   color: var(--c-text-3);
 }
 .graph-related-kind.project {
-  color: var(--c-near);
+  color: var(--c-near-text);
 }
 .graph-related-kind.task {
-  color: var(--c-today);
+  color: var(--c-today-text);
 }
 .graph-related-kind.person {
-  color: var(--c-teal);
+  color: var(--c-teal-text);
 }
 .graph-related-label {
   flex: 1;
@@ -5065,7 +5087,7 @@ html[data-easter-mode='konami'] .squid-mark {
   font-size: var(--fs-2xs);
   font-weight: 700;
   color: var(--c-text-3);
-  text-transform: uppercase;
+  text-transform: none;
   letter-spacing: .05em;
   margin-bottom: 3px;
 }
@@ -5189,7 +5211,7 @@ html[data-easter-mode='konami'] .squid-mark {
 }
 .tool-card-action {
   font-size: 11px;
-  color: var(--c-near);
+  color: var(--c-near-text);
   font-weight: 600;
   min-width: 0;
 }
@@ -5288,7 +5310,7 @@ html[data-easter-mode='konami'] .squid-mark {
 }
 .project-workspace-summary [data-tone='risk'] strong,
 .project-workspace-summary [data-tone='risk'] span {
-  color: var(--c-overdue);
+  color: var(--c-overdue-text);
 }
 .project-workspace-group {
   display: grid;
@@ -5332,7 +5354,7 @@ html[data-easter-mode='konami'] .squid-mark {
   min-width: 0;
   padding: 13px 14px 13px 16px;
   border: 1px solid color-mix(in srgb, var(--project-workspace-accent) 20%, var(--c-border-light));
-  border-left: 3px solid var(--project-workspace-accent);
+  border-left: 1px solid var(--c-border);
   border-radius: var(--r-lg);
   background: color-mix(in srgb, var(--project-workspace-accent) 2%, var(--c-surface));
   transition: background .12s ease, border-color .12s ease, box-shadow .12s ease;
@@ -5413,7 +5435,7 @@ html[data-easter-mode='konami'] .squid-mark {
   display: flex;
   align-items: center;
   gap: 8px;
-  color: var(--c-overdue);
+  color: var(--c-overdue-text);
   font-size: 12px;
   font-weight: 750;
 }
@@ -5461,10 +5483,10 @@ html[data-easter-mode='konami'] .squid-mark {
 .project-workspace-schedule {
   min-width: 0;
 }
-.project-workspace-schedule.focus-overdue strong { color: var(--c-rose); }
-.project-workspace-schedule.focus-critical strong { color: var(--c-overdue); }
-.project-workspace-schedule.focus-strong strong { color: var(--c-today); }
-.project-workspace-schedule.focus-medium strong { color: var(--c-soon); }
+.project-workspace-schedule.focus-overdue strong { color: var(--c-rose-text); }
+.project-workspace-schedule.focus-critical strong { color: var(--c-overdue-text); }
+.project-workspace-schedule.focus-strong strong { color: var(--c-today-text); }
+.project-workspace-schedule.focus-medium strong { color: var(--c-soon-text); }
 .project-workspace-row-actions {
   display: flex;
   align-items: center;
@@ -5477,7 +5499,7 @@ html[data-easter-mode='konami'] .squid-mark {
 }
 .project-workspace-delete:hover {
   background: var(--c-rose-bg);
-  color: var(--c-rose);
+  color: var(--c-rose-text);
 }
 .project-grid {
   display: grid;
@@ -5492,7 +5514,7 @@ html[data-easter-mode='konami'] .squid-mark {
   padding: 16px;
   cursor: default;
   transition: box-shadow .15s, border-color .15s, transform .1s;
-  border-left: 3px solid var(--c-border);
+  border-left: 1px solid var(--c-border);
 }
 .project-card:focus-within,
 .project-card:hover {
@@ -5593,11 +5615,11 @@ html[data-easter-mode='konami'] .squid-mark {
   font-size: var(--fs-xs);
   font-weight: 600;
 }
-.project-ddl-label.focus-overdue { color: var(--c-rose); }
-.project-ddl-label.focus-critical { color: var(--c-overdue); }
-.project-ddl-label.focus-strong { color: var(--c-today); }
-.project-ddl-label.focus-medium { color: var(--c-soon); }
-.project-ddl-label.focus-calm { color: var(--c-near); }
+.project-ddl-label.focus-overdue { color: var(--c-rose-text); }
+.project-ddl-label.focus-critical { color: var(--c-overdue-text); }
+.project-ddl-label.focus-strong { color: var(--c-today-text); }
+.project-ddl-label.focus-medium { color: var(--c-soon-text); }
+.project-ddl-label.focus-calm { color: var(--c-near-text); }
 .project-ddl-label.focus-neutral,
 .project-ddl-label.urg-done { color: var(--c-text-2); }
 .project-ddl-val { font-size: var(--fs-xs); color: var(--c-text-2); }
@@ -5693,20 +5715,20 @@ html[data-easter-mode='konami'] .squid-mark {
   border-radius: 999px;
   border: 1px solid var(--c-primary);
   background: var(--c-primary-light);
-  color: var(--c-primary);
+  color: var(--c-primary-text);
   display: flex;
   align-items: center;
   font-size: var(--fs-2xs);
   white-space: nowrap;
   overflow: hidden;
 }
-.timeline-bar.focus-overdue { border-color: var(--c-rose); background: var(--c-rose-bg); color: var(--c-rose); }
-.timeline-bar.focus-critical { border-color: var(--c-overdue); background: var(--c-overdue-bg); color: var(--c-overdue); }
-.timeline-bar.focus-strong { border-color: var(--c-today); background: var(--c-today-bg); color: var(--c-today); }
-.timeline-bar.focus-medium { border-color: var(--c-soon); background: var(--c-soon-bg); color: var(--c-soon); }
-.timeline-bar.focus-calm { border-color: var(--c-near); background: var(--c-near-bg); color: var(--c-near); }
+.timeline-bar.focus-overdue { border-color: var(--c-rose); background: var(--c-rose-bg); color: var(--c-rose-text); }
+.timeline-bar.focus-critical { border-color: var(--c-overdue); background: var(--c-overdue-bg); color: var(--c-overdue-text); }
+.timeline-bar.focus-strong { border-color: var(--c-today); background: var(--c-today-bg); color: var(--c-today-text); }
+.timeline-bar.focus-medium { border-color: var(--c-soon); background: var(--c-soon-bg); color: var(--c-soon-text); }
+.timeline-bar.focus-calm { border-color: var(--c-near); background: var(--c-near-bg); color: var(--c-near-text); }
 .timeline-bar.focus-neutral { border-color: var(--c-border); background: var(--c-bg); color: var(--c-text-2); }
-.timeline-bar.urg-done { border-color: var(--c-done); background: var(--c-sage-light); color: var(--c-sage); }
+.timeline-bar.urg-done { border-color: var(--c-done); background: var(--c-sage-light); color: var(--c-sage-text); }
 
 /* Card actions */
 .card-actions {
@@ -5725,7 +5747,7 @@ html[data-easter-mode='konami'] .squid-mark {
   transition: background .1s, color .1s;
 }
 .card-btn:hover { background: var(--c-bg); color: var(--c-text); }
-.card-btn.danger:hover { color: var(--c-overdue); }
+.card-btn.danger:hover { color: var(--c-overdue-text); }
 .card-btn svg { width: 14px; height: 14px; }
 
 /* ─── Tasks Table / List ─────────────────────────────── */
@@ -5809,7 +5831,7 @@ html[data-easter-mode='konami'] .squid-mark {
   color: var(--c-text-2);
   white-space: nowrap;
 }
-.date-chip.overdue { background: var(--c-overdue-bg); color: var(--c-overdue); }
+.date-chip.overdue { background: var(--c-overdue-bg); color: var(--c-overdue-text); }
 
 /* Status badges */
 .badge {
@@ -5819,20 +5841,20 @@ html[data-easter-mode='konami'] .squid-mark {
   font-weight: 700;
   padding: 2px 7px;
   border-radius: 20px;
-  text-transform: uppercase;
+  text-transform: none;
   letter-spacing: .04em;
 }
 .badge-todo      { background: var(--c-bg); color: var(--c-text-3); }
-.badge-progress  { background: var(--c-primary-light); color: var(--c-primary); }
-.badge-done      { background: var(--c-sage-light); color: var(--c-sage); }
-.badge-blocked   { background: var(--c-overdue-bg); color: var(--c-overdue); }
-.badge-active    { background: var(--c-teal-light); color: var(--c-teal); }
-.badge-completed { background: var(--c-sage-light); color: var(--c-sage); }
-.badge-paused    { background: var(--c-soon-bg); color: var(--c-soon); }
+.badge-progress  { background: var(--c-primary-light); color: var(--c-primary-text); }
+.badge-done      { background: var(--c-sage-light); color: var(--c-sage-text); }
+.badge-blocked   { background: var(--c-overdue-bg); color: var(--c-overdue-text); }
+.badge-active    { background: var(--c-teal-light); color: var(--c-teal-text); }
+.badge-completed { background: var(--c-sage-light); color: var(--c-sage-text); }
+.badge-paused    { background: var(--c-soon-bg); color: var(--c-soon-text); }
 .badge-cancelled { background: var(--c-bg); color: var(--c-text-3); }
-.badge-urgent    { background: var(--c-overdue-bg); color: var(--c-overdue); }
-.badge-high      { background: var(--c-today-bg); color: var(--c-today); }
-.badge-medium    { background: var(--c-near-bg); color: var(--c-near); }
+.badge-urgent    { background: var(--c-overdue-bg); color: var(--c-overdue-text); }
+.badge-high      { background: var(--c-today-bg); color: var(--c-today-text); }
+.badge-medium    { background: var(--c-near-bg); color: var(--c-near-text); }
 .badge-low       { background: var(--c-bg); color: var(--c-text-3); }
 
 /* ─── People Grid ────────────────────────────────────── */
@@ -5882,7 +5904,7 @@ html[data-easter-mode='konami'] .squid-mark {
   padding: 2px 8px;
   border-radius: 20px;
   background: var(--c-teal-light);
-  color: var(--c-teal);
+  color: var(--c-teal-text);
   font-weight: 500;
   display: inline-block;
   max-width: 100%;
@@ -5982,7 +6004,7 @@ html[data-easter-mode='konami'] .squid-mark {
 }
 .segmented-control button.active {
   background: var(--c-surface);
-  color: var(--c-primary);
+  color: var(--c-primary-text);
   box-shadow: var(--shadow-sm);
 }
 .visually-hidden {
@@ -6155,10 +6177,10 @@ html[data-easter-mode='konami'] .squid-mark {
 .productivity-person-card.load-steady { --productivity-card-border: rgba(65, 102, 245, .48); }
 .productivity-person-card.load-busy { --productivity-card-border: rgba(232, 132, 15, .58); }
 .productivity-person-card.load-tight { --productivity-card-border: rgba(229, 77, 77, .66); }
-.productivity-person-card.load-calm .productivity-load-row { color: var(--c-sage); }
-.productivity-person-card.load-steady .productivity-load-row { color: var(--c-primary); }
-.productivity-person-card.load-busy .productivity-load-row { color: var(--c-today); }
-.productivity-person-card.load-tight .productivity-load-row { color: var(--c-overdue); }
+.productivity-person-card.load-calm .productivity-load-row { color: var(--c-sage-text); }
+.productivity-person-card.load-steady .productivity-load-row { color: var(--c-primary-text); }
+.productivity-person-card.load-busy .productivity-load-row { color: var(--c-today-text); }
+.productivity-person-card.load-tight .productivity-load-row { color: var(--c-overdue-text); }
 .productivity-card-placeholder {
   border: 1px dashed var(--c-border);
   background: color-mix(in srgb, var(--c-surface) 42%, transparent);
@@ -6230,7 +6252,7 @@ html[data-easter-mode='konami'] .squid-mark {
   border-radius: var(--r-md);
   padding: 0 12px;
   background: var(--c-primary-light);
-  color: var(--c-primary);
+  color: var(--c-primary-text);
   font-weight: 800;
   white-space: nowrap;
   list-style: none;
@@ -6372,7 +6394,7 @@ html[data-easter-mode='konami'] .squid-mark {
   background: var(--person-bg, var(--c-primary-light));
 }
 .schedule-person-panel-all.active {
-  color: var(--c-primary);
+  color: var(--c-primary-text);
 }
 .schedule-person-dot {
   width: 8px;
@@ -6442,7 +6464,7 @@ html[data-easter-mode='konami'] .squid-mark {
   color: var(--c-text);
 }
 .schedule-management-actions button.danger {
-  color: var(--c-overdue);
+  color: var(--c-overdue-text);
 }
 .schedule-section-inputs {
   display: grid;
@@ -6577,7 +6599,7 @@ html[data-easter-mode='konami'] .squid-mark {
   border: 1px solid color-mix(in srgb, var(--person-accent) 32%, var(--c-border));
   border-left-color: var(--person-accent, currentColor);
   border-left-style: solid;
-  border-left-width: 4px;
+  border-left-width: 1px;
   border-radius: 7px;
   background:
     linear-gradient(180deg, color-mix(in srgb, var(--person-bg) 88%, var(--c-surface)), color-mix(in srgb, var(--person-bg) 68%, var(--c-surface)));
@@ -6645,7 +6667,7 @@ html[data-easter-mode='konami'] .squid-mark {
 }
 .schedule-stack-card[data-layout='dense'] .schedule-stack-face {
   padding: 1px 6px;
-  border-left-width: 3px;
+  border-left-width: 1px;
 }
 .schedule-stack-card[data-layout='dense'] .schedule-course-content {
   display: grid;
@@ -6664,7 +6686,7 @@ html[data-easter-mode='konami'] .squid-mark {
 }
 .schedule-stack-card[data-layout='dense'] .schedule-course-person {
   max-width: 52px;
-  font-size: 10px;
+  font-size: 11px;
   line-height: 1;
   text-align: right;
 }
@@ -6741,7 +6763,7 @@ html[data-easter-mode='konami'] .squid-mark {
 }
 .schedule-stack-card[data-stacks='3'] .schedule-course-person,
 .schedule-stack-card[data-stacks='4'] .schedule-course-person {
-  font-size: 10.5px;
+  font-size: 11px;
 }
 .schedule-stack-card[data-stacks='5'] .schedule-course-title,
 .schedule-stack-card[data-stacks='6'] .schedule-course-title,
@@ -6754,7 +6776,7 @@ html[data-easter-mode='konami'] .squid-mark {
 .schedule-stack-card[data-stacks='6'] .schedule-course-person,
 .schedule-stack-card[data-stacks='7'] .schedule-course-person,
 .schedule-stack-card[data-stacks='8'] .schedule-course-person {
-  font-size: 10px;
+  font-size: 11px;
 }
 .schedule-load-calm { --person-accent: var(--c-sage); --person-bg: color-mix(in srgb, var(--c-sage) 12%, var(--c-surface)); --person-border: rgba(93, 173, 130, .35); background: var(--person-bg); border-color: var(--person-border); }
 .schedule-load-steady { --person-accent: var(--c-primary); --person-bg: var(--c-primary-light); --person-border: rgba(65, 102, 245, .35); background: var(--person-bg); border-color: var(--person-border); }
@@ -6974,7 +6996,7 @@ html[data-easter-mode='konami'] .squid-mark {
   align-items: flex-start;
   gap: 7px;
   padding: 10px 10px 10px 12px;
-  border-left: 3px solid transparent;
+  border-left: 1px solid var(--c-border);
   border-radius: var(--r-sm);
   color: var(--c-text);
   text-align: left;
@@ -6988,7 +7010,7 @@ html[data-easter-mode='konami'] .squid-mark {
 .short-drama-rail-item.active {
   border-left-color: var(--c-primary);
   background: var(--c-surface);
-  color: var(--c-primary);
+  color: var(--c-primary-text);
 }
 
 .short-drama-rail-item strong {
@@ -7003,7 +7025,7 @@ html[data-easter-mode='konami'] .squid-mark {
 }
 
 .short-drama-rail-item.active span {
-  color: var(--c-primary);
+  color: var(--c-primary-text);
 }
 
 .short-drama-board {
@@ -7097,7 +7119,7 @@ html[data-easter-mode='konami'] .squid-mark {
 .short-drama-person-summary:hover {
   border-color: rgba(65, 102, 245, .32);
   background: var(--c-primary-light);
-  color: var(--c-primary);
+  color: var(--c-primary-text);
 }
 
 .short-drama-person-summary strong {
@@ -7119,7 +7141,7 @@ html[data-easter-mode='konami'] .squid-mark {
 
 .short-drama-person-summary em {
   grid-column: 1 / -1;
-  color: var(--c-soon);
+  color: var(--c-soon-text);
 }
 
 .short-drama-next-step {
@@ -7285,10 +7307,10 @@ html[data-easter-mode='konami'] .squid-mark {
 }
 
 .short-drama-status.status-not-started { background: var(--c-bg); color: var(--c-text-3); }
-.short-drama-status.status-in-progress { background: var(--c-primary-light); color: var(--c-primary); }
-.short-drama-status.status-review { background: var(--c-near-bg); color: var(--c-near); }
-.short-drama-status.status-revision { background: var(--c-soon-bg); color: var(--c-soon); }
-.short-drama-status.status-done { background: var(--c-sage-light); color: var(--c-sage); }
+.short-drama-status.status-in-progress { background: var(--c-primary-light); color: var(--c-primary-text); }
+.short-drama-status.status-review { background: var(--c-near-bg); color: var(--c-near-text); }
+.short-drama-status.status-revision { background: var(--c-soon-bg); color: var(--c-soon-text); }
+.short-drama-status.status-done { background: var(--c-sage-light); color: var(--c-sage-text); }
 
 .short-drama-mini-empty,
 .short-drama-empty {
@@ -7312,7 +7334,7 @@ html[data-easter-mode='konami'] .squid-mark {
 }
 
 .short-drama-danger-action {
-  color: var(--c-overdue);
+  color: var(--c-overdue-text);
 }
 
 .short-drama-quick-form {
@@ -7349,13 +7371,13 @@ html[data-easter-mode='konami'] .squid-mark {
 
 .short-drama-person-chip:hover {
   border-color: rgba(65, 102, 245, .32);
-  color: var(--c-primary);
+  color: var(--c-primary-text);
 }
 
 .short-drama-person-chip.selected {
   border-color: rgba(65, 102, 245, .4);
   background: var(--c-primary-light);
-  color: var(--c-primary);
+  color: var(--c-primary-text);
 }
 
 .short-drama-person-range-list {
@@ -7415,7 +7437,7 @@ html[data-easter-mode='konami'] .squid-mark {
 }
 
 .short-drama-person-range.selected .short-drama-person-range-name {
-  color: var(--c-primary);
+  color: var(--c-primary-text);
 }
 
 .short-drama-person-range .form-input {
@@ -7465,7 +7487,7 @@ html[data-easter-mode='konami'] .squid-mark {
 .short-drama-check.selected {
   border-color: rgba(65, 102, 245, .35);
   background: var(--c-primary-light);
-  color: var(--c-primary);
+  color: var(--c-primary-text);
 }
 
 .short-drama-check input {
@@ -7632,7 +7654,7 @@ html[data-easter-mode='konami'] .squid-mark {
   font-size: var(--fs-sm);
   font-weight: 700;
   color: var(--c-text-3);
-  text-transform: uppercase;
+  text-transform: none;
   letter-spacing: .07em;
 }
 .settings-row {
@@ -7728,7 +7750,7 @@ html[data-easter-mode='konami'] .squid-mark {
   color: var(--c-text-3);
 }
 .danger-text {
-  color: var(--c-overdue);
+  color: var(--c-overdue-text);
 }
 .backup-alert {
   display: flex;
@@ -7738,7 +7760,7 @@ html[data-easter-mode='konami'] .squid-mark {
   border-radius: var(--r-md);
   border: 1px solid var(--c-today);
   background: var(--c-today-bg);
-  color: var(--c-today);
+  color: var(--c-today-text);
   font-size: var(--fs-base);
 }
 
@@ -7793,7 +7815,7 @@ html[data-easter-mode='konami'] .squid-mark {
   background: var(--c-bg);
 }
 .context-menu-item.danger {
-  color: var(--c-overdue);
+  color: var(--c-overdue-text);
 }
 
 /* ─── Buttons ────────────────────────────────────────── */
@@ -7929,7 +7951,7 @@ html[data-easter-mode='konami'] .squid-mark {
 .form-field { display: flex; flex-direction: column; gap: 5px; }
 .form-field.span2 { grid-column: span 2; }
 .form-label { font-size: var(--fs-sm); font-weight: 600; color: var(--c-text-2); }
-.form-label-count { font-weight: 400; color: var(--c-primary); }
+.form-label-count { font-weight: 400; color: var(--c-primary-text); }
 .form-hint { font-size: var(--fs-2xs); color: var(--c-text-3); margin-top: 2px; }
 
 .date-picker {
@@ -8031,7 +8053,7 @@ html[data-easter-mode='konami'] .squid-mark {
 }
 .date-picker-day:hover {
   background: var(--c-primary-light);
-  color: var(--c-primary);
+  color: var(--c-primary-text);
 }
 .date-picker-day.muted {
   color: var(--c-text-3);
@@ -8200,7 +8222,7 @@ html[data-easter-mode='konami'] .squid-mark {
 .task-assignee-page-btn:hover:not(:disabled) {
   border-color: var(--c-primary);
   background: var(--c-primary-light);
-  color: var(--c-primary);
+  color: var(--c-primary-text);
 }
 .task-assignee-page-btn:disabled {
   opacity: .38;
@@ -8255,7 +8277,7 @@ html[data-easter-mode='konami'] .squid-mark {
 .assignee-chip.selected {
   border-color: var(--c-primary);
   background: var(--c-primary-light);
-  color: var(--c-primary);
+  color: var(--c-primary-text);
   font-weight: 600;
   padding-right: 24px;
 }
@@ -8343,17 +8365,17 @@ select.form-input { cursor: pointer; }
   background: var(--c-teal-light);
   border-radius: 20px;
   font-size: var(--fs-sm);
-  color: var(--c-teal);
+  color: var(--c-teal-text);
   font-weight: 500;
 }
-.skill-remove { color: var(--c-teal); cursor: pointer; font-size: 14px; line-height: 1; }
+.skill-remove { color: var(--c-teal-text); cursor: pointer; font-size: 14px; line-height: 1; }
 .skill-remove-button {
-  color: var(--c-teal);
+  color: var(--c-teal-text);
   font-size: 14px;
   line-height: 1;
 }
 .skill-order-btn {
-  color: var(--c-teal);
+  color: var(--c-teal-text);
   font-size: 14px;
   line-height: 1;
   opacity: 0.7;
@@ -8461,7 +8483,7 @@ select.form-input { cursor: pointer; }
   padding: 10px 12px;
   background: var(--c-bg);
   border-radius: var(--r-md);
-  border-left: 3px solid var(--c-primary);
+  border-left: 1px solid var(--c-border);
 }
 .planner-ddl-card.focus-overdue { border-left-color: var(--c-rose); background: var(--c-rose-bg); }
 .planner-ddl-card.focus-critical { border-left-color: var(--c-overdue); background: var(--c-overdue-bg); }
@@ -8494,7 +8516,7 @@ select.form-input { cursor: pointer; }
   font-size: var(--fs-xs);
   font-weight: 700;
   color: var(--c-text-3);
-  text-transform: uppercase;
+  text-transform: none;
   letter-spacing: .07em;
   margin-bottom: 8px;
 }
@@ -8618,7 +8640,7 @@ select.form-input { cursor: pointer; }
   border-radius: 3px;
   border: 1px solid var(--c-border);
 }
-.planner-unassign-btn:hover { color: var(--c-overdue); border-color: var(--c-overdue); }
+.planner-unassign-btn:hover { color: var(--c-overdue-text); border-color: var(--c-overdue); }
 /* planner stats row */
 .planner-stats-row {
   display: grid;
@@ -8641,7 +8663,7 @@ select.form-input { cursor: pointer; }
   line-height: 1;
   color: var(--c-text-1);
 }
-.planner-stat-num.warn { color: var(--c-soon); }
+.planner-stat-num.warn { color: var(--c-soon-text); }
 .planner-stat-label {
   font-size: var(--fs-2xs);
   color: var(--c-text-3);
@@ -8687,7 +8709,7 @@ select.form-input { cursor: pointer; }
 }
 .planner-due-unassigned {
   font-size: var(--fs-xs);
-  color: var(--c-soon);
+  color: var(--c-soon-text);
 }
 .task-status-chip {
   font-size: var(--fs-2xs);
@@ -8708,7 +8730,7 @@ select.form-input { cursor: pointer; }
 }
 .planner-date-chip.warn {
   background: var(--c-overdue-bg);
-  color: var(--c-overdue);
+  color: var(--c-overdue-text);
   font-weight: 700;
 }
 .planner-empty-note {
@@ -8729,13 +8751,13 @@ select.form-input { cursor: pointer; }
   margin-bottom: 4px;
   font-size: var(--fs-sm);
 }
-.planner-event-row.ddl.focus-overdue { background: var(--c-rose-bg); color: var(--c-rose); }
-.planner-event-row.ddl.focus-critical { background: var(--c-overdue-bg); color: var(--c-overdue); }
-.planner-event-row.ddl.focus-strong { background: var(--c-today-bg); color: var(--c-today); }
-.planner-event-row.ddl.focus-medium { background: var(--c-soon-bg); color: var(--c-soon); }
-.planner-event-row.ddl.focus-calm { background: var(--c-near-bg); color: var(--c-near); }
+.planner-event-row.ddl.focus-overdue { background: var(--c-rose-bg); color: var(--c-rose-text); }
+.planner-event-row.ddl.focus-critical { background: var(--c-overdue-bg); color: var(--c-overdue-text); }
+.planner-event-row.ddl.focus-strong { background: var(--c-today-bg); color: var(--c-today-text); }
+.planner-event-row.ddl.focus-medium { background: var(--c-soon-bg); color: var(--c-soon-text); }
+.planner-event-row.ddl.focus-calm { background: var(--c-near-bg); color: var(--c-near-text); }
 .planner-event-row.ddl.focus-neutral { background: var(--c-bg); color: var(--c-text-2); }
-.planner-event-row.ddl.urg-done { background: var(--c-sage-light); color: var(--c-sage); }
+.planner-event-row.ddl.urg-done { background: var(--c-sage-light); color: var(--c-sage-text); }
 
 /* ─── Confirm Dialog ─────────────────────────────────── */
 .confirm-modal {
@@ -9080,7 +9102,7 @@ select.form-input { cursor: pointer; }
   }
 
   .person-assignment-count {
-    font-size: clamp(10px, 1.45dvh, 12px);
+    font-size: clamp(11px, 1.45dvh, 12px);
   }
 
   .person-status-mark-svg {
@@ -9089,7 +9111,7 @@ select.form-input { cursor: pointer; }
   }
 
   .person-assignment-skill-list .skill-tag {
-    font-size: clamp(8px, 1.4dvh, 11px);
+    font-size: clamp(11px, 1.4dvh, 11px);
     padding: 1px 5px;
     min-height: 0;
     line-height: 1.15;
@@ -9186,7 +9208,7 @@ select.form-input { cursor: pointer; }
   }
 
   .dash-date-weekday {
-    font-size: clamp(9px, 1.55dvh, 11px);
+    font-size: clamp(11px, 1.55dvh, 11px);
     margin-top: 2px;
   }
 
@@ -9256,7 +9278,7 @@ select.form-input { cursor: pointer; }
   .focus-highlight-summary,
   .focus-highlight-task-item,
   .focus-highlight-task-more {
-    font-size: clamp(10px, 1.65dvh, 13px);
+    font-size: clamp(11px, 1.65dvh, 13px);
   }
 
   .focus-highlight-tasks {
@@ -9305,7 +9327,7 @@ select.form-input { cursor: pointer; }
   }
 
   .focus-card-meta {
-    font-size: clamp(9px, 1.45dvh, 11px);
+    font-size: clamp(11px, 1.45dvh, 11px);
   }
 
   .focus-card-days {
@@ -9361,7 +9383,7 @@ select.form-input { cursor: pointer; }
   }
 
   .task-meta-chip {
-    font-size: clamp(9px, 1.45dvh, 11px);
+    font-size: clamp(11px, 1.45dvh, 11px);
   }
 
   .task-row-right {
@@ -9417,7 +9439,7 @@ select.form-input { cursor: pointer; }
   }
 
   .person-assignment-skill-list .skill-tag {
-    font-size: clamp(8px, 1.4dvh, 11px);
+    font-size: clamp(11px, 1.4dvh, 11px);
     padding: 1px 5px;
     min-height: 0;
     line-height: 1.15;
@@ -9463,7 +9485,7 @@ select.form-input { cursor: pointer; }
     aspect-ratio: auto;
     min-height: 0;
     border-radius: clamp(6px, 1.4dvh, 10px);
-    font-size: clamp(10px, 2.1dvh, 15px);
+    font-size: clamp(11px, 2.1dvh, 15px);
   }
 
   .mini-cal-footer {
@@ -9475,7 +9497,7 @@ select.form-input { cursor: pointer; }
 
   .mini-cal-task-count,
   .mini-cal-leave-badge {
-    font-size: clamp(8px, 1.35dvh, 10px);
+    font-size: clamp(11px, 1.35dvh, 10px);
   }
 
   .cal-legend {
@@ -9483,7 +9505,7 @@ select.form-input { cursor: pointer; }
   }
 
   .cal-legend-item {
-    font-size: clamp(9px, 1.45dvh, 11px);
+    font-size: clamp(11px, 1.45dvh, 11px);
   }
 }
 
@@ -9628,7 +9650,7 @@ select.form-input { cursor: pointer; }
   }
 
   .focus-card-ddl {
-    font-size: clamp(10px, 1.8dvh, 12px);
+    font-size: clamp(11px, 1.8dvh, 12px);
   }
 
   .focus-card-days {
@@ -9861,7 +9883,7 @@ select.form-input { cursor: pointer; }
     justify-content: center;
     gap: 4px;
     padding: 6px 2px;
-    font-size: 10px;
+    font-size: 11px;
     line-height: 1.1;
     text-align: center;
     white-space: nowrap;
@@ -9886,7 +9908,7 @@ select.form-input { cursor: pointer; }
     width: 34px;
   }
 
-  .sidebar-footer .nav-button:first-child .nav-label {
+  .sidebar-footer > .nav-button .nav-label {
     display: none;
   }
 
@@ -10535,7 +10557,7 @@ select.form-input { cursor: pointer; }
   padding: 12px 16px;
 }
 .panel-header--expandable:hover { background: var(--c-primary-light); }
-.panel-header--expandable:hover .panel-title { color: var(--c-primary); }
+.panel-header--expandable:hover .panel-title { color: var(--c-primary-text); }
 /* whole-panel lifts as one block on header hover */
 .panel:has(.panel-header--expandable:hover) {
   background: var(--c-surface);
@@ -10550,7 +10572,7 @@ select.form-input { cursor: pointer; }
   color: var(--c-text-3);
   transition: background .1s, color .1s;
 }
-.mini-cal-expand-btn:hover { background: var(--c-bg); color: var(--c-primary); }
+.mini-cal-expand-btn:hover { background: var(--c-bg); color: var(--c-primary-text); }
 .mini-cal-expand-btn svg { width: 14px; height: 14px; }
 
 /* ─── Project Detail Panel ───────────────────────────── */
@@ -10625,11 +10647,11 @@ select.form-input { cursor: pointer; }
   gap: 2px;
 }
 .pdp-eyebrow {
-  color: var(--c-primary);
+  color: var(--c-primary-text);
   font-size: 11px;
   font-weight: 800;
   letter-spacing: .04em;
-  text-transform: uppercase;
+  text-transform: none;
 }
 .pdp-action-primary strong {
   color: var(--c-text);
@@ -10664,7 +10686,7 @@ select.form-input { cursor: pointer; }
   border: 1px solid var(--c-border-light);
 }
 .pdp-action-signals span[data-tone='risk'] {
-  color: var(--c-overdue);
+  color: var(--c-overdue-text);
   border-color: color-mix(in srgb, var(--c-overdue) 30%, var(--c-border-light));
   background: color-mix(in srgb, var(--c-overdue) 10%, var(--c-surface));
 }
@@ -10849,7 +10871,7 @@ select.form-input { cursor: pointer; }
   white-space: nowrap;
 }
 .pdp-blocker-item strong {
-  color: var(--c-overdue);
+  color: var(--c-overdue-text);
   font-size: 13px;
 }
 .pdp-blocker-item span {
@@ -10909,7 +10931,7 @@ select.form-input { cursor: pointer; }
 .pdp-section-title {
   font-size: var(--fs-xs);
   font-weight: 700;
-  text-transform: uppercase;
+  text-transform: none;
   letter-spacing: .07em;
   color: var(--c-text-3);
   margin-bottom: 10px;
@@ -11015,11 +11037,11 @@ select.form-input { cursor: pointer; }
 }
 
 .pdp-presence-button--present.is-active {
-  color: var(--c-teal);
+  color: var(--c-teal-text);
 }
 
 .pdp-presence-button--leave.is-active {
-  color: var(--c-overdue);
+  color: var(--c-overdue-text);
 }
 
 .pdp-skills {
@@ -11100,7 +11122,7 @@ select.form-input { cursor: pointer; }
 }
 .qm-tab:hover { color: var(--c-text-2); background: var(--c-bg); }
 .qm-tab.active {
-  color: var(--c-primary);
+  color: var(--c-primary-text);
   background: var(--c-surface);
   border-color: var(--c-border);
   border-bottom-color: var(--c-surface);
@@ -11171,7 +11193,7 @@ select.form-input { cursor: pointer; }
   transition: color .12s, background .12s;
   margin-top: 1px;
 }
-.qm-delete-btn:hover { color: var(--c-overdue); background: var(--c-overdue-bg); }
+.qm-delete-btn:hover { color: var(--c-overdue-text); background: var(--c-overdue-bg); }
 .qm-add-row {
   display: flex;
   gap: 8px;
@@ -11244,4 +11266,184 @@ select.form-input { cursor: pointer; }
     animation-iteration-count: 1 !important;
     transition-duration: .01ms !important;
   }
+}
+
+
+/* 实体材质：内容面保持清晰，浮层通过边缘亮线与厚度表达层级。 */
+:root {
+  --material-panel: #F7F9FC;
+  --material-raised: #FFFFFF;
+  --material-edge: #DCE3ED;
+  --material-rim: rgba(255, 255, 255, .92);
+  --material-floating: 0 12px 36px rgba(20, 37, 67, .14), inset 0 1px 0 var(--material-rim);
+}
+[data-theme='dark'] {
+  --material-panel: #182437;
+  --material-raised: #223147;
+  --material-edge: #3A4B63;
+  --material-rim: rgba(230, 239, 255, .1);
+  --material-floating: 0 16px 44px rgba(0, 0, 0, .32), inset 0 1px 0 var(--material-rim);
+}
+body { font-variant-numeric: tabular-nums; }
+.sidebar { background: var(--material-raised); }
+.brand-sub { color: var(--c-text-2); }
+.dashboard > * { min-width: 0; }
+.dash-header-left { flex: 1 1 40%; }
+.dash-header-right { flex: 1 1 55%; justify-content: flex-end; }
+.dash-search-wrap { max-width: 100%; }
+.dash-quote-block { min-width: 0; }
+.dash-quote-actions:focus-within { opacity: 1; pointer-events: auto; }
+.nav-item { font-weight: 550; }
+.nav-item.active { background: var(--c-primary-light); color: var(--c-primary-text); }
+.app-modal-react, .expand-panel-box, .context-menu, .acc-fan-panel,
+.task-detail-float, .schedule-selection-detail, .dash-resource-editor {
+  background: var(--material-raised);
+  border: 1px solid var(--material-edge);
+  box-shadow: var(--material-floating);
+}
+.acc-fan-panel.panel-left { border-color: var(--material-edge); }
+.focus-highlight, .focus-card, .brief-section, .project-card,
+.project-workspace-item, .planner-ddl-card, .schedule-stack-face {
+  border-left-width: 1px;
+  border-left-color: var(--c-border);
+}
+.task-row.priority-urgent, .task-row.priority-high, .task-row.priority-medium {
+  border-left: 0;
+  border-right: 0;
+}
+.task-row {
+  border: 1px solid var(--c-border-light);
+  box-shadow: none;
+}
+.task-row:hover { background: var(--material-panel); }
+.task-row .task-row-title { color: var(--c-text); }
+.brief-section-danger { border-color: transparent; }
+.brief-section-danger .brief-section-label { color: var(--c-overdue-text); }
+.short-drama-rail-item { border-left: 0; }
+.short-drama-rail-item.active { background: var(--c-primary-light); }
+.schedule-stack-face, [data-theme='dark'] .schedule-stack-face {
+  background: color-mix(in srgb, var(--person-bg) 55%, var(--c-surface));
+  border-left-color: color-mix(in srgb, var(--person-accent) 32%, var(--c-border));
+  box-shadow: none;
+}
+.schedule-stack-card[data-layout='dense'] .schedule-stack-face { border-left-width: 1px; }
+.mini-cal-day:not(.other-month), [data-theme='dark'] .mini-cal-day:not(.today):not(.other-month) {
+  background: var(--material-raised);
+  box-shadow: none;
+}
+.mini-cal-dow, [data-theme='dark'] .mini-cal-dow { color: var(--c-text-3); }
+.mini-cal-day.other-month { color: var(--c-text-3); opacity: .7; }
+.mini-cal-day.today { background: var(--c-primary-light); }
+.skill-tag { color: var(--c-teal-text); }
+.btn { transition: background-color .15s, border-color .15s, color .15s, transform .12s; }
+.btn:active:not(:disabled) { transform: translateY(1px); }
+.btn:focus-visible, .nav-item:focus-visible {
+  outline: 2px solid var(--c-primary-text);
+  outline-offset: 3px;
+}
+.quote-manager-dialog .modal-body { display: flex; flex-direction: column; padding: 0; }
+.quote-manager-dialog .qm-body { min-height: 0; overflow: auto; }
+.quote-manager-dialog .qm-tabs { flex-shrink: 0; }
+.quote-manager-dialog .qm-input { min-width: 0; }
+@media (min-width: 721px) {
+  .task-row { min-width: 0; }
+}
+@media (max-width: 720px) {
+  .dash-header-left, .dash-header-right { flex: 0 0 auto; width: 100%; }
+  .sidebar { box-shadow: 0 -1px 0 var(--material-edge); }
+  .panel-action, .mini-cal-footer button { min-height: 32px; }
+  .quote-manager-dialog .qm-add-row { flex-wrap: wrap; }
+}
+@media (prefers-contrast: more) {
+  :root { --material-edge: var(--c-text-2); }
+}
+
+h1.dash-date-big { margin: 0; }
+.person-assignment-placeholder { background: var(--material-panel); }
+@media (max-width: 720px) {
+  .person-assignment-placeholder { display: none; }
+  .people-assignment-grid { grid-auto-rows: minmax(96px, auto); }
+}
+
+.task-row-body {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) max-content;
+  grid-template-rows: auto auto;
+  gap: 4px 10px;
+}
+.task-row-main { grid-column: 1; grid-row: 1; }
+.task-row-right { display: contents; }
+.task-row-meta {
+  grid-column: 1;
+  grid-row: 2;
+  flex-direction: row;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 8px;
+}
+.task-meta-chip { padding: 0; border: 0; background: transparent; gap: 4px; }
+.task-meta-chip:first-child { flex: 0 1 auto; max-width: 45%; }
+.task-meta-chip + .task-meta-chip { flex: 1 1 0; }
+.task-meta-label { font-weight: 400; }
+.task-row-deadline { grid-column: 2; grid-row: 1 / 3; align-self: center; margin: 0; }
+
+@media (min-width: 1181px) {
+  .dash-header { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 720px); gap: 16px; }
+  .dash-search-wrap { min-width: 0; flex: 1; }
+  .dash-quote-block { width: 100%; margin-right: 0; }
+}
+@media (max-width: 720px) {
+  .people-assignment-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); grid-template-rows: none; grid-auto-rows: minmax(126px, auto); }
+  .dash-right, .dash-bottom > .panel { padding-left: 20px; padding-right: 20px; }
+}
+@media (min-width: 721px) and (max-width: 1180px) {
+  .dash-right { padding-left: 20px; padding-right: 20px; }
+}
+.mini-cal-day { background-image: none !important; }
+.person-assignment-skill-list .skill-tag { min-height: 14px; line-height: 1.2; padding-top: 0; padding-bottom: 0; }
+@media (min-width: 1181px) {
+  .dash-header-right { width: 100%; margin-left: 0; }
+}
+@media (min-width: 721px) and (max-width: 1180px) {
+  .dash-bottom > .panel { padding-left: 20px; padding-right: 20px; }
+}
+@media (max-width: 720px) {
+  .dash-header { padding-left: 20px; padding-right: 20px; }
+  .pft-row { border-color: var(--c-border); }
+}
+
+.people-panel-body { overflow-y: auto; }
+@media (min-width: 721px) and (max-width: 1180px) {
+  .people-assignment-grid { height: auto; grid-template-columns: repeat(2, minmax(0, 1fr)); grid-template-rows: none; grid-auto-rows: minmax(112px, auto); }
+  .person-assignment-placeholder { display: none; }
+}
+@media (min-width: 1181px) {
+  .people-assignment-grid { grid-template-rows: repeat(4, minmax(106px, 1fr)); }
+}
+@media (min-width: 721px) and (max-width: 980px) {
+  .pft-axis-tick:not(.is-major):not(.is-today) .pft-axis-tick-label { display: none; }
+}
+@media (min-width: 721px) and (max-width: 980px) {
+  .pft-axis-tick:not(.is-today) .pft-axis-tick-label { display: none; }
+  .pft-axis-tick:nth-child(3n + 1):not(.is-today) .pft-axis-tick-label { display: block; }
+}
+.pft-phase { color: color-mix(in srgb, var(--pft-accent) 55%, var(--c-text)); }
+.btn-danger { background: #B82E3B; border-color: #B82E3B; color: #FFFFFF; }
+.btn-danger:hover { background: #A42431; border-color: #A42431; }
+[data-theme='dark'] .mini-cal-day.other-month { opacity: 1; }
+[data-theme='dark'] .mini-cal-day.other-month .mini-cal-num { color: var(--c-text-3); }
+[data-theme='dark'] .mini-cal-day.today .mini-cal-num { color: var(--c-primary-text); }
+[data-theme='dark'] .mini-cal-task-count { color: var(--c-primary-text); }
+[data-theme='dark'] .mini-cal-day.task-roman-4 .mini-cal-task-count { color: var(--c-today-text); }
+[data-theme='dark'] .mini-cal-day.task-roman-5 .mini-cal-task-count,
+[data-theme='dark'] .mini-cal-day.task-roman-6 .mini-cal-task-count { color: var(--c-overdue-text); }
+.mini-cal-day.task-roman-4 .mini-cal-task-count { color: var(--c-today-text); }
+.cal-legend-leave { color: var(--c-rose-text); }
+.focus-highlight, .focus-card { border: 1px solid var(--c-border); }
+.focus-highlight-task-item, .brief-section, .planner-ddl-card { border-left: 0; }
+.project-workspace-row { border-left-color: var(--c-border-light); }
+.person-assignment-card { gap: 4px; }
+.person-assignment-card:has(.person-assignment-skills.has-skill-overflow) { padding-bottom: 22px; }
+@media (min-width: 1181px) {
+  .people-assignment-grid { grid-template-rows: repeat(4, minmax(116px, 1fr)); }
 }

@@ -704,94 +704,114 @@ export function Materials() {
   }, [newFolderMode])
 
   // ── 甲方要求操作 ────────────────────────────────────
-  const saveBrief = (brief: ClientBrief) => {
+  const saveBrief = async (brief: ClientBrief) => {
     const exists = briefs.some((item) => item.id === brief.id)
     const next = exists
       ? briefs.map((item) => (item.id === brief.id ? brief : item))
       : [brief, ...briefs]
-    writeBriefs(next)
+    await writeBriefs(next)
     toast(editingBrief ? '已保存' : '甲方要求已创建', 'success')
     setEditingBrief(undefined)
   }
 
   const deleteBrief = async (brief: ClientBrief) => {
-    const ok = await confirm('删除甲方要求', `确认删除「${brief.clientName}」的要求记录？`)
-    if (!ok) return
-    writeBriefs(briefs.filter((item) => item.id !== brief.id))
-    toast('已删除', 'error')
+    try {
+      const ok = await confirm('删除甲方要求', `确认删除「${brief.clientName}」的要求记录？`)
+      if (!ok) return
+      await writeBriefs(briefs.filter((item) => item.id !== brief.id))
+      toast('已删除', 'error')
+    } catch {
+      return
+    }
   }
 
   // ── 账号密码操作 ────────────────────────────────────
-  const saveAccount = (account: AccountCredential) => {
+  const saveAccount = async (account: AccountCredential) => {
     const exists = accounts.some((item) => item.id === account.id)
     const next = exists
       ? accounts.map((item) => (item.id === account.id ? account : item))
       : [account, ...accounts]
-    writeAccounts(next)
     // 若平台名不在 folders 列表，自动注册
     if (account.platform && !folders.includes(account.platform)) {
-      writeFolders([...folders, account.platform])
+      await writeFolders([...folders, account.platform])
     }
+    await writeAccounts(next)
     toast(editingAccount ? '已保存' : '账号已创建', 'success')
     setEditingAccount(undefined)
     setDefaultPlatform('')
   }
 
   const deleteAccount = async (account: AccountCredential) => {
-    const ok = await confirm('删除账号', `确认删除「${account.platform}」的账号记录？`)
-    if (!ok) return
-    writeAccounts(accounts.filter((item) => item.id !== account.id))
-    toast('已删除', 'error')
+    try {
+      const ok = await confirm('删除账号', `确认删除「${account.platform}」的账号记录？`)
+      if (!ok) return
+      await writeAccounts(accounts.filter((item) => item.id !== account.id))
+      toast('已删除', 'error')
+    } catch {
+      return
+    }
   }
 
   // ── 文件夹操作 ──────────────────────────────────────
-  const createFolder = (e: React.FormEvent) => {
-    e.preventDefault()
-    const name = newFolderName.trim()
-    if (!name) return
-    if (registeredPlatforms.includes(name)) {
-      toast(`文件夹「${name}」已存在`, 'error')
+  const createFolder = async (e: React.FormEvent) => {
+    try {
+      e.preventDefault()
+      const name = newFolderName.trim()
+      if (!name) return
+      if (registeredPlatforms.includes(name)) {
+        toast(`文件夹「${name}」已存在`, 'error')
+        return
+      }
+      await writeFolders([...folders, name])
+      toast(`文件夹「${name}」已创建`, 'success')
+      setNewFolderName('')
+      setNewFolderMode(false)
+    } catch {
       return
     }
-    writeFolders([...folders, name])
-    toast(`文件夹「${name}」已创建`, 'success')
-    setNewFolderName('')
-    setNewFolderMode(false)
   }
 
-  const renamePlatform = (oldName: string, newName: string) => {
-    if (oldName === newName) return
-    if (registeredPlatforms.includes(newName)) {
-      toast(`文件夹「${newName}」已存在`, 'error')
+  const renamePlatform = async (oldName: string, newName: string) => {
+    try {
+      if (oldName === newName) return
+      if (registeredPlatforms.includes(newName)) {
+        toast(`文件夹「${newName}」已存在`, 'error')
+        return
+      }
+      await writeAccounts(accounts.map((a) => a.platform === oldName ? { ...a, platform: newName } : a))
+      if (folders.includes(oldName)) {
+        const colors = { ...folderSettings.colors }
+        if (colors[oldName] && !colors[newName]) colors[newName] = colors[oldName]
+        delete colors[oldName]
+        await writeFolderSettings({
+          items: folders.map((f) => f === oldName ? newName : f),
+          colors,
+        })
+      } else if (!folders.includes(newName)) {
+        await writeFolders([...folders, newName])
+      }
+      toast('文件夹已重命名', 'success')
+    } catch {
       return
     }
-    writeAccounts(accounts.map((a) => a.platform === oldName ? { ...a, platform: newName } : a))
-    if (folders.includes(oldName)) {
-      const colors = { ...folderSettings.colors }
-      if (colors[oldName] && !colors[newName]) colors[newName] = colors[oldName]
-      delete colors[oldName]
-      writeFolderSettings({
-        items: folders.map((f) => f === oldName ? newName : f),
-        colors,
-      })
-    } else if (!folders.includes(newName)) {
-      writeFolders([...folders, newName])
-    }
-    toast('文件夹已重命名', 'success')
   }
 
   const deletePlatform = async (platform: string) => {
-    const count = (accountsByPlatform.get(platform) ?? []).length
-    const ok = await confirm(
-      '删除文件夹',
-      count > 0
-        ? `确认删除「${platform}」文件夹及其 ${count} 个账号记录？此操作不可撤销。`
-        : `确认删除空文件夹「${platform}」？`,
-    )
-    if (!ok) return
-    writeAccounts(accounts.filter((a) => a.platform !== platform))
-    writeFolders(registeredPlatforms.filter((f) => f !== platform))
-    toast('已删除', 'error')
+    try {
+      const count = (accountsByPlatform.get(platform) ?? []).length
+      const ok = await confirm(
+        '删除文件夹',
+        count > 0
+          ? `确认删除「${platform}」文件夹及其 ${count} 个账号记录？此操作不可撤销。`
+          : `确认删除空文件夹「${platform}」？`,
+      )
+      if (!ok) return
+      await writeAccounts(accounts.filter((a) => a.platform !== platform))
+      await writeFolders(registeredPlatforms.filter((f) => f !== platform))
+      toast('已删除', 'error')
+    } catch {
+      return
+    }
   }
 
   const openAddAccountInFolder = (platform: string) => {
@@ -799,26 +819,38 @@ export function Materials() {
     setEditingAccount(null)
   }
 
-  const moveAccountToFolder = (account: AccountCredential, targetFolder: string) => {
-    const updated = { ...account, platform: targetFolder, updatedAt: new Date().toISOString() }
-    writeAccounts(accounts.map((a) => (a.id === account.id ? updated : a)))
-    toast(`已移至「${targetFolder}」`, 'success')
-  }
-
-  const changeFolderColor = (platform: string, color: string) => {
-    writeFolderSettings(setFolderCustomColor(folderSettings, platform, color))
-  }
-
-  const dropFolderOn = (targetPlatform: string) => {
-    if (!draggingPlatform || draggingPlatform === targetPlatform) {
-      setDraggingPlatform(null)
-      setDragOverPlatform(null)
+  const moveAccountToFolder = async (account: AccountCredential, targetFolder: string) => {
+    try {
+      const updated = { ...account, platform: targetFolder, updatedAt: new Date().toISOString() }
+      await writeAccounts(accounts.map((a) => (a.id === account.id ? updated : a)))
+      toast(`已移至「${targetFolder}」`, 'success')
+    } catch {
       return
     }
-    const next = insertFolderBefore(registeredPlatforms, draggingPlatform, targetPlatform)
-    writeFolderSettings({ items: next, colors: folderSettings.colors })
-    setDraggingPlatform(null)
-    setDragOverPlatform(null)
+  }
+
+  const changeFolderColor = async (platform: string, color: string) => {
+    try {
+      await writeFolderSettings(setFolderCustomColor(folderSettings, platform, color))
+    } catch {
+      return
+    }
+  }
+
+  const dropFolderOn = async (targetPlatform: string) => {
+    try {
+      if (!draggingPlatform || draggingPlatform === targetPlatform) {
+        setDraggingPlatform(null)
+        setDragOverPlatform(null)
+        return
+      }
+      const next = insertFolderBefore(registeredPlatforms, draggingPlatform, targetPlatform)
+      await writeFolderSettings({ items: next, colors: folderSettings.colors })
+      setDraggingPlatform(null)
+      setDragOverPlatform(null)
+    } catch {
+      return
+    }
   }
 
   // 是否有任何内容可展示（文件夹 + 账号）

@@ -10,6 +10,8 @@ function getFocusableElements(container: HTMLElement) {
 export function useModalFocus(active: boolean, onEscape: () => void) {
   const dialogRef = useRef<HTMLDivElement>(null)
   const previousFocusRef = useRef<HTMLElement | null>(null)
+  const restoreFocusFrameRef = useRef<number | null>(null)
+  const focusSessionRef = useRef(false)
   const onEscapeRef = useRef(onEscape)
   const overlayTokenRef = useOverlayLayer(active)
 
@@ -19,9 +21,16 @@ export function useModalFocus(active: boolean, onEscape: () => void) {
 
   useLayoutEffect(() => {
     if (!active) return undefined
-    previousFocusRef.current = document.activeElement instanceof HTMLElement
-      ? document.activeElement
-      : null
+    if (restoreFocusFrameRef.current !== null) {
+      window.cancelAnimationFrame(restoreFocusFrameRef.current)
+      restoreFocusFrameRef.current = null
+    }
+    if (!focusSessionRef.current) {
+      previousFocusRef.current = document.activeElement instanceof HTMLElement
+        ? document.activeElement
+        : null
+      focusSessionRef.current = true
+    }
 
     const dialog = dialogRef.current
     const initialFocus = dialog?.querySelector<HTMLElement>('[data-modal-initial-focus]')
@@ -31,10 +40,12 @@ export function useModalFocus(active: boolean, onEscape: () => void) {
 
     return () => {
       const previousFocus = previousFocusRef.current
-      previousFocusRef.current = null
-      if (previousFocus?.isConnected) {
-        window.requestAnimationFrame(() => previousFocus.focus())
-      }
+      restoreFocusFrameRef.current = window.requestAnimationFrame(() => {
+        restoreFocusFrameRef.current = null
+        previousFocusRef.current = null
+        focusSessionRef.current = false
+        if (previousFocus?.isConnected) previousFocus.focus()
+      })
     }
   }, [active, overlayTokenRef])
 

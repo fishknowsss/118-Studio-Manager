@@ -30,7 +30,7 @@ export function subscribeHomeResourceLinkState(listener: () => void) {
 }
 
 export function writeHomeResourceLink(url: string) {
-  homeResourceLinkStore.write({ url: normalizeHomeResourceUrl(url) })
+  return homeResourceLinkStore.write({ url: normalizeHomeResourceUrl(url) })
 }
 
 export async function initializeHomeResourceLinkState() {

@@ -1,4 +1,6 @@
+import { publishDatabaseChange } from '../../legacy/crossTab'
 import { db } from '../../legacy/db'
+import { runTrackedStoreWrite } from '../../legacy/store'
 
 const pendingWrites = new Map<string, Promise<void>>()
 
@@ -13,10 +15,12 @@ type SyncableStoreOptions<T> = {
   legacyKey?: string
   emptyValue: T
   sanitize: (raw: unknown) => T
+  parseLegacy?: (raw: string) => unknown
 }
 
 function emitSyncableDataUpdated(key: string) {
   if (typeof document === 'undefined') return
+  publishDatabaseChange()
   document.dispatchEvent(new CustomEvent('syncableDataUpdated', {
     detail: { key },
   }))
@@ -36,11 +40,10 @@ async function persistValue<T>(key: string, value: T) {
 
 function trackPendingWrite(key: string, promise: Promise<void>) {
   pendingWrites.set(key, promise)
-  void promise.finally(() => {
-    if (pendingWrites.get(key) === promise) {
-      pendingWrites.delete(key)
-    }
-  })
+  const cleanup = () => {
+    if (pendingWrites.get(key) === promise) pendingWrites.delete(key)
+  }
+  void promise.then(cleanup, cleanup)
 }
 
 export async function waitForSyncableSettingsWrites() {
@@ -54,6 +57,7 @@ export function createSyncableSettingsStore<T>({
   legacyKey,
   emptyValue,
   sanitize,
+  parseLegacy = JSON.parse,
 }: SyncableStoreOptions<T>) {
   let currentValue = sanitize(emptyValue)
   const listeners = new Set<() => void>()
@@ -69,7 +73,7 @@ export function createSyncableSettingsStore<T>({
     if (!raw) return null
 
     try {
-      return JSON.parse(raw) as unknown
+      return parseLegacy(raw)
     } catch {
       return null
     }
@@ -99,17 +103,21 @@ export function createSyncableSettingsStore<T>({
 
     write(nextValue: T) {
       const sanitized = sanitize(nextValue)
-      writeChain = writeChain
+      const previousWrite = writeChain
+      writeChain = runTrackedStoreWrite(() => previousWrite
         .catch(() => undefined)
         .then(async () => {
           await persistValue(key, sanitized)
           setCurrentValue(sanitized)
           emitSyncableDataUpdated(key)
-        })
-        .catch((error) => {
-          console.error(`[syncable-settings] 保存 ${key} 失败`, error)
-        })
+        }))
       trackPendingWrite(key, writeChain)
+      void writeChain.catch((error) => {
+        document.dispatchEvent(new CustomEvent('persistenceError', {
+          detail: { message: '保存失败，数据未写入，请重试', error },
+        }))
+      })
+      return writeChain
     },
 
     async initialize() {

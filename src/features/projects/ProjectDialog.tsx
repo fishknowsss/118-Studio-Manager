@@ -43,7 +43,7 @@ export function ProjectDialog({
       onClose()
     } catch (error) {
       console.error('[118SM] 保存项目失败:', error)
-      toast('保存失败', 'error')
+      toast(error instanceof Error ? error.message : '保存失败', 'error')
     } finally {
       setIsSaving(false)
     }

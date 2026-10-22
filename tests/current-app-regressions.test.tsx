@@ -672,7 +672,7 @@ describe('current app regressions', () => {
     expect(document.body.querySelectorAll('.assignee-chip')).toHaveLength(1)
     expect(document.body.textContent).toContain('成员13')
     expect(document.body.textContent).toContain('3 / 3')
-    expect(document.body.querySelector('.assignee-chip-avatar')?.textContent).toBe('♂')
+    expect(document.body.querySelector('.assignee-chip-avatar.male svg')).not.toBeNull()
 
     act(() => {
       root.unmount()

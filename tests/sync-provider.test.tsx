@@ -466,4 +466,17 @@ describe('cloud sync provider', () => {
     expect(view.container.querySelector('output')?.textContent).toBe('ready:')
     view.cleanup()
   })
+
+  it('invalidates local undo checkpoints only after a remote restore commits', async () => {
+    const view = await renderProvider({ fetchData: vi.fn().mockResolvedValue(successfulSync) })
+    const { pushUndoCheckpoint, getUndoHistoryState } = await import('../src/legacy/editUndo')
+    await pushUndoCheckpoint('恢复前的本地编辑')
+    expect(getUndoHistoryState().count).toBe(1)
+    await act(async () => {
+      view.container.querySelector<HTMLButtonElement>('[data-action="restore"]')?.click()
+    })
+    expect(getUndoHistoryState().count).toBe(0)
+    view.cleanup()
+  })
+
 })

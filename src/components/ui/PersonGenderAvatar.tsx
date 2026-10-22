@@ -1,4 +1,5 @@
-import { getPersonGenderSymbol, getPersonGenderTone } from '../../legacy/utils'
+import { PersonGenderGlyph } from './PersonGenderGlyph'
+import { getPersonGenderTone } from '../../legacy/utils'
 
 export function PersonGenderAvatar({
   className,
@@ -21,7 +22,7 @@ export function PersonGenderAvatar({
         className || '',
       ].filter(Boolean).join(' ')}
     >
-      {getPersonGenderSymbol(gender)}
+      <PersonGenderGlyph gender={gender} />
     </span>
   )
 }

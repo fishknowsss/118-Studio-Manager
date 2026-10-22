@@ -323,10 +323,13 @@ function datePercent(dateKey: string | null | undefined, startDate: string, endD
   return Math.max(0, Math.min(100, Math.round((offset / total) * 100)))
 }
 
-function taskTouchesDate(task: LegacyTask, dateKey: string) {
+function taskTouchesDate(task: LegacyTask, dateKey: string, referenceDate: string) {
   if (task.status === 'done') return false
   if (task.scheduledDate === dateKey || task.endDate === dateKey) return true
-  if (task.status === 'in-progress' && task.endDate && dateKey <= task.endDate) return true
+  if (task.status === 'in-progress' && task.endDate && dateKey <= task.endDate) {
+    const startDate = task.startDate || task.scheduledDate || coerceToLocalDateKey(task.createdAt) || referenceDate
+    return Boolean(startDate && startDate <= dateKey)
+  }
   if (!task.startDate || !task.endDate) return false
   return task.startDate <= dateKey && dateKey <= task.endDate
 }
@@ -549,7 +552,7 @@ export function buildDashboardMiniCalendarModel(
   const days = getCalendarDays(currentMonth.getFullYear(), currentMonth.getMonth()).map(({ date, otherMonth }) => {
     const dateKey = coerceToLocalDateKey(date) || shiftLocalDateKey(date, 0)
     const eventSummary = eventMap[dateKey]
-    const dayTasks = tasks.filter((task) => taskTouchesDate(task, dateKey))
+    const dayTasks = tasks.filter((task) => taskTouchesDate(task, dateKey, todayStr))
     const dueTaskCount = tasks.filter((task) => task.status !== 'done' && task.endDate === dateKey).length
     const hasProjectDeadline = Boolean(eventSummary?.hasDdl)
     const hasTaskDeadline = dueTaskCount > 0
@@ -616,7 +619,7 @@ export function buildDatePlannerModel(
   const availablePeopleCount = people.filter((person) => person.status === 'active' && !leavePersonIds.has(person.id)).length
 
   const plannerTasks = tasks
-    .filter((task) => taskTouchesDate(task, dateKey))
+    .filter((task) => taskTouchesDate(task, dateKey, referenceDate))
     .map((task): DatePlannerTaskModel => {
       const assigneeNames = getTaskAssigneeIds(task).map((personId) => peopleById[personId]?.name || '未知成员')
       const dueInDays = daysFromReference(task.endDate, referenceDate)

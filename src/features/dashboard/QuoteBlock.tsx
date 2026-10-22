@@ -1,5 +1,5 @@
-import { useRef, useState, useSyncExternalStore } from 'react'
-import { useBackdropDismiss } from '../../components/ui/useBackdropDismiss'
+import { useEffect, useRef, useState, useSyncExternalStore } from 'react'
+import { Dialog } from '../../components/ui/Dialog'
 import {
   PHILOSOPHY_QUOTES,
   MOTIVATIONS,
@@ -31,6 +31,7 @@ export function QuoteBlock() {
   const [hovered, setHovered] = useState(false)
   const [showManager, setShowManager] = useState(false)
   const [tab, setTab] = useState<'quotes' | 'motivations'>('quotes')
+  const [isSaving, setIsSaving] = useState(false)
   const [newText, setNewText] = useState('')
   const [newSrc, setNewSrc] = useState('')
   const [newMotivationText, setNewMotivationText] = useState('')
@@ -49,36 +50,54 @@ export function QuoteBlock() {
     leaveTimer.current = setTimeout(() => setHovered(false), 250)
   }
 
-  const addQuote = () => {
+  const addQuote = async () => {
+    if (isSaving) return
     const t = newText.trim()
     if (!t) return
     const item: QuoteItem = { text: t, src: newSrc.trim() }
     const next = [...customQuotes, item]
-    writeCustomQuotes(next)
-    setNewText('')
-    setNewSrc('')
+    setIsSaving(true)
+    try {
+      await writeCustomQuotes(next)
+      setNewText('')
+      setNewSrc('')
+    } catch {
+      return
+    } finally {
+      setIsSaving(false)
+    }
   }
 
   const deleteCustomQuote = (i: number) => {
     const next = customQuotes.filter((_, idx) => idx !== i)
-    writeCustomQuotes(next)
+    void writeCustomQuotes(next).catch(() => undefined)
   }
 
-  const addMotivation = () => {
+  const addMotivation = async () => {
+    if (isSaving) return
     const t = newMotivationText.trim()
     if (!t) return
     const next = [...customMotivations, t]
-    writeCustomMotivations(next)
-    setNewMotivationText('')
+    setIsSaving(true)
+    try {
+      await writeCustomMotivations(next)
+      setNewMotivationText('')
+    } catch {
+      return
+    } finally {
+      setIsSaving(false)
+    }
   }
 
   const deleteCustomMotivation = (i: number) => {
     const next = customMotivations.filter((_, idx) => idx !== i)
-    writeCustomMotivations(next)
+    void writeCustomMotivations(next).catch(() => undefined)
   }
 
   const closeManager = () => setShowManager(false)
-  const backdropDismiss = useBackdropDismiss<HTMLDivElement>(closeManager)
+  useEffect(() => () => {
+    if (leaveTimer.current) clearTimeout(leaveTimer.current)
+  }, [])
 
   return (
     <>
@@ -122,116 +141,102 @@ export function QuoteBlock() {
       </div>
 
       {showManager ? (
-        <div className="qm-overlay" role="presentation" {...backdropDismiss}>
-          <div
-            className="qm-box"
-            role="dialog"
-            aria-modal="true"
-            aria-label="语句管理"
-          >
-            <div className="qm-header">
-              <span className="qm-title">语句库</span>
-              <button className="modal-close" type="button" onClick={closeManager} aria-label="关闭">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <line x1="18" y1="6" x2="6" y2="18" />
-                  <line x1="6" y1="6" x2="18" y2="18" />
-                </svg>
-              </button>
-            </div>
-
-            <div className="qm-tabs">
-              <button className={`qm-tab${tab === 'quotes' ? ' active' : ''}`} type="button" onClick={() => setTab('quotes')}>
-                格言 · {allQuotes.length}
-              </button>
-              <button className={`qm-tab${tab === 'motivations' ? ' active' : ''}`} type="button" onClick={() => setTab('motivations')}>
-                激励语 · {allMotivations.length}
-              </button>
-            </div>
-
-            <div className="qm-body">
-              {tab === 'quotes' ? (
-                <>
-                  <div className="qm-list">
-                    {PHILOSOPHY_QUOTES.map((q, i) => (
-                      <div key={`b-${i}`} className="qm-item">
-                        <div className="qm-item-content">
-                          <span className="qm-item-text">"{q.text}"</span>
-                          {q.src ? <span className="qm-item-src">— {q.src}</span> : null}
-                        </div>
-                        <span className="qm-builtin-badge">内置</span>
-                      </div>
-                    ))}
-                    {customQuotes.map((q, i) => (
-                      <div key={`c-${i}`} className="qm-item">
-                        <div className="qm-item-content">
-                          <span className="qm-item-text">"{q.text}"</span>
-                          {q.src ? <span className="qm-item-src">— {q.src}</span> : null}
-                        </div>
-                        <button className="qm-delete-btn" type="button" onClick={() => deleteCustomQuote(i)} aria-label="删除">
-                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="12" height="12">
-                            <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
-                          </svg>
-                        </button>
-                      </div>
-                    ))}
-                  </div>
-                  <div className="qm-add-row">
-                    <input
-                      className="qm-input"
-                      placeholder="语句内容"
-                      value={newText}
-                      onChange={(e) => setNewText(e.target.value)}
-                      onKeyDown={(e) => { if (e.key === 'Enter') addQuote() }}
-                    />
-                    <input
-                      className="qm-input qm-input-src"
-                      placeholder="来源（可选）"
-                      value={newSrc}
-                      onChange={(e) => setNewSrc(e.target.value)}
-                      onKeyDown={(e) => { if (e.key === 'Enter') addQuote() }}
-                    />
-                    <button className="btn btn-primary btn-sm" type="button" onClick={addQuote}>添加</button>
-                  </div>
-                </>
-              ) : (
-                <>
-                  <div className="qm-list">
-                    {MOTIVATIONS.map((m, i) => (
-                      <div key={`bm-${i}`} className="qm-item">
-                        <div className="qm-item-content">
-                          <span className="qm-item-text">{m}</span>
-                        </div>
-                        <span className="qm-builtin-badge">内置</span>
-                      </div>
-                    ))}
-                    {customMotivations.map((m, i) => (
-                      <div key={`cm-${i}`} className="qm-item">
-                        <div className="qm-item-content">
-                          <span className="qm-item-text">{m}</span>
-                        </div>
-                        <button className="qm-delete-btn" type="button" onClick={() => deleteCustomMotivation(i)} aria-label="删除">
-                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="12" height="12">
-                            <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
-                          </svg>
-                        </button>
-                      </div>
-                    ))}
-                  </div>
-                  <div className="qm-add-row">
-                    <input
-                      className="qm-input"
-                      placeholder="激励语内容"
-                      value={newMotivationText}
-                      onChange={(e) => setNewMotivationText(e.target.value)}
-                      onKeyDown={(e) => { if (e.key === 'Enter') addMotivation() }}
-                    />
-                    <button className="btn btn-primary btn-sm" type="button" onClick={addMotivation}>添加</button>
-                  </div>
-                </>
-              )}
-            </div>
+        <Dialog open title="语句管理" onClose={isSaving ? () => {} : closeManager} className="quote-manager-dialog" width="wide">
+          <div className="qm-tabs">
+            <button data-modal-initial-focus className={`qm-tab${tab === 'quotes' ? ' active' : ''}`} type="button" onClick={() => setTab('quotes')}>
+              格言 · {allQuotes.length}
+            </button>
+            <button className={`qm-tab${tab === 'motivations' ? ' active' : ''}`} type="button" onClick={() => setTab('motivations')}>
+              激励语 · {allMotivations.length}
+            </button>
           </div>
-        </div>
+
+          <div className="qm-body">
+            {tab === 'quotes' ? (
+              <>
+                <div className="qm-list">
+                  {PHILOSOPHY_QUOTES.map((q, i) => (
+                    <div key={`b-${i}`} className="qm-item">
+                      <div className="qm-item-content">
+                        <span className="qm-item-text">"{q.text}"</span>
+                        {q.src ? <span className="qm-item-src">— {q.src}</span> : null}
+                      </div>
+                      <span className="qm-builtin-badge">内置</span>
+                    </div>
+                  ))}
+                  {customQuotes.map((q, i) => (
+                    <div key={`c-${i}`} className="qm-item">
+                      <div className="qm-item-content">
+                        <span className="qm-item-text">"{q.text}"</span>
+                        {q.src ? <span className="qm-item-src">— {q.src}</span> : null}
+                      </div>
+                      <button className="qm-delete-btn" type="button" onClick={() => deleteCustomQuote(i)} aria-label="删除">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="12" height="12">
+                          <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
+                        </svg>
+                      </button>
+                    </div>
+                  ))}
+                </div>
+                <div className="qm-add-row">
+                  <input
+                    className="qm-input"
+                    aria-label="语句内容"
+                    placeholder="语句内容"
+                    value={newText}
+                    onChange={(e) => setNewText(e.target.value)}
+                    onKeyDown={(e) => { if (e.key === 'Enter' && !e.nativeEvent.isComposing) void addQuote() }}
+                  />
+                  <input
+                    aria-label="语句来源"
+                    className="qm-input qm-input-src"
+                    placeholder="来源（可选）"
+                    value={newSrc}
+                    onChange={(e) => setNewSrc(e.target.value)}
+                    onKeyDown={(e) => { if (e.key === 'Enter' && !e.nativeEvent.isComposing) void addQuote() }}
+                  />
+                  <button className="btn btn-primary btn-sm" type="button" onClick={() => void addQuote()} disabled={isSaving}>添加</button>
+                </div>
+              </>
+            ) : (
+              <>
+                <div className="qm-list">
+                  {MOTIVATIONS.map((m, i) => (
+                    <div key={`bm-${i}`} className="qm-item">
+                      <div className="qm-item-content">
+                        <span className="qm-item-text">{m}</span>
+                      </div>
+                      <span className="qm-builtin-badge">内置</span>
+                    </div>
+                  ))}
+                  {customMotivations.map((m, i) => (
+                    <div key={`cm-${i}`} className="qm-item">
+                      <div className="qm-item-content">
+                        <span className="qm-item-text">{m}</span>
+                      </div>
+                      <button className="qm-delete-btn" type="button" onClick={() => deleteCustomMotivation(i)} aria-label="删除">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="12" height="12">
+                          <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
+                        </svg>
+                      </button>
+                    </div>
+                  ))}
+                </div>
+                <div className="qm-add-row">
+                  <input
+                    className="qm-input"
+                    aria-label="激励语内容"
+                    placeholder="激励语内容"
+                    value={newMotivationText}
+                    onChange={(e) => setNewMotivationText(e.target.value)}
+                    onKeyDown={(e) => { if (e.key === 'Enter' && !e.nativeEvent.isComposing) void addMotivation() }}
+                  />
+                  <button className="btn btn-primary btn-sm" type="button" onClick={() => void addMotivation()} disabled={isSaving}>添加</button>
+                </div>
+              </>
+            )}
+          </div>
+        </Dialog>
       ) : null}
     </>
   )

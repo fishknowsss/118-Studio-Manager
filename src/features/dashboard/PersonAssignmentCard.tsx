@@ -1,8 +1,9 @@
+import { PersonGenderGlyph } from '../../components/ui/PersonGenderGlyph'
 import { useRef, type DragEvent, type MouseEvent, type Ref } from 'react'
 import { SquidMark } from '../../components/easter/SquidMark'
 import { getSquidVariant, hasSquidPersonName } from '../../components/easter/squidMarkUtils'
 import type { PersonCardModel } from '../../legacy/selectors'
-import { getPersonGenderSymbol, getPersonGenderTone } from '../../legacy/utils'
+import { getPersonGenderTone } from '../../legacy/utils'
 import { PersonStatusMark } from './PersonStatusMark'
 
 function getSkillTagClassName(skill: string) {
@@ -42,7 +43,6 @@ export function PersonAssignmentCard({
   const hiddenTaskCount = Math.max(0, model.taskCount - 1)
   const extraTaskLabel = !isTaskLabelEmpty && hiddenTaskCount > 0 ? `+${hiddenTaskCount}` : ''
   const genderTone = getPersonGenderTone(model.genderLabel)
-  const genderSymbol = getPersonGenderSymbol(model.genderLabel)
   const statusKind = model.isOnLeaveToday ? 'leave' : model.isPresent ? 'present' : null
   const isPresent = statusKind === 'present'
   const showSquidMark = hasSquidPersonName(model.name)
@@ -111,7 +111,7 @@ export function PersonAssignmentCard({
           )
           : <span className="person-assignment-empty-skill">补充技能</span>}
       </div>
-      {genderTone !== 'neutral' ? <span className={`person-assignment-gender-mark ${genderTone}`}>{genderSymbol}</span> : null}
+      {genderTone !== 'neutral' ? <span className={`person-assignment-gender-mark ${genderTone}`}><PersonGenderGlyph gender={model.genderLabel} /></span> : null}
     </div>
   )
 }

@@ -1,4 +1,4 @@
-import { Fragment, useEffect, useMemo, useRef, useState, type CSSProperties, type ChangeEvent, type Dispatch, type SetStateAction } from 'react'
+import { Fragment, useEffect, useMemo, useRef, useState, useSyncExternalStore, type CSSProperties, type ChangeEvent, type Dispatch, type SetStateAction } from 'react'
 import { useConfirm } from '../components/feedback/ConfirmProvider'
 import { useToast } from '../components/feedback/ToastProvider'
 import { SquidMark } from '../components/easter/SquidMark'
@@ -23,6 +23,7 @@ import {
   weekTextApplies,
   type ScheduleCourseGroup,
 } from '../features/productivity/scheduleModels'
+import { DEFAULT_TERM_START_DATE, readTermStartDate, subscribeTermStartDate, writeTermStartDate } from '../features/productivity/termSettings'
 import { extractSchedulePdf } from '../features/productivity/schedulePdfParser'
 import type { ClassScheduleEntry, LegacyPerson } from '../legacy/store'
 import { store } from '../legacy/store'
@@ -33,8 +34,6 @@ import { useTodayDate } from '../legacy/useTodayDate'
 const PAGE_SIZE = 16
 const WEEKDAYS = ['一', '二', '三', '四', '五', '六', '日']
 const SECTIONS = Array.from({ length: 12 }, (_, index) => index + 1)
-const DEFAULT_TERM_START_DATE = '2026-03-02'
-const TERM_START_STORAGE_KEY = '118sm.productivity.termStartDate'
 
 type ViewMode = 'cards' | 'schedule'
 type ScheduleFormState = {
@@ -160,11 +159,6 @@ function buildImportedPerson(parsed: Awaited<ReturnType<typeof extractSchedulePd
   } satisfies LegacyPerson
 }
 
-function readStoredTermStartDate() {
-  if (typeof window === 'undefined') return DEFAULT_TERM_START_DATE
-  return window.localStorage.getItem(TERM_START_STORAGE_KEY) || DEFAULT_TERM_START_DATE
-}
-
 export function Productivity() {
   const snapshot = useLegacyStoreSnapshot()
   const { people, tasks, classSchedules } = snapshot
@@ -175,7 +169,7 @@ export function Productivity() {
   const [page, setPage] = useState(0)
   const [flippedPersonIds, setFlippedPersonIds] = useState<Set<string>>(() => new Set())
   const [selectedPersonIds, setSelectedPersonIds] = useState<string[]>([])
-  const [termStartDate, setTermStartDate] = useState(readStoredTermStartDate)
+  const termStartDate = useSyncExternalStore(subscribeTermStartDate, readTermStartDate)
   const [isImporting, setIsImporting] = useState(false)
   const [showScheduleDialog, setShowScheduleDialog] = useState(false)
   const [openScheduleMenu, setOpenScheduleMenu] = useState<'people' | 'management' | 'week' | null>(null)
@@ -342,10 +336,6 @@ export function Productivity() {
     toast('课表已删除', 'success')
   }
 
-  useEffect(() => {
-    window.localStorage.setItem(TERM_START_STORAGE_KEY, termStartDate)
-  }, [termStartDate])
-
   return (
     <div className="productivity-view">
       <div className="view-header productivity-header">
@@ -385,7 +375,7 @@ export function Productivity() {
                       id="schedule-start-date"
                       label="学期开始"
                       value={termStartDate}
-                      onChange={(value) => setTermStartDate(value || DEFAULT_TERM_START_DATE)}
+                      onChange={(value) => void writeTermStartDate(value || DEFAULT_TERM_START_DATE)}
                     />
                   </div>
                 </div>

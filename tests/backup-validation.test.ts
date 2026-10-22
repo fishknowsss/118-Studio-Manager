@@ -102,4 +102,18 @@ describe('backup validation', () => {
     delete backup[BACKUP_COLLECTION_NAMES[requiredCount - 1]]
     expect(() => normalizeImportedBackup(backup)).toThrow('备份文件不完整')
   })
+
+  it.each([
+    { projects: [{ id: 'p', name: 42 }] },
+    { tasks: [{ id: 't', title: { text: '错误类型' } }] },
+    { tasks: [{ id: 't', status: 'unknown' }] },
+    { people: [{ id: 'p', name: [] }] },
+    { tasks: [{ id: 't', endDate: '2026-02-31' }] },
+    { tasks: [{ id: 't', estimatedHours: -1 }] },
+    { classSchedules: [{ id: 's', dayOfWeek: 8, startSection: 1, endSection: 2 }] },
+    { shortDramaAssignments: [{ id: 'a', producerIds: [], allocations: [{ personId: 'p', actualHours: '3' }] }] },
+  ])('rejects malformed business fields before importing %j', (partial) => {
+    expect(() => normalizeImportedBackup(buildBackupPayload(partial))).toThrow('数据表记录无效')
+  })
+
 })

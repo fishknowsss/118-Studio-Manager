@@ -71,7 +71,7 @@ export function subscribeDashboardPersonPanelState(listener: () => void) {
 
 export function writeDashboardPersonOrder(order: string[]) {
   const current = dashboardPersonPanelStore.read()
-  dashboardPersonPanelStore.write({
+  return dashboardPersonPanelStore.write({
     ...current,
     order: sanitizeOrder(order),
   })
@@ -90,7 +90,7 @@ export function writeDashboardPersonPresence(personId: string, presence: Dashboa
     delete nextPresenceByPersonId[normalizedPersonId]
   }
 
-  dashboardPersonPanelStore.write({
+  return dashboardPersonPanelStore.write({
     ...current,
     presenceByPersonId: nextPresenceByPersonId,
   })

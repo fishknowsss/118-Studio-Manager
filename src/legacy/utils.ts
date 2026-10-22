@@ -128,7 +128,7 @@ export function formatFileDate(date = new Date()) {
 }
 
 export function parseLocalDateKey(dateStr: string | null | undefined) {
-  if (!dateStr) return null
+  if (!dateStr || !/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) return null
   const [yearText, monthText, dayText] = dateStr.split('-')
   const year = Number(yearText)
   const month = Number(monthText)
@@ -138,7 +138,10 @@ export function parseLocalDateKey(dateStr: string | null | undefined) {
     return null
   }
 
-  return new Date(year, month - 1, day, 12, 0, 0, 0)
+  const date = new Date(year, month - 1, day, 12, 0, 0, 0)
+  return date.getFullYear() === year && date.getMonth() === month - 1 && date.getDate() === day
+    ? date
+    : null
 }
 
 export function shiftLocalDateKey(date = new Date(), offsetDays = 0) {
@@ -387,18 +390,61 @@ export function getBackupPayloadValidationError(
     Array.isArray(value) && value.every((item) => typeof item === 'string')
   )
 
+  const stringFields: Partial<Record<BackupCollectionName, string[]>> = {
+    projects: ['name', 'description', 'notes'],
+    tasks: ['title', 'description', 'projectId', 'assigneeId'],
+    people: ['name', 'className', 'studentNo', 'email', 'notes'],
+    logs: ['text', 'ts'],
+    leaveRecords: ['personId', 'date'],
+    classSchedules: ['personId', 'personName', 'studentNo', 'className', 'courseName', 'weeksText', 'location', 'teacher', 'sourceFileName'],
+    shortDramas: ['title', 'notes'],
+    shortDramaGroups: ['dramaId', 'name', 'leaderId', 'notes'],
+    shortDramaAssignments: ['dramaId', 'groupId', 'episodes', 'ownerId', 'notes'],
+  }
+  const statuses: Partial<Record<BackupCollectionName, string[]>> = {
+    projects: ['active', 'completed', 'paused', 'cancelled'],
+    tasks: ['todo', 'in-progress', 'blocked', 'done'],
+    people: ['active', 'inactive'],
+    shortDramas: ['not-started', 'in-progress', 'review', 'revision', 'done'],
+    shortDramaAssignments: ['not-started', 'in-progress', 'review', 'revision', 'done'],
+  }
+  const priorities = ['low', 'medium', 'high', 'urgent']
+  const optionalString = (value: unknown) => value == null || typeof value === 'string'
+  const validDate = (value: unknown) => value == null || value === '' || (typeof value === 'string' && Boolean(parseLocalDateKey(value)))
+  const nonnegativeNumber = (value: unknown) => value == null || (typeof value === 'number' && Number.isFinite(value) && value >= 0)
+
   const hasInvalidRecordShape = (name: BackupCollectionName, record: BackupRecord) => {
+    if ([...(stringFields[name] || []), 'createdAt', 'updatedAt'].some((field) => !optionalString(record[field]))) return true
+    if (statuses[name] && record.status != null && (typeof record.status !== 'string' || !statuses[name]!.includes(record.status))) return true
+    if ((name === 'projects' || name === 'tasks') && record.priority != null && (typeof record.priority !== 'string' || !priorities.includes(record.priority))) return true
+    if (['startDate', 'endDate', 'reviewDate', 'deliveryDate', 'ddl', 'scheduledDate'].some((field) => !validDate(record[field]))) return true
+    if (name === 'leaveRecords' && !validDate(record.date)) return true
+    if (['estimatedHours', 'actualHours', 'finishedDurationSeconds', 'totalEpisodes'].some((field) => !nonnegativeNumber(record[field]))) return true
+    if (name === 'logs' && (typeof record.text !== 'string' || typeof record.ts !== 'string' || Number.isNaN(Date.parse(record.ts)))) return true
+    if (name === 'leaveRecords' && (typeof record.personId !== 'string' || !record.personId.trim() || !record.date || !optionalString(record.reason))) return true
+    if (name === 'classSchedules') {
+      if (['personId', 'personName', 'courseName', 'weeksText'].some((field) => typeof record[field] !== 'string')) return true
+      if (!Number.isInteger(record.dayOfWeek) || Number(record.dayOfWeek) < 1 || Number(record.dayOfWeek) > 7) return true
+      if (!Number.isInteger(record.startSection) || !Number.isInteger(record.endSection)) return true
+      if (Number(record.startSection) < 1 || Number(record.endSection) > 12 || Number(record.endSection) < Number(record.startSection)) return true
+    }
+
     if (name === 'people' && record.skills !== undefined && !isStringArray(record.skills)) return true
     if (name === 'tasks' && record.assigneeIds !== undefined && !isStringArray(record.assigneeIds)) return true
     if (name === 'shortDramaGroups') {
+      if (typeof record.dramaId !== 'string' || !record.dramaId.trim()) return true
       return !isStringArray(record.memberIds)
     }
     if (name === 'shortDramaAssignments') {
+      if (typeof record.dramaId !== 'string' || !record.dramaId.trim()) return true
       if (!isStringArray(record.producerIds) || !Array.isArray(record.allocations)) return true
       return record.allocations.some((allocation) => {
         if (!allocation || typeof allocation !== 'object' || Array.isArray(allocation)) return true
         const personId = (allocation as BackupRecord).personId
+        const value = allocation as BackupRecord
         return typeof personId !== 'string' || !personId.trim()
+          || !optionalString(value.episodes) || !optionalString(value.notes)
+          || !nonnegativeNumber(value.estimatedHours) || !nonnegativeNumber(value.actualHours)
       })
     }
     return false
@@ -423,7 +469,7 @@ export function getBackupPayloadValidationError(
       seenKeys.add(key)
       return hasInvalidRecordShape(name, backupRecord)
     })
-    if (hasInvalidRecord) return `数据表记录无效：${name}`
+    if (hasInvalidRecord) return `数据表记录无效：${name}（检查字段类型、状态、日期和工时）`
     if (hasDuplicateKey) return `数据表存在重复记录：${name}`
   }
 

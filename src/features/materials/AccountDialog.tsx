@@ -9,11 +9,12 @@ type Props = {
   folders: string[]
   /** 从某个文件夹打开"新建"时预填文件夹名 */
   defaultPlatform?: string
-  onSave: (account: AccountCredential) => void
+  onSave: (account: AccountCredential) => Promise<void> | void
   onClose: () => void
 }
 
 export function AccountDialog({ account, folders, defaultPlatform, onSave, onClose }: Props) {
+  const [isSaving, setIsSaving] = useState(false)
   const isNew = !account
   const { toast } = useToast()
 
@@ -24,7 +25,8 @@ export function AccountDialog({ account, folders, defaultPlatform, onSave, onClo
   const [note, setNote]         = useState(account?.note ?? '')
   const [showPwd, setShowPwd]   = useState(false)
 
-  const save = () => {
+  const save = async () => {
+    if (isSaving) return
     if (!platform.trim()) {
       toast('请填写所在文件夹', 'error')
       return
@@ -41,29 +43,36 @@ export function AccountDialog({ account, folders, defaultPlatform, onSave, onClo
     }
 
     const now = new Date().toISOString()
-    onSave({
-      id:        account?.id ?? crypto.randomUUID(),
-      platform:  platform.trim(),
-      url:       normalizedUrl,
-      account:   acc.trim(),
-      password,
-      note:      note.trim(),
-      category:  account?.category ?? 'other',
-      createdAt: account?.createdAt ?? now,
-      updatedAt: now,
-    })
+    setIsSaving(true)
+    try {
+      await onSave({
+        id:        account?.id ?? crypto.randomUUID(),
+        platform:  platform.trim(),
+        url:       normalizedUrl,
+        account:   acc.trim(),
+        password,
+        note:      note.trim(),
+        category:  account?.category ?? 'other',
+        createdAt: account?.createdAt ?? now,
+        updatedAt: now,
+      })
+    } catch {
+      return
+    } finally {
+      setIsSaving(false)
+    }
   }
 
   return (
     <Dialog
       open
       title={isNew ? '新建账号' : '编辑账号'}
-      onClose={onClose}
+      onClose={isSaving ? () => {} : onClose}
       footer={(
         <>
-          <button className="btn btn-secondary" type="button" onClick={onClose}>取消</button>
-          <button className="btn btn-primary" type="button" onClick={save}>
-            {isNew ? '创建' : '保存'}
+          <button className="btn btn-secondary" type="button" onClick={onClose} disabled={isSaving}>取消</button>
+          <button className="btn btn-primary" type="button" onClick={() => void save()} disabled={isSaving}>
+            {isSaving ? '保存中' : isNew ? '创建' : '保存'}
           </button>
         </>
       )}

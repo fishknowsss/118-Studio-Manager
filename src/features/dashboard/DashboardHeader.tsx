@@ -52,14 +52,18 @@ export function DashboardHeader({
     window.open(homeResourceLink.url, '_blank', 'noopener,noreferrer')
   }
 
-  const saveResourceLink = (event: FormEvent<HTMLFormElement>) => {
+  const saveResourceLink = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
     const normalizedUrl = normalizeHomeResourceUrl(draftResourceUrl)
     if (draftResourceUrl.trim() && !normalizedUrl) {
       toast('请输入有效的网页链接', 'error')
       return
     }
-    writeHomeResourceLink(normalizedUrl)
+    try {
+      await writeHomeResourceLink(normalizedUrl)
+    } catch {
+      return
+    }
     setDraftResourceUrl(normalizedUrl)
     setResourceEditorOpen(false)
   }
@@ -108,7 +112,7 @@ export function DashboardHeader({
     <div className="dash-header">
       <div className="dash-header-left">
         <div className="dash-date-block">
-          <div className="dash-date-big">{model.dateText}</div>
+          <h1 className="dash-date-big">{model.dateText}</h1>
           <div className="dash-date-weekday">{model.weekdayText}</div>
         </div>
 
@@ -201,7 +205,7 @@ export function DashboardHeader({
                 className="btn btn-xs btn-secondary"
                 type="button"
                 onClick={() => {
-                  writeHomeResourceLink('')
+                  void writeHomeResourceLink('').catch(() => undefined)
                   setDraftResourceUrl('')
                   setResourceEditorOpen(false)
                 }}

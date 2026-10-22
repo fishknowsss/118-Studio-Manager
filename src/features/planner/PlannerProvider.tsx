@@ -82,7 +82,7 @@ function PlannerDrawer({
       storeSnapshot.leaveRecords,
       dateStr,
     ),
-    [dateStr, storeSnapshot],
+    [dateStr, storeSnapshot.projects, storeSnapshot.tasks, storeSnapshot.people, storeSnapshot.leaveRecords],
   )
 
   // Upcoming DDL projects within 14 days from selected date

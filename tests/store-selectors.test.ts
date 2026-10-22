@@ -1201,4 +1201,14 @@ describe('store selectors', () => {
     expect(patch.leaveRecordIds).toEqual(['leave-1'])
     expect(patch.classScheduleIds).toEqual(['schedule-1'])
   })
+
+  it('excludes an in-progress task before its explicit start date', () => {
+    const task = { id: 'future', status: 'in-progress' as const, startDate: '2026-04-25', endDate: '2026-04-28' }
+    const model = buildDashboardMiniCalendarModel(new Date(2026, 3, 1), {}, '2026-04-23', new Set(), [task])
+    expect(model.days.find((day) => day.dateKey === '2026-04-01')?.taskCount).toBe(0)
+    expect(model.days.find((day) => day.dateKey === '2026-04-24')?.taskCount).toBe(0)
+    expect(model.days.find((day) => day.dateKey === '2026-04-25')?.taskCount).toBe(1)
+    expect(buildDatePlannerModel('2026-04-24', [], [task], [], []).tasks).toEqual([])
+  })
+
 })

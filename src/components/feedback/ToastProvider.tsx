@@ -39,6 +39,12 @@ export function ToastProvider({ children }: { children: ReactNode }) {
     timersRef.current.clear()
   }, [])
 
+  useEffect(() => {
+    const onError = () => value.toast('保存失败，数据未写入，请重试', 'error')
+    document.addEventListener('persistenceError', onError)
+    return () => document.removeEventListener('persistenceError', onError)
+  }, [value])
+
   return (
     <ToastContext.Provider value={value}>
       {children}

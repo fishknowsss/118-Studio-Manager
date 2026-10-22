@@ -1,3 +1,4 @@
+import { initializeTermSettings, reloadTermSettingsFromDB } from '../productivity/termSettings'
 import { initializeMaterialsState, reloadMaterialsStateFromDB } from '../materials/materialsState'
 import {
   initializeDashboardPersonPanelState,
@@ -16,6 +17,7 @@ import { waitForSyncableSettingsWrites } from './syncableSettings'
 export async function initializeSyncableViewState() {
   await Promise.all([
     initializeMaterialsState(),
+    initializeTermSettings(),
     initializeDashboardPersonPanelState(),
     initializeHomeResourceLinkState(),
     initializeQuoteLibraryState(),
@@ -25,6 +27,7 @@ export async function initializeSyncableViewState() {
 export async function reloadSyncableViewStateFromDB() {
   await Promise.all([
     reloadMaterialsStateFromDB(),
+    reloadTermSettingsFromDB(),
     reloadDashboardPersonPanelStateFromDB(),
     reloadHomeResourceLinkStateFromDB(),
     reloadQuoteLibraryStateFromDB(),

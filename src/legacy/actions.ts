@@ -18,6 +18,7 @@ import type {
   ProjectStatus,
   TaskPriority,
   TaskStatus,
+  LegacyEntity,
 } from './store'
 import {
   store,
@@ -110,6 +111,12 @@ async function runWithUndo<T>(label: string, operation: () => Promise<T>) {
   }
 }
 
+function assertCurrentRecord(previous: LegacyEntity | null, current: LegacyEntity | undefined) {
+  if (previous && (!current || previous.updatedAt !== current.updatedAt)) {
+    throw new Error('此记录已在另一页面更新，请关闭编辑框后重新打开')
+  }
+}
+
 export function buildProjectRecord(
   project: LegacyProject | null,
   form: ProjectFormInput,
@@ -182,6 +189,7 @@ export async function saveProjectFromForm(project: LegacyProject | null, form: P
   return await runWithUndo(
     `${project ? '编辑' : '创建'}项目「${form.name?.trim() || '未命名项目'}」`,
     async () => {
+      assertCurrentRecord(project, project ? store.getProject(project.id) : undefined)
       const saved = buildProjectRecord(project, form)
       await store.saveProject(saved)
       await store.addLog(`${project ? '编辑' : '创建'}项目「${saved.name}」`)
@@ -194,6 +202,7 @@ export async function saveTaskFromForm(task: LegacyTask | null, form: TaskFormIn
   return await runWithUndo(
     `${task ? '编辑' : '创建'}任务「${form.title?.trim() || '未命名任务'}」`,
     async () => {
+      assertCurrentRecord(task, task ? store.getTask(task.id) : undefined)
       const saved = buildTaskRecord(task, form)
       await store.saveTask(saved)
       await store.addLog(`${task ? '编辑' : '创建'}任务「${saved.title}」`)
@@ -206,6 +215,7 @@ export async function savePersonFromForm(person: LegacyPerson | null, form: Pers
   return await runWithUndo(
     `${person ? '编辑' : '新增'}人员「${form.name?.trim() || '未命名人员'}」`,
     async () => {
+      assertCurrentRecord(person, person ? store.getPerson(person.id) : undefined)
       const saved = buildPersonRecord(person, form)
       await store.savePerson(saved)
       await store.addLog(`${person ? '编辑' : '新增'}人员「${saved.name}」`)

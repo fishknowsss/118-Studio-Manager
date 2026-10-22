@@ -11,6 +11,7 @@ import {
   type ReactNode,
 } from 'react'
 import { db } from '../../legacy/db'
+import { clearUndoHistory } from '../../legacy/editUndo'
 import {
   store,
   subscribeStoreWriteStarted,
@@ -167,6 +168,7 @@ export function CloudSyncProvider({ children }: { children: ReactNode }) {
       }
 
       await db.importAll(current.data)
+      clearUndoHistory()
       await reloadSyncableViewStateFromDB()
       await store.loadAll()
       clearSyncTimer()
@@ -373,6 +375,7 @@ export function CloudSyncProvider({ children }: { children: ReactNode }) {
     if (pendingLocalChangesRef.current) queueAutoSync()
 
     const unsubscribe = store.subscribe((detail) => {
+      if (detail?.source === 'cross-tab') return
       if (suppressStoreEventsRef.current && detail?.source === 'reload') return
       scheduleAutoSync()
     })

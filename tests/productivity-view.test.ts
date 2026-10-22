@@ -244,7 +244,7 @@ describe('productivity view', () => {
     expect(styleSource).toMatch(/\.schedule-load-calm/)
     expect(styleSource).toMatch(/\.schedule-load-tight/)
     expect(styleSource).not.toMatch(/\.schedule-tone-0/)
-    expect(styleSource).toMatch(/border-left-width:\s*4px/)
+    expect(styleSource).toMatch(/border-left-width:\s*1px/)
     expect(styleSource).toMatch(/schedule-person-filter/)
     expect(styleSource).toMatch(/schedule-person-panel/)
     expect(source).toMatch(/mode === 'schedule' \? \(/)
@@ -333,7 +333,7 @@ describe('productivity view', () => {
     const source = readFileSync(join(process.cwd(), 'src/views/Productivity.tsx'), 'utf8')
     const styleSource = readFileSync(join(process.cwd(), 'css/style.css'), 'utf8')
 
-    expect(source).toMatch(/DEFAULT_TERM_START_DATE = '2026-03-02'/)
+    expect(source).toMatch(/useSyncExternalStore\(subscribeTermStartDate, readTermStartDate\)/)
     expect(source).toMatch(/filter\(\(entry\) => weekTextApplies\(entry\.weeksText, currentWeek\)\)/)
     expect(source).not.toMatch(/scheduleScope/)
     expect(source).not.toMatch(/onScheduleScopeChange/)

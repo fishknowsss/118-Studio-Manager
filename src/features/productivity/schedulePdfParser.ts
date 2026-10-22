@@ -231,19 +231,23 @@ export async function extractSchedulePdf(file: File) {
   const pdf = await loadingTask.promise
   const items: ScheduleTextItem[] = []
 
-  for (let pageIndex = 1; pageIndex <= pdf.numPages; pageIndex += 1) {
-    const page = await pdf.getPage(pageIndex)
-    const content = await page.getTextContent()
-    for (const item of content.items) {
-      if (!('str' in item) || !item.str.trim()) continue
-      items.push({
-        str: item.str,
-        x: item.transform[4],
-        y: item.transform[5],
-        pageIndex,
-      })
+  try {
+    for (let pageIndex = 1; pageIndex <= pdf.numPages; pageIndex += 1) {
+      const page = await pdf.getPage(pageIndex)
+      const content = await page.getTextContent()
+      for (const item of content.items) {
+        if (!('str' in item) || !item.str.trim()) continue
+        items.push({
+          str: item.str,
+          x: item.transform[4],
+          y: item.transform[5],
+          pageIndex,
+        })
+      }
     }
-  }
 
-  return parseScheduleTextItems(items)
+    return parseScheduleTextItems(items)
+  } finally {
+    await loadingTask.destroy()
+  }
 }
