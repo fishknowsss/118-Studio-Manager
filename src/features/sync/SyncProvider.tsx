@@ -396,6 +396,8 @@ export function CloudSyncProvider({ children }: { children: ReactNode }) {
     window.addEventListener('storage', onStorage)
 
     const poll = window.setInterval(() => {
+      // 后台标签页不需要周期性刷新元数据；重新回到前台时由 visibilitychange 补一次。
+      if (document.visibilityState !== 'visible') return
       void refreshRemoteMeta()
     }, META_POLL_MS)
 

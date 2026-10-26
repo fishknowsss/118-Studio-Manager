@@ -11432,22 +11432,22 @@ h1.dash-date-big { margin: 0; }
 .task-row.priority-low {
   background: var(--c-surface);
   border-color: var(--c-border-light);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .72);
+  box-shadow: 0 1px 0 rgba(255, 255, 255, .72);
 }
 .task-row.priority-medium {
   background: color-mix(in srgb, var(--c-soon-bg) 34%, var(--c-surface));
-  border-color: var(--c-border-light);
-  box-shadow: inset 0 2px 0 color-mix(in srgb, var(--c-soon) 70%, transparent), inset 0 1px 0 rgba(255, 255, 255, .68);
+  border-color: color-mix(in srgb, var(--c-soon) 30%, var(--c-border-light));
+  box-shadow: 0 1px 0 rgba(255, 255, 255, .68);
 }
 .task-row.priority-high {
   background: color-mix(in srgb, var(--c-today-bg) 46%, var(--c-surface));
-  border-color: var(--c-border-light);
-  box-shadow: inset 0 2px 0 color-mix(in srgb, var(--c-today) 78%, transparent), inset 0 1px 0 rgba(255, 255, 255, .68);
+  border-color: color-mix(in srgb, var(--c-today) 34%, var(--c-border-light));
+  box-shadow: 0 1px 0 rgba(255, 255, 255, .68);
 }
 .task-row.priority-urgent {
   background: color-mix(in srgb, var(--c-overdue-bg) 58%, var(--c-surface));
-  border-color: var(--c-border-light);
-  box-shadow: inset 0 3px 0 var(--c-overdue), inset 0 1px 0 rgba(255, 255, 255, .7), 0 2px 8px color-mix(in srgb, var(--c-overdue) 9%, transparent);
+  border-color: color-mix(in srgb, var(--c-overdue) 46%, var(--c-border-light));
+  box-shadow: 0 1px 0 rgba(255, 255, 255, .7), 0 2px 8px color-mix(in srgb, var(--c-overdue) 9%, transparent);
 }
 .task-row.priority-low:hover { background: color-mix(in srgb, var(--c-border-light) 35%, var(--c-surface)); }
 .task-row.priority-medium:hover { background: color-mix(in srgb, var(--c-soon-bg) 52%, var(--c-surface)); }
@@ -11457,6 +11457,14 @@ h1.dash-date-big { margin: 0; }
 [data-theme='dark'] .task-row.priority-medium { background: color-mix(in srgb, var(--c-soon-bg) 32%, var(--material-raised)); }
 [data-theme='dark'] .task-row.priority-high { background: color-mix(in srgb, var(--c-today-bg) 34%, var(--material-raised)); }
 [data-theme='dark'] .task-row.priority-urgent { background: color-mix(in srgb, var(--c-overdue-bg) 38%, var(--material-raised)); }
+
+/* 任务优先级的深色边缘仍属于整条任务表面，不使用顶部彩条。 */
+[data-theme='dark'] .task-row.priority-low,
+[data-theme='dark'] .task-row.priority-medium,
+[data-theme='dark'] .task-row.priority-high,
+[data-theme='dark'] .task-row.priority-urgent {
+  box-shadow: 0 1px 0 rgba(7, 13, 24, .46);
+}
 
 [data-theme='dark'] {
   --c-teal-text: var(--c-teal);
@@ -11604,4 +11612,245 @@ h1.dash-date-big { margin: 0; }
     width: calc(100% - 8px);
     max-width: calc(100% - 8px);
   }
+}
+
+/* 原始青绿色回归：语句激励和技能标签保留品牌色，避免被灰暗文字变量替换。 */
+:root:not([data-theme='dark']) .dash-motivation,
+:root:not([data-theme='dark']) .skill-tag,
+:root:not([data-theme='dark']) .person-assignment-skill-list .skill-tag {
+  color: #39C5BB;
+  font-weight: 650;
+}
+[data-theme='dark'] .dash-motivation,
+[data-theme='dark'] .skill-tag,
+[data-theme='dark'] .person-assignment-skill-list .skill-tag {
+  color: #6CDDD1;
+  font-weight: 650;
+}
+
+/* 逾期状态统一使用鲜明玫红/红色，不让状态文字落入灰蓝色。 */
+.focus-highlight.focus-overdue .focus-highlight-days-num,
+.focus-highlight.focus-overdue .focus-highlight-ddl,
+.focus-card.focus-overdue .focus-card-days-num,
+.focus-card.focus-overdue .focus-card-ddl,
+.project-workspace-row.focus-overdue .project-workspace-signals,
+.project-workspace-row.focus-overdue .project-workspace-schedule strong,
+.project-ddl-label.focus-overdue,
+.date-chip.overdue,
+.badge-overdue,
+[data-tone='risk'] {
+  color: #C43A7A;
+  font-weight: 750;
+}
+.focus-highlight.focus-critical .focus-highlight-days-num,
+.focus-highlight.focus-critical .focus-highlight-ddl,
+.focus-card.focus-critical .focus-card-days-num,
+.focus-card.focus-critical .focus-card-ddl,
+.project-workspace-row.focus-critical .project-workspace-signals,
+.project-workspace-row.focus-critical .project-workspace-schedule strong,
+.project-ddl-label.focus-critical,
+.badge-risk {
+  color: #C43343;
+  font-weight: 750;
+}
+.badge-overdue,
+.badge-risk {
+  background: #FCEAF2;
+  border: 1px solid #E6B4CA;
+}
+[data-theme='dark'] .focus-highlight.focus-overdue .focus-highlight-days-num,
+[data-theme='dark'] .focus-highlight.focus-overdue .focus-highlight-ddl,
+[data-theme='dark'] .focus-card.focus-overdue .focus-card-days-num,
+[data-theme='dark'] .focus-card.focus-overdue .focus-card-ddl,
+[data-theme='dark'] .project-workspace-row.focus-overdue .project-workspace-signals,
+[data-theme='dark'] .project-workspace-row.focus-overdue .project-workspace-schedule strong,
+[data-theme='dark'] .badge-overdue {
+  color: #FCA2C9;
+}
+[data-theme='dark'] .focus-highlight.focus-critical .focus-highlight-days-num,
+[data-theme='dark'] .focus-highlight.focus-critical .focus-highlight-ddl,
+[data-theme='dark'] .focus-card.focus-critical .focus-card-days-num,
+[data-theme='dark'] .focus-card.focus-critical .focus-card-ddl,
+[data-theme='dark'] .project-workspace-row.focus-critical .project-workspace-signals,
+[data-theme='dark'] .project-workspace-row.focus-critical .project-workspace-schedule strong,
+[data-theme='dark'] .badge-risk {
+  color: #FF9CA8;
+}
+
+/* 语句区 hover 要能被感知，按钮与内容保持在同一个浮层边缘内。 */
+.dash-quote-block {
+  border: 1px solid transparent;
+  transition: background .16s ease, border-color .16s ease, box-shadow .16s ease;
+}
+:root:not([data-theme='dark']) .dash-quote-block:hover {
+  background: #E7F0FC;
+  border-color: #C3D5ED;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .92), 0 2px 9px rgba(49, 84, 217, .10);
+}
+.dash-quote-btn:hover {
+  background: #DCE8FF;
+  border-color: #9FB9EA;
+  color: #3154D9;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .88), 0 2px 6px rgba(49, 84, 217, .14);
+}
+
+/* 人员首行 hover 需要安全的顶部呼吸空间，避免 transform 和边缘亮线被裁切。 */
+@media (min-width: 721px) {
+  .people-panel-body {
+    overflow: visible;
+    padding-top: 6px;
+  }
+  .people-page-viewport {
+    overflow: visible;
+  }
+  .people-assignment-grid {
+    box-sizing: border-box;
+    height: calc(100% - 6px);
+  }
+}
+
+/* 侧栏层级融合：沿用原始蓝色，使用实体面、细边缘和轻微内侧高光区分层次。 */
+:root:not([data-theme='dark']) {
+  --sidebar-surface: #F1F6FC;
+  --sidebar-brand-surface: #E8F0F8;
+  --sidebar-footer-surface: #EAF1F8;
+  --sidebar-edge: #B9C9DC;
+  --sidebar-nav: #40526B;
+  --sidebar-nav-hover: #E0EBF8;
+  --sidebar-nav-active: #D3E2FF;
+  --sidebar-nav-active-edge: #8EAEED;
+}
+[data-theme='dark'] {
+  --sidebar-surface: #162236;
+  --sidebar-brand-surface: #1B2B43;
+  --sidebar-footer-surface: #1A2940;
+  --sidebar-edge: #435875;
+  --sidebar-nav: #C4D1E5;
+  --sidebar-nav-hover: #243A59;
+  --sidebar-nav-active: #2D4778;
+  --sidebar-nav-active-edge: #6689CC;
+}
+
+.sidebar {
+  background: var(--sidebar-surface);
+  border-right: .5px solid var(--sidebar-edge);
+  box-shadow: inset -1px 0 0 color-mix(in srgb, var(--material-rim) 78%, transparent);
+}
+.sidebar-brand {
+  background: var(--sidebar-brand-surface);
+  border-bottom: .5px solid var(--sidebar-edge);
+  box-shadow: inset 0 -1px 0 color-mix(in srgb, var(--material-rim) 82%, transparent);
+}
+.brand-sub { color: var(--c-text-2); }
+.nav-list {
+  padding: 12px 10px;
+  gap: 4px;
+}
+.nav-item {
+  border: .5px solid transparent;
+  color: var(--sidebar-nav);
+  transform: none;
+  transition: background-color .16s ease, border-color .16s ease, color .16s ease, box-shadow .16s ease;
+}
+.nav-item:hover {
+  background: var(--sidebar-nav-hover);
+  border-color: color-mix(in srgb, var(--sidebar-edge) 78%, transparent);
+  color: var(--c-text);
+  transform: none;
+  box-shadow: inset 0 1px 0 color-mix(in srgb, var(--material-rim) 72%, transparent);
+}
+.nav-item.active {
+  background: var(--sidebar-nav-active);
+  border-color: var(--sidebar-nav-active-edge);
+  color: var(--c-primary-text);
+  box-shadow: inset 0 1px 0 color-mix(in srgb, var(--material-rim) 90%, transparent), 0 2px 6px color-mix(in srgb, var(--c-primary) 12%, transparent);
+}
+.nav-item.active .nav-icon { stroke: var(--c-primary); }
+.nav-item:focus-visible {
+  outline: 2px solid var(--c-primary);
+  outline-offset: 2px;
+}
+.sidebar-footer {
+  padding: 10px;
+  border-top: .5px solid var(--sidebar-edge);
+  background: var(--sidebar-footer-surface);
+  box-shadow: inset 0 1px 0 color-mix(in srgb, var(--material-rim) 78%, transparent);
+}
+.sidebar-footer .nav-item { margin: 0; }
+
+@media (max-width: 720px) {
+  .sidebar {
+    border-right: 0;
+    border-top: .5px solid var(--sidebar-edge);
+    box-shadow: 0 -5px 18px rgba(20, 37, 67, .08), inset 0 1px 0 color-mix(in srgb, var(--material-rim) 78%, transparent);
+  }
+  .nav-list,
+  .sidebar-footer {
+    padding: 7px 8px calc(7px + env(safe-area-inset-bottom));
+    gap: 4px;
+  }
+  .sidebar-footer {
+    border-top: 0;
+    border-left: .5px solid var(--sidebar-edge);
+    box-shadow: inset 1px 0 0 color-mix(in srgb, var(--material-rim) 78%, transparent);
+  }
+  .nav-item:hover { box-shadow: inset 0 1px 0 color-mix(in srgb, var(--material-rim) 72%, transparent); }
+}
+
+/* 这些选择器保持与早期主题覆盖相同的优先级，确保新的侧栏层级实际生效。 */
+:root:not([data-theme='dark']) .sidebar {
+  background: var(--sidebar-surface);
+  border-right-color: var(--sidebar-edge);
+}
+:root:not([data-theme='dark']) .sidebar-brand {
+  background: var(--sidebar-brand-surface);
+  border-bottom-color: var(--sidebar-edge);
+}
+:root:not([data-theme='dark']) .nav-item {
+  color: var(--sidebar-nav);
+  transform: none;
+}
+:root:not([data-theme='dark']) .nav-item:hover {
+  background: var(--sidebar-nav-hover);
+  border-color: color-mix(in srgb, var(--sidebar-edge) 78%, transparent);
+  color: var(--c-text);
+  transform: none;
+}
+:root:not([data-theme='dark']) .nav-item.active {
+  background: var(--sidebar-nav-active);
+  border-color: var(--sidebar-nav-active-edge);
+  color: var(--c-primary-text);
+  transform: none;
+}
+:root:not([data-theme='dark']) .sidebar-footer {
+  background: var(--sidebar-footer-surface);
+  border-top-color: var(--sidebar-edge);
+}
+[data-theme='dark'] .sidebar {
+  background: var(--sidebar-surface);
+  border-right-color: var(--sidebar-edge);
+}
+[data-theme='dark'] .sidebar-brand {
+  background: var(--sidebar-brand-surface);
+  border-bottom-color: var(--sidebar-edge);
+}
+[data-theme='dark'] .nav-item {
+  color: var(--sidebar-nav);
+  transform: none;
+}
+[data-theme='dark'] .nav-item:hover {
+  background: var(--sidebar-nav-hover);
+  border-color: var(--sidebar-edge);
+  color: var(--c-text);
+  transform: none;
+}
+[data-theme='dark'] .nav-item.active {
+  background: var(--sidebar-nav-active);
+  border-color: var(--sidebar-nav-active-edge);
+  color: var(--c-primary-text);
+  transform: none;
+}
+[data-theme='dark'] .sidebar-footer {
+  background: var(--sidebar-footer-surface);
+  border-top-color: var(--sidebar-edge);
 }
