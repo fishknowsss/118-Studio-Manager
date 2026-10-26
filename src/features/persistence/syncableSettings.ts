@@ -10,6 +10,11 @@ type SyncableSettingsRecord<T> = {
   updatedAt: string
 }
 
+export type SyncableSettingsBatchEntry = {
+  key: string
+  value: unknown
+}
+
 type SyncableStoreOptions<T> = {
   key: string
   legacyKey?: string
@@ -36,6 +41,28 @@ async function persistValue<T>(key: string, value: T) {
     value,
     updatedAt: new Date().toISOString(),
   } satisfies SyncableSettingsRecord<T>)
+}
+
+export function writeSyncableSettingsBatch(entries: SyncableSettingsBatchEntry[]) {
+  const uniqueEntries = entries.filter((entry, index, all) => (
+    entry.key && all.findIndex((candidate) => candidate.key === entry.key) === index
+  ))
+  return runTrackedStoreWrite(async () => {
+    await db.runTransaction(['settings'], 'readwrite', (stores) => {
+      const timestamp = new Date().toISOString()
+      for (const entry of uniqueEntries) {
+        stores.settings.put({ key: entry.key, value: entry.value, updatedAt: timestamp })
+      }
+    })
+    publishDatabaseChange()
+    if (typeof document !== 'undefined') {
+      for (const entry of uniqueEntries) {
+        document.dispatchEvent(new CustomEvent('syncableDataUpdated', {
+          detail: { key: entry.key },
+        }))
+      }
+    }
+  })
 }
 
 function trackPendingWrite(key: string, promise: Promise<void>) {

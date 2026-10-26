@@ -1,4 +1,4 @@
-import { createSyncableSettingsStore } from '../persistence/syncableSettings'
+import { createSyncableSettingsStore, writeSyncableSettingsBatch } from '../persistence/syncableSettings'
 import { normalizeExternalHttpUrl } from '../../legacy/utils'
 
 // ─── 甲方要求 ─────────────────────────────────────────
@@ -151,6 +151,17 @@ export function readAccounts(): AccountCredential[] {
 
 export function writeAccounts(accounts: AccountCredential[]) {
   return accountsStore.write(accounts)
+}
+
+export async function writeAccountsAndFolders(accounts: AccountCredential[], folders: MaterialFolderSettings) {
+  await writeSyncableSettingsBatch([
+    { key: ACCOUNT_SETTINGS_KEY, value: sanitizeAccounts(accounts) },
+    { key: FOLDER_SETTINGS_KEY, value: sanitizeFolderSettings(folders) },
+  ])
+  await Promise.all([
+    accountsStore.reloadFromDB(),
+    foldersStore.reloadFromDB(),
+  ])
 }
 
 export function subscribeAccounts(listener: () => void) {

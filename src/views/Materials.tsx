@@ -14,6 +14,7 @@ import {
   readFolders,
   readFolderSettings,
   writeFolders,
+  writeAccountsAndFolders,
   writeFolderSettings,
   getFolderCustomColor,
   setFolderCustomColor,
@@ -758,9 +759,13 @@ export function Materials() {
       : [account, ...accounts]
     // 若平台名不在 folders 列表，自动注册
     if (account.platform && !folders.includes(account.platform)) {
-      await writeFolders([...folders, account.platform])
+      await writeAccountsAndFolders(next, {
+        ...folderSettings,
+        items: [...folders, account.platform],
+      })
+    } else {
+      await writeAccounts(next)
     }
-    await writeAccounts(next)
     toast(editingAccount ? '已保存' : '账号已创建', 'success')
     setEditingAccount(undefined)
     setDefaultPlatform('')
@@ -803,17 +808,22 @@ export function Materials() {
         toast(`文件夹「${newName}」已存在`, 'error')
         return
       }
-      await writeAccounts(accounts.map((a) => a.platform === oldName ? { ...a, platform: newName } : a))
+      const nextAccounts = accounts.map((a) => a.platform === oldName ? { ...a, platform: newName } : a)
       if (folders.includes(oldName)) {
         const colors = { ...folderSettings.colors }
         if (colors[oldName] && !colors[newName]) colors[newName] = colors[oldName]
         delete colors[oldName]
-        await writeFolderSettings({
+        await writeAccountsAndFolders(nextAccounts, {
           items: folders.map((f) => f === oldName ? newName : f),
           colors,
         })
       } else if (!folders.includes(newName)) {
-        await writeFolders([...folders, newName])
+        await writeAccountsAndFolders(nextAccounts, {
+          ...folderSettings,
+          items: [...folders, newName],
+        })
+      } else {
+        await writeAccounts(nextAccounts)
       }
       toast('文件夹已重命名', 'success')
     } catch {
@@ -831,8 +841,13 @@ export function Materials() {
           : `确认删除空文件夹「${platform}」？`,
       )
       if (!ok) return
-      await writeAccounts(accounts.filter((a) => a.platform !== platform))
-      await writeFolders(registeredPlatforms.filter((f) => f !== platform))
+      await writeAccountsAndFolders(
+        accounts.filter((a) => a.platform !== platform),
+        {
+          ...folderSettings,
+          items: registeredPlatforms.filter((f) => f !== platform),
+        },
+      )
       toast('已删除', 'error')
     } catch {
       return
