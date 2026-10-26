@@ -11413,52 +11413,60 @@ h1.dash-date-big { margin: 0; }
   .people-assignment-grid { grid-template-rows: repeat(4, minmax(116px, 1fr)); }
 }
 
-/* ─── Light theme calibration and task material hierarchy ───────────── */
+/* 语义色恢复：沿用原始鲜明色相，层次交给表面与边缘。 */
 :root:not([data-theme='dark']) {
-  /* Keep semantic accents vivid; use surfaces and edges to establish depth. */
-  --c-bg: #E7EDF5;
-  --c-surface: #F8FAFD;
-  --c-border: #C2CFDF;
-  --c-border-light: #D4DFEC;
-  --c-text-3: #586B82;
-  --material-panel: #E6ECF4;
-  --material-raised: #F7FAFD;
-  --material-edge: #BCCBDD;
-  --material-rim: rgba(255, 255, 255, .78);
-}
-[data-theme='dark'] {
-  --c-text-3: #A6B4C8;
-  --material-panel: #1A273A;
-  --material-raised: #202F44;
-  --material-edge: #465A73;
-  --material-rim: rgba(230, 239, 255, .1);
+  --c-teal-text: var(--c-teal);
+  --c-sage-text: var(--c-sage);
+  --c-overdue-text: var(--c-overdue);
+  --c-rose-text: var(--c-rose);
+  --c-today-text: var(--c-today);
+  --c-soon-text: var(--c-soon);
+  --c-done-text: var(--c-done);
+  --c-blocked-text: var(--c-blocked);
+  --c-primary-text: var(--c-primary);
+  --c-near-text: var(--c-near);
+  --c-text-3: #64748B;
 }
 
+/* 任务优先级用整条任务的材质状态表达，不添加文字色标或圆点。 */
 .task-row.priority-low {
-  background: var(--material-raised);
-  border: 1px solid var(--c-border-light);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .68);
+  background: var(--c-surface);
+  border-color: var(--c-border-light);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .72);
 }
 .task-row.priority-medium {
-  background: color-mix(in srgb, var(--c-soon-bg) 62%, var(--material-raised));
-  border: 1px solid var(--c-border-light);
-  box-shadow: inset 0 2px 0 color-mix(in srgb, var(--c-soon) 72%, transparent), inset 0 1px 0 rgba(255, 255, 255, .62);
+  background: color-mix(in srgb, var(--c-soon-bg) 34%, var(--c-surface));
+  border-color: var(--c-border-light);
+  box-shadow: inset 0 2px 0 color-mix(in srgb, var(--c-soon) 70%, transparent), inset 0 1px 0 rgba(255, 255, 255, .68);
 }
 .task-row.priority-high {
-  background: color-mix(in srgb, var(--c-today-bg) 72%, var(--material-raised));
-  border: 1px solid var(--c-border-light);
-  box-shadow: inset 0 2px 0 color-mix(in srgb, var(--c-today) 82%, transparent), inset 0 1px 0 rgba(255, 255, 255, .62);
+  background: color-mix(in srgb, var(--c-today-bg) 46%, var(--c-surface));
+  border-color: var(--c-border-light);
+  box-shadow: inset 0 2px 0 color-mix(in srgb, var(--c-today) 78%, transparent), inset 0 1px 0 rgba(255, 255, 255, .68);
 }
 .task-row.priority-urgent {
-  background: color-mix(in srgb, var(--c-overdue-bg) 82%, var(--material-raised));
-  border: 1px solid var(--c-border-light);
-  box-shadow: inset 0 3px 0 var(--c-overdue), inset 0 1px 0 rgba(255, 255, 255, .66), 0 2px 8px color-mix(in srgb, var(--c-overdue) 12%, transparent);
+  background: color-mix(in srgb, var(--c-overdue-bg) 58%, var(--c-surface));
+  border-color: var(--c-border-light);
+  box-shadow: inset 0 3px 0 var(--c-overdue), inset 0 1px 0 rgba(255, 255, 255, .7), 0 2px 8px color-mix(in srgb, var(--c-overdue) 9%, transparent);
 }
-.task-row.priority-low:hover { background: color-mix(in srgb, var(--c-border-light) 48%, var(--material-raised)); }
-.task-row.priority-medium:hover { background: color-mix(in srgb, var(--c-soon-bg) 76%, var(--material-raised)); }
-.task-row.priority-high:hover { background: color-mix(in srgb, var(--c-today-bg) 84%, var(--material-raised)); }
-.task-row.priority-urgent:hover { background: color-mix(in srgb, var(--c-overdue-bg) 90%, var(--material-raised)); }
+.task-row.priority-low:hover { background: color-mix(in srgb, var(--c-border-light) 35%, var(--c-surface)); }
+.task-row.priority-medium:hover { background: color-mix(in srgb, var(--c-soon-bg) 52%, var(--c-surface)); }
+.task-row.priority-high:hover { background: color-mix(in srgb, var(--c-today-bg) 64%, var(--c-surface)); }
+.task-row.priority-urgent:hover { background: color-mix(in srgb, var(--c-overdue-bg) 74%, var(--c-surface)); }
 [data-theme='dark'] .task-row.priority-low { background: var(--material-raised); }
-[data-theme='dark'] .task-row.priority-medium { background: color-mix(in srgb, var(--c-soon-bg) 42%, var(--material-raised)); }
-[data-theme='dark'] .task-row.priority-high { background: color-mix(in srgb, var(--c-today-bg) 42%, var(--material-raised)); }
-[data-theme='dark'] .task-row.priority-urgent { background: color-mix(in srgb, var(--c-overdue-bg) 44%, var(--material-raised)); }
+[data-theme='dark'] .task-row.priority-medium { background: color-mix(in srgb, var(--c-soon-bg) 32%, var(--material-raised)); }
+[data-theme='dark'] .task-row.priority-high { background: color-mix(in srgb, var(--c-today-bg) 34%, var(--material-raised)); }
+[data-theme='dark'] .task-row.priority-urgent { background: color-mix(in srgb, var(--c-overdue-bg) 38%, var(--material-raised)); }
+
+[data-theme='dark'] {
+  --c-teal-text: var(--c-teal);
+  --c-sage-text: var(--c-sage);
+  --c-overdue-text: var(--c-overdue);
+  --c-rose-text: var(--c-rose);
+  --c-today-text: var(--c-today);
+  --c-soon-text: var(--c-soon);
+  --c-done-text: var(--c-done);
+  --c-blocked-text: var(--c-blocked);
+  --c-primary-text: var(--c-primary);
+  --c-near-text: var(--c-near);
+}

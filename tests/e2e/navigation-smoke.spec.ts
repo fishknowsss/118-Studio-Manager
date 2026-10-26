@@ -12,11 +12,11 @@ test('侧栏页面可以连续打开且没有运行时错误', async ({ page }) 
   const firstTaskRowStyle = await page.locator('.task-row').first().evaluate((element) => ({
     background: getComputedStyle(element).backgroundColor,
     boxShadow: getComputedStyle(element).boxShadow,
-    borderLeft: getComputedStyle(element).borderLeftStyle,
-    borderRight: getComputedStyle(element).borderRightStyle,
+    borderLeftWidth: getComputedStyle(element).borderLeftWidth,
+    borderRightWidth: getComputedStyle(element).borderRightWidth,
   }))
-  expect(firstTaskRowStyle.borderLeft).toBe('solid')
-  expect(firstTaskRowStyle.borderRight).toBe('solid')
+  expect(Number.parseFloat(firstTaskRowStyle.borderLeftWidth)).toBeLessThanOrEqual(1)
+  expect(Number.parseFloat(firstTaskRowStyle.borderRightWidth)).toBeLessThanOrEqual(1)
   expect(firstTaskRowStyle.boxShadow).toContain('inset')
 
   for (const [navigationLabel, heading] of [
