@@ -11470,3 +11470,138 @@ h1.dash-date-big { margin: 0; }
   --c-primary-text: var(--c-primary);
   --c-near-text: var(--c-near);
 }
+
+/* 第二轮视觉校准：优先级是整条任务的表面状态，不用顶部彩条。 */
+.task-row.priority-low,
+.task-row.priority-medium,
+.task-row.priority-high,
+.task-row.priority-urgent {
+  border: 1px solid var(--c-border-light);
+  border-left-width: 1px;
+  border-right-width: 1px;
+}
+.task-row.priority-low {
+  background: color-mix(in srgb, var(--c-surface) 94%, var(--c-bg));
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .72), 0 1px 2px rgba(35, 54, 78, .04);
+}
+.task-row.priority-medium {
+  background: color-mix(in srgb, var(--c-soon-bg) 30%, var(--c-surface));
+  border-color: color-mix(in srgb, var(--c-soon) 24%, var(--c-border-light));
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--c-soon) 10%, transparent), 0 1px 3px rgba(35, 54, 78, .05);
+}
+.task-row.priority-high {
+  background: color-mix(in srgb, var(--c-today-bg) 42%, var(--c-surface));
+  border-color: color-mix(in srgb, var(--c-today) 28%, var(--c-border-light));
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--c-today) 11%, transparent), 0 1px 3px rgba(35, 54, 78, .06);
+}
+.task-row.priority-urgent {
+  background: color-mix(in srgb, var(--c-overdue-bg) 52%, var(--c-surface));
+  border-color: color-mix(in srgb, var(--c-overdue) 34%, var(--c-border-light));
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--c-overdue) 15%, transparent), 0 2px 6px color-mix(in srgb, var(--c-overdue) 9%, transparent);
+}
+.task-row.priority-low:hover { background: color-mix(in srgb, var(--c-border-light) 26%, var(--c-surface)); }
+.task-row.priority-medium:hover { background: color-mix(in srgb, var(--c-soon-bg) 46%, var(--c-surface)); }
+.task-row.priority-high:hover { background: color-mix(in srgb, var(--c-today-bg) 58%, var(--c-surface)); }
+.task-row.priority-urgent:hover { background: color-mix(in srgb, var(--c-overdue-bg) 68%, var(--c-surface)); }
+
+/* 桌面和横向平板固定 4×4 版式，始终保留 16 个位置。 */
+@media (min-width: 721px) {
+  .people-assignment-grid {
+    height: 100%;
+    min-height: 0;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    grid-template-rows: repeat(4, minmax(0, 1fr));
+  }
+  .people-panel-body,
+  .people-page-viewport {
+    min-height: 0;
+    overflow: hidden;
+  }
+}
+
+/* 浅色组件边缘：统一用实体边缘和内侧亮线建立层级。 */
+:root:not([data-theme='dark']) {
+  --c-border: #CBD7E5;
+  --c-border-light: #DFE7F0;
+  --material-panel: #EEF3F8;
+  --material-raised: #FBFDFF;
+  --material-edge: #C3D0DE;
+  --material-rim: rgba(255, 255, 255, .82);
+}
+.dashboard .dash-bottom > .panel,
+.dashboard .dash-right {
+  border: 1px solid var(--material-edge);
+  box-shadow: inset 0 1px 0 var(--material-rim);
+}
+.dashboard .dash-bottom > .panel + .panel,
+.dashboard .dash-right {
+  border-left-color: var(--material-edge);
+}
+
+/* 项目焦点的逾期与临界状态保持高饱和、高明度，并强化信息优先级。 */
+.focus-highlight.focus-overdue .focus-highlight-days-num,
+.focus-highlight.focus-overdue .focus-highlight-ddl,
+.focus-card.focus-overdue .focus-card-days-num,
+.focus-card.focus-overdue .focus-card-ddl,
+.project-ddl-label.focus-overdue,
+.project-workspace-schedule.focus-overdue strong,
+.timeline-bar.focus-overdue,
+.planner-event-row.ddl.focus-overdue,
+.cal-event.ddl.focus-overdue {
+  color: var(--c-rose);
+  font-weight: 700;
+}
+.focus-highlight.focus-critical .focus-highlight-days-num,
+.focus-highlight.focus-critical .focus-highlight-ddl,
+.focus-card.focus-critical .focus-card-days-num,
+.focus-card.focus-critical .focus-card-ddl,
+.project-ddl-label.focus-critical,
+.project-workspace-schedule.focus-critical strong,
+.timeline-bar.focus-critical,
+.planner-event-row.ddl.focus-critical,
+.cal-event.ddl.focus-critical {
+  color: var(--c-overdue);
+  font-weight: 700;
+}
+
+/* 技能标签是文字信息，使用高对比的深青色；纯青绿保留给图形和强调面。 */
+.skill-tag,
+.person-assignment-skill-list .skill-tag {
+  color: #127B76;
+}
+[data-theme='dark'] .skill-tag,
+[data-theme='dark'] .person-assignment-skill-list .skill-tag {
+  color: #6CDDD1;
+}
+
+/* 浅色背景上的文字色保留鲜明色相，同时满足正文对比度。 */
+:root:not([data-theme='dark']) .dash-motivation {
+  color: #087A73;
+}
+:root:not([data-theme='dark']) .pft-action[data-kind='blocked'],
+:root:not([data-theme='dark']) .brief-section-danger .brief-section-label,
+:root:not([data-theme='dark']) .panel-action {
+  color: #B42331;
+}
+:root:not([data-theme='dark']) .panel-action {
+  color: #3154D9;
+}
+:root:not([data-theme='dark']) .panel-title {
+  color: #52677F;
+}
+[data-theme='dark'] .dash-motivation {
+  color: #6CDDD1;
+}
+[data-theme='dark'] .pft-action[data-kind='blocked'],
+[data-theme='dark'] .brief-section-danger .brief-section-label {
+  color: #FF9CA8;
+}
+@media (min-width: 721px) and (max-width: 1180px) {
+  .person-assignment-card {
+    padding-right: 16px;
+  }
+  .person-assignment-count {
+    width: calc(100% - 8px);
+    max-width: calc(100% - 8px);
+  }
+}
