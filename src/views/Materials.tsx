@@ -118,13 +118,18 @@ function AccountEntry({
 }) {
   const [flash, setFlash] = useState<'account' | 'password' | null>(null)
   const [showMove, setShowMove] = useState(false)
+  const flashTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const { toast } = useToast()
 
   const copy = async (text: string, field: 'account' | 'password', label: string) => {
     const ok = await copyToClipboard(text)
     if (ok) {
       setFlash(field)
-      setTimeout(() => setFlash(null), 1200)
+      if (flashTimerRef.current) clearTimeout(flashTimerRef.current)
+      flashTimerRef.current = setTimeout(() => {
+        flashTimerRef.current = null
+        setFlash(null)
+      }, 1200)
     }
     toast(ok ? `${label}已复制` : '复制失败，请手动选择', ok ? 'success' : 'error')
   }
@@ -139,6 +144,10 @@ function AccountEntry({
     setShowMove(false)
     onMoveModeChange?.(false)
   }
+
+  useEffect(() => () => {
+    if (flashTimerRef.current) clearTimeout(flashTimerRef.current)
+  }, [])
 
   return (
     <div className="acc-entry">
@@ -285,6 +294,7 @@ function PlatformCard({
   const [isRenaming, setIsRenaming] = useState(false)
   const [renameValue, setRenameValue] = useState(platform)
   const [dragReady, setDragReady] = useState(false)
+  const focusTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const isDragging = draggingPlatform === platform
   const isDragTarget = dragOverPlatform === platform && draggingPlatform !== platform
   const effectiveOpen = open && !dragReady && !draggingPlatform
@@ -339,7 +349,11 @@ function PlatformCard({
     e.stopPropagation()
     setRenameValue(platform)
     setIsRenaming(true)
-    setTimeout(() => renameInputRef.current?.focus(), 0)
+    if (focusTimerRef.current) clearTimeout(focusTimerRef.current)
+    focusTimerRef.current = setTimeout(() => {
+      focusTimerRef.current = null
+      renameInputRef.current?.focus()
+    }, 0)
   }
 
   const confirmRename = () => {
@@ -356,6 +370,7 @@ function PlatformCard({
   useEffect(() => () => {
     if (closeTimer.current) clearTimeout(closeTimer.current)
     clearLongPress()
+    if (focusTimerRef.current) clearTimeout(focusTimerRef.current)
   }, [])
 
   return (
@@ -699,8 +714,18 @@ export function Materials() {
   )
 
   // 新建文件夹时自动聚焦
+  const newFolderFocusTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+
   useEffect(() => {
-    if (newFolderMode) setTimeout(() => newFolderInputRef.current?.focus(), 0)
+    if (!newFolderMode) return undefined
+    newFolderFocusTimerRef.current = setTimeout(() => {
+      newFolderFocusTimerRef.current = null
+      newFolderInputRef.current?.focus()
+    }, 0)
+    return () => {
+      if (newFolderFocusTimerRef.current) clearTimeout(newFolderFocusTimerRef.current)
+      newFolderFocusTimerRef.current = null
+    }
   }, [newFolderMode])
 
   // ── 甲方要求操作 ────────────────────────────────────

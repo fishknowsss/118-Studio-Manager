@@ -457,6 +457,7 @@ function ProductivityCardsView({
   const contentRef = useRef<HTMLDivElement>(null)
   const wheelAccum = useRef(0)
   const wheelLock = useRef(false)
+  const wheelUnlockTimerRef = useRef<number | null>(null)
 
   useEffect(() => {
     const el = contentRef.current
@@ -469,7 +470,11 @@ function ProductivityCardsView({
       const dir = wheelAccum.current > 0 ? 1 : -1
       wheelAccum.current = 0
       wheelLock.current = true
-      window.setTimeout(() => { wheelLock.current = false }, 300)
+      if (wheelUnlockTimerRef.current !== null) window.clearTimeout(wheelUnlockTimerRef.current)
+      wheelUnlockTimerRef.current = window.setTimeout(() => {
+        wheelUnlockTimerRef.current = null
+        wheelLock.current = false
+      }, 300)
       const next = page + dir
       if (next < 0 || next >= totalPages) return
       setSlideDir(next > page ? 'down' : 'up')
@@ -477,7 +482,14 @@ function ProductivityCardsView({
       setPage(next)
     }
     el.addEventListener('wheel', onWheel, { passive: false })
-    return () => el.removeEventListener('wheel', onWheel)
+    return () => {
+      el.removeEventListener('wheel', onWheel)
+      if (wheelUnlockTimerRef.current !== null) {
+        window.clearTimeout(wheelUnlockTimerRef.current)
+        wheelUnlockTimerRef.current = null
+      }
+      wheelLock.current = false
+    }
   }, [page, setPage, totalPages])
 
   const goToPage = (next: number) => {

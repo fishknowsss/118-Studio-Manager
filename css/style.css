@@ -978,7 +978,7 @@ html[data-easter-mode='konami'] .assignee-chip.selected:has(.assignee-chip-avata
   font-size: 16px;
   font-weight: 600;
   color: var(--c-text-3);
-  text-transform: none;
+  text-transform: uppercase;
   letter-spacing: .06em;
 }
 
@@ -2165,12 +2165,36 @@ html[data-easter-mode='konami'] .assignee-chip.selected:has(.assignee-chip-avata
 }
 .task-row:hover .task-row-ctx-hint { opacity: 1; }
 .task-row.drop-target { border-color: var(--c-primary); background: var(--c-primary-light); transform: none; }
-.task-row.priority-urgent { border-left: 1px solid var(--c-border); border-right: 1px solid var(--c-border); }
-.task-row.priority-high   { border-left: 1px solid var(--c-border);   border-right: 1px solid var(--c-border); }
-.task-row.priority-medium { border-left: 1px solid var(--c-border);    border-right: 1px solid var(--c-border); }
-.task-row.priority-urgent:hover { background: color-mix(in srgb, var(--c-overdue) 8%, var(--c-surface)); border-left-color: var(--c-overdue); border-right-color: var(--c-overdue); }
-.task-row.priority-high:hover   { background: color-mix(in srgb, var(--c-today)   8%, var(--c-surface)); border-left-color: var(--c-today);   border-right-color: var(--c-today); }
-.task-row.priority-medium:hover { background: color-mix(in srgb, var(--c-near)    8%, var(--c-surface)); border-left-color: var(--c-near);    border-right-color: var(--c-near); }
+.task-row.priority-urgent { border-left: 0; border-right: 0; }
+.task-row.priority-high   { border-left: 0; border-right: 0; }
+.task-row.priority-medium { border-left: 0; border-right: 0; }
+.task-row.priority-urgent:hover { background: color-mix(in srgb, var(--c-overdue) 8%, var(--c-surface)); }
+.task-row.priority-high:hover   { background: color-mix(in srgb, var(--c-today)   8%, var(--c-surface)); }
+.task-row.priority-medium:hover { background: color-mix(in srgb, var(--c-near)    8%, var(--c-surface)); }
+.task-priority-mark {
+  width: 7px;
+  height: 7px;
+  flex: 0 0 7px;
+  border-radius: 50%;
+  background: var(--c-text-3);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--c-text-3) 12%, transparent);
+}
+.task-priority-mark.priority-low {
+  background: var(--c-text-3);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--c-text-3) 12%, transparent);
+}
+.task-priority-mark.priority-medium {
+  background: var(--c-soon);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--c-soon) 16%, transparent);
+}
+.task-priority-mark.priority-high {
+  background: var(--c-today);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--c-today) 16%, transparent);
+}
+.task-priority-mark.priority-urgent {
+  background: var(--c-overdue);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--c-overdue) 16%, transparent);
+}
 .task-row[draggable="true"] { cursor: grab; }
 .task-row--active {
   background: color-mix(in srgb, var(--c-primary) 8%, var(--c-surface));
@@ -11065,43 +11089,6 @@ select.form-input { cursor: pointer; }
 /* reuse .pdp-section-title from project panel */
 
 /* ─── Quote Manager Modal ────────────────────────────── */
-.qm-overlay {
-  position: fixed;
-  inset: 0;
-  background: rgba(15, 23, 42, .30);
-  backdrop-filter: blur(6px);
-  -webkit-backdrop-filter: blur(6px);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 9999;
-  animation: ep-overlay-in .18s ease both;
-}
-.qm-box {
-  background: var(--c-surface);
-  border: 1px solid var(--c-border);
-  border-radius: var(--r-xl);
-  box-shadow: var(--shadow-lg);
-  width: min(560px, 92vw);
-  max-height: min(680px, 86vh);
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-  animation: ep-box-in .22s cubic-bezier(0.16, 1, 0.3, 1) both;
-}
-.qm-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 18px 20px 14px;
-  border-bottom: 1px solid var(--c-border);
-  flex-shrink: 0;
-}
-.qm-title {
-  font-size: 15px;
-  font-weight: 700;
-  color: var(--c-text);
-}
 .qm-tabs {
   display: flex;
   gap: 4px;

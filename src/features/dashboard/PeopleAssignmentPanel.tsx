@@ -53,6 +53,7 @@ export function PeopleAssignmentPanel({
   const previousPageRef = useRef(0)
   const wheelAccum = useRef(0)
   const wheelLock = useRef(false)
+  const wheelUnlockTimerRef = useRef<number | null>(null)
 
   const totalPages = Math.max(1, Math.ceil(people.length / PAGE_SIZE))
   const activePage = Math.min(page, totalPages - 1)
@@ -79,7 +80,11 @@ export function PeopleAssignmentPanel({
       const dir = wheelAccum.current > 0 ? 1 : -1
       wheelAccum.current = 0
       wheelLock.current = true
-      setTimeout(() => { wheelLock.current = false }, 300)
+      if (wheelUnlockTimerRef.current !== null) window.clearTimeout(wheelUnlockTimerRef.current)
+      wheelUnlockTimerRef.current = window.setTimeout(() => {
+        wheelUnlockTimerRef.current = null
+        wheelLock.current = false
+      }, 300)
       const next = activePage + dir
       if (next < 0 || next >= totalPages) return
       setSlideDir(next > activePage ? 'down' : 'up')
@@ -87,7 +92,14 @@ export function PeopleAssignmentPanel({
       setPage(next)
     }
     el.addEventListener('wheel', onWheel, { passive: false })
-    return () => el.removeEventListener('wheel', onWheel)
+    return () => {
+      el.removeEventListener('wheel', onWheel)
+      if (wheelUnlockTimerRef.current !== null) {
+        window.clearTimeout(wheelUnlockTimerRef.current)
+        wheelUnlockTimerRef.current = null
+      }
+      wheelLock.current = false
+    }
   }, [activePage, totalPages])
 
   const start = activePage * PAGE_SIZE

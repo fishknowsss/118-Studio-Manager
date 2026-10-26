@@ -256,6 +256,12 @@ export function TaskPoolPanel({
                 onDrop={(event) => onDropToTask(event, task.id)}
               >
                 {showSquidMark ? <SquidMark className="squid-mark--task-row" variant={getSquidVariant(task.id)} /> : null}
+                <span
+                  className={`task-priority-mark priority-${task.priority || 'medium'}`}
+                  role="img"
+                  aria-label={`优先级${PRIORITY_LABELS[task.priority || 'medium'] ?? task.priority ?? '中'}`}
+                  title={`优先级：${PRIORITY_LABELS[task.priority || 'medium'] ?? task.priority ?? '中'}`}
+                />
                 <StatusIcon status={task.status} />
                 <div className="task-row-body">
                   <div className="task-row-main">

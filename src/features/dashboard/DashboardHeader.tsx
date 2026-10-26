@@ -1,4 +1,4 @@
-import { useState, useSyncExternalStore, type FormEvent, type KeyboardEvent, type MouseEvent } from 'react'
+import { useEffect, useRef, useState, useSyncExternalStore, type FormEvent, type KeyboardEvent, type MouseEvent } from 'react'
 import { useToast } from '../../components/feedback/ToastProvider'
 import type { DashboardHeaderModel, QuickJumpSearchItem } from '../../legacy/selectors'
 import { QuoteBlock } from './QuoteBlock'
@@ -26,11 +26,16 @@ export function DashboardHeader({
   const [searchOpen, setSearchOpen] = useState(false)
   const [activeIndex, setActiveIndex] = useState(0)
   const [resourceEditorOpen, setResourceEditorOpen] = useState(false)
+  const searchCloseTimerRef = useRef<number | null>(null)
   const homeResourceLink = useSyncExternalStore(
     subscribeHomeResourceLinkState,
     readHomeResourceLinkState,
   )
   const [draftResourceUrl, setDraftResourceUrl] = useState(homeResourceLink.url)
+
+  useEffect(() => () => {
+    if (searchCloseTimerRef.current !== null) window.clearTimeout(searchCloseTimerRef.current)
+  }, [])
 
   const showDropdown = searchOpen && searchQuery.trim().length > 0
 
@@ -118,7 +123,13 @@ export function DashboardHeader({
 
         <div
           className="dash-search-wrap"
-          onBlur={() => window.setTimeout(() => setSearchOpen(false), 100)}
+          onBlur={() => {
+            if (searchCloseTimerRef.current !== null) window.clearTimeout(searchCloseTimerRef.current)
+            searchCloseTimerRef.current = window.setTimeout(() => {
+              searchCloseTimerRef.current = null
+              setSearchOpen(false)
+            }, 100)
+          }}
         >
           <input
             className="dash-search-input"
