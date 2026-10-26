@@ -9,11 +9,15 @@ test('侧栏页面可以连续打开且没有运行时错误', async ({ page }) 
 
   await page.goto('/#dashboard')
   await expect(page.getByRole('button', { name: '首页' })).toBeVisible()
-  await expect(page.locator('.task-row').first().locator('.task-priority-mark')).toBeVisible()
-  expect(await page.locator('.task-row').first().evaluate((element) => ({
-    left: getComputedStyle(element).borderLeftStyle,
-    right: getComputedStyle(element).borderRightStyle,
-  }))).toEqual({ left: 'none', right: 'none' })
+  const firstTaskRowStyle = await page.locator('.task-row').first().evaluate((element) => ({
+    background: getComputedStyle(element).backgroundColor,
+    boxShadow: getComputedStyle(element).boxShadow,
+    borderLeft: getComputedStyle(element).borderLeftStyle,
+    borderRight: getComputedStyle(element).borderRightStyle,
+  }))
+  expect(firstTaskRowStyle.borderLeft).toBe('solid')
+  expect(firstTaskRowStyle.borderRight).toBe('solid')
+  expect(firstTaskRowStyle.boxShadow).toContain('inset')
 
   for (const [navigationLabel, heading] of [
     ['资料', '资料'],

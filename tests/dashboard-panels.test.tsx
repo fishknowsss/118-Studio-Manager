@@ -899,7 +899,7 @@ describe('dashboard panels', () => {
     expect(card?.querySelector('.task-detail-card-action[aria-label="删除任务"]')).not.toBeNull()
     expect(card?.querySelector('.task-detail-card-action')?.textContent?.trim()).toBe('')
     expect(view.container.textContent).toContain('进行中')
-    expect(view.container.textContent).toContain('紧急')
+    expect(view.container.textContent).not.toContain('紧急')
     expect(view.container.textContent).toContain('王浩然')
     expect(view.container.textContent).toContain('品牌宣传片第三季')
     expect(view.container.textContent).toContain('4 小时')

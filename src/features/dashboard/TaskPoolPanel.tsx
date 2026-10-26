@@ -9,7 +9,7 @@ import { ContextMenu, type ContextMenuItem } from '../../components/ui/ContextMe
 import { TaskDialog } from '../tasks/TaskDialog'
 import { deleteTaskWithLog, updateTaskQuickField } from '../../legacy/actions'
 import { useLegacyStoreSnapshot } from '../../legacy/useLegacyStore'
-import { formatDate, today, PRIORITY_LABELS, STATUS_LABELS } from '../../legacy/utils'
+import { formatDate, today, STATUS_LABELS } from '../../legacy/utils'
 import type { TaskStatus } from '../../legacy/store'
 
 type TaskRow = LegacyTask & { people?: LegacyPerson[]; project?: LegacyProject | null }
@@ -256,12 +256,6 @@ export function TaskPoolPanel({
                 onDrop={(event) => onDropToTask(event, task.id)}
               >
                 {showSquidMark ? <SquidMark className="squid-mark--task-row" variant={getSquidVariant(task.id)} /> : null}
-                <span
-                  className={`task-priority-mark priority-${task.priority || 'medium'}`}
-                  role="img"
-                  aria-label={`优先级${PRIORITY_LABELS[task.priority || 'medium'] ?? task.priority ?? '中'}`}
-                  title={`优先级：${PRIORITY_LABELS[task.priority || 'medium'] ?? task.priority ?? '中'}`}
-                />
                 <StatusIcon status={task.status} />
                 <div className="task-row-body">
                   <div className="task-row-main">
@@ -362,7 +356,6 @@ export function TaskPoolPanel({
 
             <div className="task-detail-card-status">
               <span>{STATUS_LABELS[detailTask.status || 'todo'] ?? detailTask.status ?? '待处理'}</span>
-              <span>{PRIORITY_LABELS[detailTask.priority || 'medium'] ?? detailTask.priority ?? '中'}</span>
               <span>{detailTask.endDate ? `截止 ${formatDate(detailTask.endDate)}` : '未设截止'}</span>
             </div>
 

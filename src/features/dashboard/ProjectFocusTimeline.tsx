@@ -73,7 +73,6 @@ export const ProjectFocusTimeline = memo(function ProjectFocusTimeline({
               key={item.id}
               type="button"
               className={`pft-row ${item.urgencyKey}`}
-              aria-label={`${item.name}，${item.phaseLabel}，进度 ${item.progressPercent}%，${item.actionLabel}，${item.deliveryLabel || formatDate(item.deliveryDate || item.endDate)}`}
               onClick={(event) => {
                 const rect = event.currentTarget.getBoundingClientRect()
                 onExpandProject(item.id, rect.left + rect.width / 2, rect.top + rect.height / 2)

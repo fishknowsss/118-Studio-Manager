@@ -1029,6 +1029,8 @@ html[data-easter-mode='konami'] .assignee-chip.selected:has(.assignee-chip-avata
 .sidebar-footer {
   padding: 8px;
   border-top: 1px solid var(--c-border-light);
+  margin: 0;
+  list-style: none;
 }
 .sidebar-footer .nav-item { margin: 0; }
 
@@ -1281,9 +1283,9 @@ html[data-easter-mode='konami'] .assignee-chip.selected:has(.assignee-chip-avata
   min-width: 0;
   overflow: hidden;
   text-align: right;
-  transition: padding-right .15s;
+  transition: transform .15s;
 }
-.dash-quote-block:hover .dash-quote-content { padding-right: 36px; }
+.dash-quote-block:hover .dash-quote-content { transform: translateX(-36px); }
 .dash-quote-line {
   display: flex;
   align-items: baseline;
@@ -2171,30 +2173,6 @@ html[data-easter-mode='konami'] .assignee-chip.selected:has(.assignee-chip-avata
 .task-row.priority-urgent:hover { background: color-mix(in srgb, var(--c-overdue) 8%, var(--c-surface)); }
 .task-row.priority-high:hover   { background: color-mix(in srgb, var(--c-today)   8%, var(--c-surface)); }
 .task-row.priority-medium:hover { background: color-mix(in srgb, var(--c-near)    8%, var(--c-surface)); }
-.task-priority-mark {
-  width: 7px;
-  height: 7px;
-  flex: 0 0 7px;
-  border-radius: 50%;
-  background: var(--c-text-3);
-  box-shadow: 0 0 0 2px color-mix(in srgb, var(--c-text-3) 12%, transparent);
-}
-.task-priority-mark.priority-low {
-  background: var(--c-text-3);
-  box-shadow: 0 0 0 2px color-mix(in srgb, var(--c-text-3) 12%, transparent);
-}
-.task-priority-mark.priority-medium {
-  background: var(--c-soon);
-  box-shadow: 0 0 0 2px color-mix(in srgb, var(--c-soon) 16%, transparent);
-}
-.task-priority-mark.priority-high {
-  background: var(--c-today);
-  box-shadow: 0 0 0 2px color-mix(in srgb, var(--c-today) 16%, transparent);
-}
-.task-priority-mark.priority-urgent {
-  background: var(--c-overdue);
-  box-shadow: 0 0 0 2px color-mix(in srgb, var(--c-overdue) 16%, transparent);
-}
 .task-row[draggable="true"] { cursor: grab; }
 .task-row--active {
   background: color-mix(in srgb, var(--c-primary) 8%, var(--c-surface));
@@ -9932,7 +9910,7 @@ select.form-input { cursor: pointer; }
     width: 34px;
   }
 
-  .sidebar-footer > .nav-button .nav-label {
+  .sidebar-footer > li > .nav-button .nav-label {
     display: none;
   }
 
@@ -11434,3 +11412,53 @@ h1.dash-date-big { margin: 0; }
 @media (min-width: 1181px) {
   .people-assignment-grid { grid-template-rows: repeat(4, minmax(116px, 1fr)); }
 }
+
+/* ─── Light theme calibration and task material hierarchy ───────────── */
+:root:not([data-theme='dark']) {
+  /* Keep semantic accents vivid; use surfaces and edges to establish depth. */
+  --c-bg: #E7EDF5;
+  --c-surface: #F8FAFD;
+  --c-border: #C2CFDF;
+  --c-border-light: #D4DFEC;
+  --c-text-3: #586B82;
+  --material-panel: #E6ECF4;
+  --material-raised: #F7FAFD;
+  --material-edge: #BCCBDD;
+  --material-rim: rgba(255, 255, 255, .78);
+}
+[data-theme='dark'] {
+  --c-text-3: #A6B4C8;
+  --material-panel: #1A273A;
+  --material-raised: #202F44;
+  --material-edge: #465A73;
+  --material-rim: rgba(230, 239, 255, .1);
+}
+
+.task-row.priority-low {
+  background: var(--material-raised);
+  border: 1px solid var(--c-border-light);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .68);
+}
+.task-row.priority-medium {
+  background: color-mix(in srgb, var(--c-soon-bg) 62%, var(--material-raised));
+  border: 1px solid var(--c-border-light);
+  box-shadow: inset 0 2px 0 color-mix(in srgb, var(--c-soon) 72%, transparent), inset 0 1px 0 rgba(255, 255, 255, .62);
+}
+.task-row.priority-high {
+  background: color-mix(in srgb, var(--c-today-bg) 72%, var(--material-raised));
+  border: 1px solid var(--c-border-light);
+  box-shadow: inset 0 2px 0 color-mix(in srgb, var(--c-today) 82%, transparent), inset 0 1px 0 rgba(255, 255, 255, .62);
+}
+.task-row.priority-urgent {
+  background: color-mix(in srgb, var(--c-overdue-bg) 82%, var(--material-raised));
+  border: 1px solid var(--c-border-light);
+  box-shadow: inset 0 3px 0 var(--c-overdue), inset 0 1px 0 rgba(255, 255, 255, .66), 0 2px 8px color-mix(in srgb, var(--c-overdue) 12%, transparent);
+}
+.task-row.priority-low:hover { background: color-mix(in srgb, var(--c-border-light) 48%, var(--material-raised)); }
+.task-row.priority-medium:hover { background: color-mix(in srgb, var(--c-soon-bg) 76%, var(--material-raised)); }
+.task-row.priority-high:hover { background: color-mix(in srgb, var(--c-today-bg) 84%, var(--material-raised)); }
+.task-row.priority-urgent:hover { background: color-mix(in srgb, var(--c-overdue-bg) 90%, var(--material-raised)); }
+[data-theme='dark'] .task-row.priority-low { background: var(--material-raised); }
+[data-theme='dark'] .task-row.priority-medium { background: color-mix(in srgb, var(--c-soon-bg) 42%, var(--material-raised)); }
+[data-theme='dark'] .task-row.priority-high { background: color-mix(in srgb, var(--c-today-bg) 42%, var(--material-raised)); }
+[data-theme='dark'] .task-row.priority-urgent { background: color-mix(in srgb, var(--c-overdue-bg) 44%, var(--material-raised)); }

@@ -54,7 +54,6 @@ export function PersonAssignmentCard({
       draggable
       role="button"
       tabIndex={0}
-      aria-label={`打开${model.name}的详情`}
       data-person-id={model.id}
       onDragEnd={onDragEnd}
       onDragLeave={onDragLeave}
